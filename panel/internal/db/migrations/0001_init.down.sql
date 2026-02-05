@@ -1,0 +1,5 @@
+DROP TABLE IF EXISTS traffic_stats;
+DROP TABLE IF EXISTS user_inbounds;
+DROP TABLE IF EXISTS inbounds;
+DROP TABLE IF EXISTS nodes;
+DROP TABLE IF EXISTS users;
