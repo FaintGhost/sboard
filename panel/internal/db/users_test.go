@@ -6,6 +6,7 @@ import (
   "path/filepath"
   "runtime"
   "testing"
+  "time"
 
   "sboard/panel/internal/db"
   "github.com/stretchr/testify/require"
@@ -37,4 +38,25 @@ func TestUserCreateAndUnique(t *testing.T) {
   _, err = store.CreateUser(context.Background(), "alice")
   require.Error(t, err)
   require.True(t, errors.Is(err, db.ErrConflict))
+}
+
+func TestUserUpdateExpireAt(t *testing.T) {
+  store := setupStore(t)
+  user, err := store.CreateUser(context.Background(), "alice")
+  require.NoError(t, err)
+
+  exp := time.Now().UTC().Truncate(time.Second)
+  updated, err := store.UpdateUser(context.Background(), user.ID, db.UserUpdate{
+    ExpireAt:    &exp,
+    ExpireAtSet: true,
+  })
+  require.NoError(t, err)
+  require.NotNil(t, updated.ExpireAt)
+  require.WithinDuration(t, exp, *updated.ExpireAt, time.Second)
+
+  updated, err = store.UpdateUser(context.Background(), user.ID, db.UserUpdate{
+    ExpireAtSet: true,
+  })
+  require.NoError(t, err)
+  require.Nil(t, updated.ExpireAt)
 }
