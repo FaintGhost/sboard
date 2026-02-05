@@ -10,6 +10,9 @@ import (
 
 func main() {
   cfg := config.Load()
+  if err := config.Validate(cfg); err != nil {
+    log.Fatal(err)
+  }
   database, err := db.Open(cfg.DBPath)
   if err != nil {
     log.Fatal(err)
