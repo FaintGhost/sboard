@@ -32,6 +32,7 @@ type UserUpdate struct {
   Username        *string
   Status          *string
   ExpireAt        *time.Time
+  ExpireAtSet     bool
   TrafficLimit    *int64
   TrafficResetDay *int
 }
@@ -98,9 +99,13 @@ func (s *Store) UpdateUser(ctx context.Context, id int64, update UserUpdate) (Us
     sets = append(sets, "status = ?")
     args = append(args, *update.Status)
   }
-  if update.ExpireAt != nil {
+  if update.ExpireAtSet {
     sets = append(sets, "expire_at = ?")
-    args = append(args, *update.ExpireAt)
+    if update.ExpireAt != nil {
+      args = append(args, sql.NullTime{Time: *update.ExpireAt, Valid: true})
+    } else {
+      args = append(args, sql.NullTime{})
+    }
   }
   if update.TrafficLimit != nil {
     sets = append(sets, "traffic_limit = ?")

@@ -12,9 +12,10 @@ func NewRouter(cfg config.Config, store *db.Store) *gin.Engine {
   r.POST("/api/admin/login", AdminLogin(cfg))
   auth := r.Group("/api")
   auth.Use(AuthMiddleware(cfg.JWTSecret))
-  auth.GET("/users", func(c *gin.Context) {
-    c.JSON(200, gin.H{"data": []any{}})
-  })
-  _ = store
+  auth.GET("/users", UsersList(store))
+  auth.POST("/users", UsersCreate(store))
+  auth.GET("/users/:id", UsersGet(store))
+  auth.PUT("/users/:id", UsersUpdate(store))
+  auth.DELETE("/users/:id", UsersDelete(store))
   return r
 }

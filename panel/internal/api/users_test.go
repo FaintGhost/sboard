@@ -1,0 +1,161 @@
+package api_test
+
+import (
+  "encoding/json"
+  "fmt"
+  "net/http"
+  "net/http/httptest"
+  "path/filepath"
+  "runtime"
+  "strings"
+  "testing"
+  "time"
+
+  "sboard/panel/internal/api"
+  "sboard/panel/internal/config"
+  "sboard/panel/internal/db"
+  "github.com/golang-jwt/jwt/v5"
+  "github.com/stretchr/testify/require"
+)
+
+type userDTO struct {
+  ID              int64      `json:"id"`
+  UUID            string     `json:"uuid"`
+  Username        string     `json:"username"`
+  TrafficLimit    int64      `json:"traffic_limit"`
+  TrafficUsed     int64      `json:"traffic_used"`
+  TrafficResetDay int        `json:"traffic_reset_day"`
+  ExpireAt        *time.Time `json:"expire_at"`
+  Status          string     `json:"status"`
+}
+
+type userResp struct {
+  Data userDTO `json:"data"`
+}
+
+type listResp struct {
+  Data []userDTO `json:"data"`
+}
+
+func setupStore(t *testing.T) *db.Store {
+  t.Helper()
+  dir := t.TempDir()
+  dbPath := filepath.Join(dir, "test.db")
+  database, err := db.Open(dbPath)
+  require.NoError(t, err)
+  t.Cleanup(func() { _ = database.Close() })
+
+  _, file, _, ok := runtime.Caller(0)
+  require.True(t, ok)
+  migrationsDir := filepath.Join(filepath.Dir(file), "..", "db", "migrations")
+  err = db.MigrateUp(database, migrationsDir)
+  require.NoError(t, err)
+
+  return db.NewStore(database)
+}
+
+func mustToken(secret string) string {
+  now := time.Now()
+  exp := now.Add(24 * time.Hour)
+  claims := jwt.RegisteredClaims{
+    Subject:   "admin",
+    IssuedAt:  jwt.NewNumericDate(now),
+    ExpiresAt: jwt.NewNumericDate(exp),
+  }
+  token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+  signed, err := token.SignedString([]byte(secret))
+  if err != nil {
+    panic(err)
+  }
+  return signed
+}
+
+func TestUsersAPI_CreateListAndDisable(t *testing.T) {
+  cfg := config.Config{JWTSecret: "secret"}
+  store := setupStore(t)
+  r := api.NewRouter(cfg, store)
+  token := mustToken(cfg.JWTSecret)
+
+  w := httptest.NewRecorder()
+  req := httptest.NewRequest(http.MethodPost, "/api/users", strings.NewReader(`{"username":"alice"}`))
+  req.Header.Set("Authorization", "Bearer "+token)
+  r.ServeHTTP(w, req)
+  require.Equal(t, http.StatusCreated, w.Code)
+
+  var created userResp
+  require.NoError(t, json.Unmarshal(w.Body.Bytes(), &created))
+  require.Equal(t, "alice", created.Data.Username)
+  require.Equal(t, "active", created.Data.Status)
+
+  w = httptest.NewRecorder()
+  req = httptest.NewRequest(http.MethodGet, "/api/users?limit=10&offset=0", nil)
+  req.Header.Set("Authorization", "Bearer "+token)
+  r.ServeHTTP(w, req)
+  require.Equal(t, http.StatusOK, w.Code)
+
+  var listed listResp
+  require.NoError(t, json.Unmarshal(w.Body.Bytes(), &listed))
+  require.Len(t, listed.Data, 1)
+
+  w = httptest.NewRecorder()
+  req = httptest.NewRequest(http.MethodDelete, fmt.Sprintf("/api/users/%d", created.Data.ID), nil)
+  req.Header.Set("Authorization", "Bearer "+token)
+  r.ServeHTTP(w, req)
+  require.Equal(t, http.StatusOK, w.Code)
+
+  var disabled userResp
+  require.NoError(t, json.Unmarshal(w.Body.Bytes(), &disabled))
+  require.Equal(t, "disabled", disabled.Data.Status)
+
+  w = httptest.NewRecorder()
+  req = httptest.NewRequest(http.MethodGet, "/api/users?limit=10&offset=0", nil)
+  req.Header.Set("Authorization", "Bearer "+token)
+  r.ServeHTTP(w, req)
+  require.Equal(t, http.StatusOK, w.Code)
+
+  require.NoError(t, json.Unmarshal(w.Body.Bytes(), &listed))
+  require.Len(t, listed.Data, 0)
+
+  w = httptest.NewRecorder()
+  req = httptest.NewRequest(http.MethodGet, "/api/users?status=disabled&limit=10&offset=0", nil)
+  req.Header.Set("Authorization", "Bearer "+token)
+  r.ServeHTTP(w, req)
+  require.Equal(t, http.StatusOK, w.Code)
+
+  require.NoError(t, json.Unmarshal(w.Body.Bytes(), &listed))
+  require.Len(t, listed.Data, 1)
+}
+
+func TestUsersAPI_GetAndUpdate(t *testing.T) {
+  cfg := config.Config{JWTSecret: "secret"}
+  store := setupStore(t)
+  r := api.NewRouter(cfg, store)
+  token := mustToken(cfg.JWTSecret)
+
+  w := httptest.NewRecorder()
+  req := httptest.NewRequest(http.MethodPost, "/api/users", strings.NewReader(`{"username":"alice"}`))
+  req.Header.Set("Authorization", "Bearer "+token)
+  r.ServeHTTP(w, req)
+  require.Equal(t, http.StatusCreated, w.Code)
+
+  var created userResp
+  require.NoError(t, json.Unmarshal(w.Body.Bytes(), &created))
+
+  w = httptest.NewRecorder()
+  req = httptest.NewRequest(http.MethodGet, fmt.Sprintf("/api/users/%d", created.Data.ID), nil)
+  req.Header.Set("Authorization", "Bearer "+token)
+  r.ServeHTTP(w, req)
+  require.Equal(t, http.StatusOK, w.Code)
+
+  w = httptest.NewRecorder()
+  req = httptest.NewRequest(http.MethodPut, fmt.Sprintf("/api/users/%d", created.Data.ID), strings.NewReader(`{"traffic_limit":1024,"traffic_reset_day":1,"status":"expired"}`))
+  req.Header.Set("Authorization", "Bearer "+token)
+  r.ServeHTTP(w, req)
+  require.Equal(t, http.StatusOK, w.Code)
+
+  var updated userResp
+  require.NoError(t, json.Unmarshal(w.Body.Bytes(), &updated))
+  require.Equal(t, int64(1024), updated.Data.TrafficLimit)
+  require.Equal(t, 1, updated.Data.TrafficResetDay)
+  require.Equal(t, "expired", updated.Data.Status)
+}
