@@ -59,6 +59,12 @@ func (s *Store) GetUserByID(ctx context.Context, id int64) (User, error) {
   return scanUser(row)
 }
 
+func (s *Store) GetUserByUUID(ctx context.Context, uuid string) (User, error) {
+  row := s.DB.QueryRowContext(ctx, `SELECT id, uuid, username, traffic_limit, traffic_used, traffic_reset_day, expire_at, status
+    FROM users WHERE uuid = ?`, uuid)
+  return scanUser(row)
+}
+
 func (s *Store) ListUsers(ctx context.Context, limit, offset int, status string) ([]User, error) {
   args := []any{}
   where := ""

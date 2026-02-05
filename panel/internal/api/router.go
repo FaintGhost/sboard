@@ -10,6 +10,7 @@ func NewRouter(cfg config.Config, store *db.Store) *gin.Engine {
   r := gin.New()
   r.GET("/api/health", Health)
   r.POST("/api/admin/login", AdminLogin(cfg))
+  r.GET("/api/sub/:user_uuid", SubscriptionGet(store))
   auth := r.Group("/api")
   auth.Use(AuthMiddleware(cfg.JWTSecret))
   auth.GET("/users", UsersList(store))
