@@ -1,0 +1,16 @@
+package api
+
+import "github.com/gin-gonic/gin"
+
+type Core interface {
+  ApplyConfig(ctx *gin.Context, body []byte) error
+}
+
+func NewRouter(secret string, core Core) *gin.Engine {
+  r := gin.New()
+  r.GET("/api/health", Health)
+  r.POST("/api/config/sync", func(c *gin.Context) {
+    ConfigSync(c, secret, core)
+  })
+  return r
+}
