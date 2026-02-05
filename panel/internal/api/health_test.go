@@ -6,11 +6,12 @@ import (
   "testing"
 
   "sboard/panel/internal/api"
+  "sboard/panel/internal/config"
   "github.com/stretchr/testify/require"
 )
 
 func TestHealth(t *testing.T) {
-  r := api.NewRouter()
+  r := api.NewRouter(config.Config{}, nil)
   w := httptest.NewRecorder()
   req := httptest.NewRequest(http.MethodGet, "/api/health", nil)
 

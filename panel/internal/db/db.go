@@ -8,3 +8,11 @@ import (
 func Open(path string) (*sql.DB, error) {
   return sql.Open("sqlite3", path)
 }
+
+type Store struct {
+  DB *sql.DB
+}
+
+func NewStore(db *sql.DB) *Store {
+  return &Store{DB: db}
+}
