@@ -95,6 +95,17 @@ docker run -d --name sboard-node -p 3000:3000 sboard-node
 **基础 API**
 - `GET /api/health`：Panel 与 Node 均提供健康检查
 - `POST /api/config/sync`：Node 接收入站配置并创建入站
+- `GET /api/sub/:user_uuid`：订阅链接（sing-box）
+
+**订阅行为（sing-box）**
+- `?format=singbox` 优先于 User-Agent，返回 JSON
+- User-Agent 命中 `sing-box`/`SFA`/`SFI` 返回 JSON
+- 其他 User-Agent 返回 Base64(JSON)
+
+**节点与入站字段**
+- `nodes.api_address/api_port`：Panel ↔ Node 通信地址
+- `nodes.public_address`：订阅中使用的对外地址
+- `inbounds.public_port`：订阅中使用的对外端口（为空时回退 `listen_port`）
 
 **目录结构**
 - `panel/`：Panel 后端（Gin + SQLite）
