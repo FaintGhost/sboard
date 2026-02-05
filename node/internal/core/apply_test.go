@@ -4,7 +4,7 @@ import (
   "context"
   "testing"
 
-  "github.com/FaintGhost/sboard/node/internal/core"
+  "sboard/node/internal/core"
   "github.com/sagernet/sing-box/adapter"
   "github.com/sagernet/sing-box/log"
   "github.com/sagernet/sing-box/option"

@@ -3,7 +3,7 @@ package sync_test
 import (
   "testing"
 
-  "github.com/FaintGhost/sboard/node/internal/sync"
+  "sboard/node/internal/sync"
   "github.com/stretchr/testify/require"
 )
 

@@ -1,4 +1,4 @@
-module github.com/FaintGhost/sboard/node
+module sboard/node
 
 go 1.25
 

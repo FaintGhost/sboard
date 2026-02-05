@@ -5,7 +5,7 @@ import (
   "net/http/httptest"
   "testing"
 
-  "github.com/FaintGhost/sboard/panel/internal/api"
+  "sboard/panel/internal/api"
   "github.com/stretchr/testify/require"
 )
 

@@ -6,7 +6,7 @@ import (
   "strings"
   "testing"
 
-  "github.com/FaintGhost/sboard/node/internal/api"
+  "sboard/node/internal/api"
   "github.com/gin-gonic/gin"
   "github.com/stretchr/testify/require"
 )
