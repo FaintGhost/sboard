@@ -10,6 +10,9 @@ import (
 
 func main() {
   cfg := config.Load()
+  if err := config.Validate(cfg); err != nil {
+    log.Fatal(err)
+  }
   database, err := db.Open(cfg.DBPath)
   if err != nil {
     log.Fatal(err)
@@ -17,7 +20,8 @@ func main() {
   if err := db.MigrateUp(database, "internal/db/migrations"); err != nil {
     log.Fatal(err)
   }
-  r := api.NewRouter()
+  store := db.NewStore(database)
+  r := api.NewRouter(cfg, store)
   if err := r.Run(cfg.HTTPAddr); err != nil {
     log.Fatal(err)
   }
