@@ -25,3 +25,12 @@ func TestAdminLogin(t *testing.T) {
   r.ServeHTTP(w, req)
   require.Equal(t, http.StatusUnauthorized, w.Code)
 }
+
+func TestAuthMiddleware(t *testing.T) {
+  cfg := config.Config{JWTSecret: "secret"}
+  r := api.NewRouter(cfg, nil)
+  w := httptest.NewRecorder()
+  req := httptest.NewRequest(http.MethodGet, "/api/users", nil)
+  r.ServeHTTP(w, req)
+  require.Equal(t, http.StatusUnauthorized, w.Code)
+}

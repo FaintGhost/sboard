@@ -1,7 +1,9 @@
 package api
 
 import (
+  "fmt"
   "net/http"
+  "strings"
   "time"
 
   "sboard/panel/internal/config"
@@ -53,4 +55,29 @@ func signAdminToken(secret string) (string, time.Time, error) {
     return "", time.Time{}, err
   }
   return signed, exp, nil
+}
+
+func AuthMiddleware(secret string) gin.HandlerFunc {
+  return func(c *gin.Context) {
+    auth := c.GetHeader("Authorization")
+    if !strings.HasPrefix(auth, "Bearer ") {
+      c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+      c.Abort()
+      return
+    }
+    tokenStr := strings.TrimPrefix(auth, "Bearer ")
+    claims := &jwt.RegisteredClaims{}
+    token, err := jwt.ParseWithClaims(tokenStr, claims, func(t *jwt.Token) (any, error) {
+      if t.Method != jwt.SigningMethodHS256 {
+        return nil, fmt.Errorf("unexpected signing method")
+      }
+      return []byte(secret), nil
+    })
+    if err != nil || !token.Valid || claims.Subject != "admin" {
+      c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+      c.Abort()
+      return
+    }
+    c.Next()
+  }
 }
