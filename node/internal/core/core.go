@@ -37,9 +37,7 @@ func New(ctx context.Context, logLevel string) (*Core, error) {
   ctx = include.Context(ctx)
 
   opts := option.Options{
-    Log:   &option.LogOptions{Level: logLevel},
-    Route: &option.RouteOptions{Final: "direct"},
-    DNS:   &option.DNSOptions{RawDNSOptions: option.RawDNSOptions{Final: "direct"}},
+    Log: &option.LogOptions{Level: logLevel},
   }
 
   lf, err := log.New(log.Options{Context: ctx, Options: *opts.Log})
