@@ -60,3 +60,16 @@ func TestUserUpdateExpireAt(t *testing.T) {
   require.NoError(t, err)
   require.Nil(t, updated.ExpireAt)
 }
+
+func TestListUsersIncludesDisabledByDefault(t *testing.T) {
+  store := setupStore(t)
+  user, err := store.CreateUser(context.Background(), "alice")
+  require.NoError(t, err)
+
+  require.NoError(t, store.DisableUser(context.Background(), user.ID))
+
+  listed, err := store.ListUsers(context.Background(), 10, 0, "")
+  require.NoError(t, err)
+  require.Len(t, listed, 1)
+  require.Equal(t, "disabled", listed[0].Status)
+}

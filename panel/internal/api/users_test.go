@@ -114,7 +114,8 @@ func TestUsersAPI_CreateListAndDisable(t *testing.T) {
   require.Equal(t, http.StatusOK, w.Code)
 
   require.NoError(t, json.Unmarshal(w.Body.Bytes(), &listed))
-  require.Len(t, listed.Data, 0)
+  require.Len(t, listed.Data, 1)
+  require.Equal(t, "disabled", listed.Data[0].Status)
 
   w = httptest.NewRecorder()
   req = httptest.NewRequest(http.MethodGet, "/api/users?status=disabled&limit=10&offset=0", nil)

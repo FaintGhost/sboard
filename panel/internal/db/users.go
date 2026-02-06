@@ -68,9 +68,7 @@ func (s *Store) GetUserByUUID(ctx context.Context, uuid string) (User, error) {
 func (s *Store) ListUsers(ctx context.Context, limit, offset int, status string) ([]User, error) {
   args := []any{}
   where := ""
-  if status == "" {
-    where = "WHERE status != 'disabled'"
-  } else {
+  if status != "" {
     where = "WHERE status = ?"
     args = append(args, status)
   }

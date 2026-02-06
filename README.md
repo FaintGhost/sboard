@@ -17,6 +17,10 @@ SBoard 是一个基于 sing-box 的订阅管理面板与节点管理系统。当
 cd /root/workspace/sboard/panel
 PANEL_HTTP_ADDR=:8080 \
 PANEL_DB_PATH=panel.db \
+PANEL_CORS_ALLOW_ORIGINS=http://localhost:5173 \
+ADMIN_USER=admin \
+ADMIN_PASS=admin123 \
+PANEL_JWT_SECRET=change-me-in-prod \
 go run ./cmd/panel
 ```
 
@@ -87,10 +91,29 @@ docker run -d --name sboard-node -p 3000:3000 sboard-node
 - Panel
   - `PANEL_HTTP_ADDR`：监听地址，默认 `:8080`
   - `PANEL_DB_PATH`：SQLite 路径，默认 `panel.db`
+  - `ADMIN_USER`：管理员登录用户名（必填）
+  - `ADMIN_PASS`：管理员登录密码（必填）
+  - `PANEL_JWT_SECRET`：JWT 签名密钥（必填）
+  - `PANEL_CORS_ALLOW_ORIGINS`：允许的前端 Origin（逗号分隔或 `*`），默认 `http://localhost:5173`
+  - `PANEL_LOG_REQUESTS`：是否打印每个 HTTP 请求（`true/false`），默认 `true`
 - Node
   - `NODE_HTTP_ADDR`：监听地址，默认 `:3000`
   - `NODE_SECRET_KEY`：API 密钥，用于 `Authorization: Bearer <secret>`
   - `NODE_LOG_LEVEL`：日志级别，默认 `info`
+
+**前后端联调（本地）**
+1. 启动 Panel（如上，确保设置 `ADMIN_USER/ADMIN_PASS/PANEL_JWT_SECRET`）
+2. 启动前端：
+```bash
+cd /root/workspace/sboard/panel/web
+npm run dev
+```
+3. Vite 会把 `/api/*` 代理到 Panel（默认 `http://127.0.0.1:8080`）。如需自定义目标：
+```bash
+VITE_PROXY_TARGET=http://127.0.0.1:8080 npm run dev
+```
+3. 前端登录账号密码：使用你启动 Panel 时传入的 `ADMIN_USER` 和 `ADMIN_PASS`  
+   示例即 `admin / admin123`
 
 **基础 API**
 - `GET /api/health`：Panel 与 Node 均提供健康检查

@@ -8,6 +8,9 @@ import (
 
 func NewRouter(cfg config.Config, store *db.Store) *gin.Engine {
   r := gin.New()
+  r.Use(RequestLogger(cfg.LogRequests))
+  r.Use(gin.Recovery())
+  r.Use(CORSMiddleware(cfg.CORSAllowOrigins))
   r.GET("/api/health", Health)
   r.POST("/api/admin/login", AdminLogin(cfg))
   r.GET("/api/sub/:user_uuid", SubscriptionGet(store))

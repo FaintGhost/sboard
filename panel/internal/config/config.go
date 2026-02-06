@@ -3,6 +3,7 @@ package config
 import (
   "errors"
   "os"
+  "strings"
 )
 
 type Config struct {
@@ -11,12 +12,15 @@ type Config struct {
   AdminUser string
   AdminPass string
   JWTSecret string
+  CORSAllowOrigins string
+  LogRequests bool
 }
 
 func Load() Config {
   cfg := Config{
     HTTPAddr: ":8080",
     DBPath:   "panel.db",
+    LogRequests: true,
   }
   if v := os.Getenv("PANEL_HTTP_ADDR"); v != "" {
     cfg.HTTPAddr = v
@@ -33,6 +37,12 @@ func Load() Config {
   if v := os.Getenv("PANEL_JWT_SECRET"); v != "" {
     cfg.JWTSecret = v
   }
+  if v := os.Getenv("PANEL_CORS_ALLOW_ORIGINS"); v != "" {
+    cfg.CORSAllowOrigins = v
+  }
+  if v := os.Getenv("PANEL_LOG_REQUESTS"); v != "" {
+    cfg.LogRequests = parseBool(v, cfg.LogRequests)
+  }
   return cfg
 }
 
@@ -41,4 +51,19 @@ func Validate(cfg Config) error {
     return errors.New("missing admin or jwt config")
   }
   return nil
+}
+
+func parseBool(raw string, defaultValue bool) bool {
+  v := strings.TrimSpace(strings.ToLower(raw))
+  if v == "" {
+    return defaultValue
+  }
+  switch v {
+  case "1", "true", "yes", "y", "on":
+    return true
+  case "0", "false", "no", "n", "off":
+    return false
+  default:
+    return defaultValue
+  }
 }
