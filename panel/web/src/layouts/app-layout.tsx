@@ -24,7 +24,10 @@ export function AppLayout() {
   const title = titleForPath(location.pathname)
 
   return (
-    <SidebarProvider style={{ "--header-height": "3.5rem" } as CSSProperties}>
+    <SidebarProvider
+      className="bg-sidebar"
+      style={{ "--header-height": "3.5rem" } as CSSProperties}
+    >
       <AppSidebar
         variant="inset"
         onLogout={() => {
