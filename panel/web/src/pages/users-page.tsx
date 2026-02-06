@@ -410,25 +410,7 @@ export function UsersPage() {
                 </div>
 
                 <div className="space-y-2 md:col-span-2">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-sm text-slate-700">分组（group_ids）</Label>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={
-                        upserting.mode !== "edit" ||
-                        userGroupsQuery.isLoading ||
-                        saveGroupsMutation.isPending
-                      }
-                      onClick={() => {
-                        if (upserting.mode !== "edit") return
-                        saveGroupsMutation.mutate({ userId: upserting.user.id, groupIDs: upserting.groupIDs })
-                      }}
-                    >
-                      保存分组
-                    </Button>
-                  </div>
+                  <Label className="text-sm text-slate-700">分组</Label>
                   <p className="text-xs text-slate-500">
                     用户可以属于多个分组。订阅下发按分组生效。
                   </p>
@@ -639,7 +621,7 @@ export function UsersPage() {
                 取消
               </Button>
               <Button
-                onClick={() => {
+                onClick={async () => {
                   if (!upserting) return
 
                   if (upserting.mode === "create") {
@@ -671,13 +653,17 @@ export function UsersPage() {
                     payload.expire_at = rfc3339FromDateOnlyUTC(upserting.expireDate)
                   }
 
-                  updateMutation.mutate({ id: upserting.user.id, payload })
+                  // Save user info and groups together
+                  await Promise.all([
+                    updateMutation.mutateAsync({ id: upserting.user.id, payload }),
+                    saveGroupsMutation.mutateAsync({ userId: upserting.user.id, groupIDs: upserting.groupIDs }),
+                  ])
                 }}
                 disabled={
                   !upserting ||
                   (upserting.mode === "create"
                     ? createMutation.isPending || !upserting.username.trim()
-                    : updateMutation.isPending || !upserting.username.trim())
+                    : updateMutation.isPending || saveGroupsMutation.isPending || !upserting.username.trim())
                 }
               >
                 {upserting?.mode === "create"
