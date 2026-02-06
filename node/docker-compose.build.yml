@@ -1,0 +1,8 @@
+services:
+  sboard-node:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    # Tag the locally built image, so you can push it to Docker Hub after build.
+    image: "${SBOARD_NODE_IMAGE:-faintghost/sboard-node:local}"
+
