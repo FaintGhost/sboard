@@ -40,8 +40,8 @@ curl -X POST http://127.0.0.1:3000/api/config/sync \
   -d '{"inbounds":[{"type":"mixed","tag":"m1","listen":"0.0.0.0","listen_port":1080}]}'
 ```
 
-**Docker 部署（示例）**
-当前仓库未内置 Dockerfile，以下为参考示例，按需调整。
+**Docker 部署**
+Node 侧已内置 Docker 部署文件（见下方 Compose）。Panel 侧暂未内置 Dockerfile，以下为参考示例，按需调整。
 
 示例 `Dockerfile.panel`：
 ```Dockerfile
@@ -77,6 +77,17 @@ ENV NODE_LOG_LEVEL=info
 EXPOSE 3000
 CMD ["/app/node"]
 ```
+
+**Node Docker Compose（推荐，海外 VPS）**
+仓库已内置 `node/docker-compose.yml` 与 `node/Dockerfile`，可以在海外 VPS 直接构建运行：
+```bash
+cd node
+export NODE_SECRET_KEY='change-me'
+docker compose up -d --build
+```
+说明：
+- compose 使用 `network_mode: host`，方便入站直接监听宿主机端口（例如 443）
+- 这会让 Node API（默认 `:3000`）暴露在公网：请用防火墙只允许 Panel 服务器 IP 访问 3000
 
 构建与运行示例：
 ```bash

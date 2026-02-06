@@ -1,0 +1,18 @@
+services:
+  sboard-node:
+    container_name: sboard-node
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+
+    # This is simplest for a proxy node: inbounds can bind host ports directly (443, etc).
+    # IMPORTANT: `NODE_HTTP_ADDR=:3000` will be publicly reachable unless you firewall it.
+    # Recommend: allow only the Panel server IP to access port 3000.
+    network_mode: host
+
+    environment:
+      NODE_HTTP_ADDR: ":3000"
+      NODE_SECRET_KEY: "${NODE_SECRET_KEY:-change-me}"
+      NODE_LOG_LEVEL: "${NODE_LOG_LEVEL:-info}"
+
