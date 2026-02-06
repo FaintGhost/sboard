@@ -86,9 +86,9 @@
     "saveFailed": "保存失败",
     "saveGroupsFailed": "保存分组失败",
     "status": {
-      "active": "active",
-      "disabled": "disabled",
-      "expired": "expired",
+      "active": "启用",
+      "disabled": "禁用",
+      "expired": "已过期",
       "trafficExceeded": "流量超限"
     }
   },

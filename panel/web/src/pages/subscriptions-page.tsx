@@ -76,6 +76,7 @@ function CopyButton({ text, label }: { text: string; label?: string }) {
 }
 
 function StatusBadge({ status }: { status: UserStatus }) {
+  const { t } = useTranslation()
   const variants: Record<UserStatus, "default" | "destructive" | "secondary" | "outline"> = {
     active: "default",
     disabled: "secondary",
@@ -83,7 +84,11 @@ function StatusBadge({ status }: { status: UserStatus }) {
     traffic_exceeded: "outline",
   }
 
-  return <Badge variant={variants[status]}>{status}</Badge>
+  const label = status === "traffic_exceeded"
+    ? t("users.status.trafficExceeded")
+    : t(`users.status.${status}`)
+
+  return <Badge variant={variants[status]}>{label}</Badge>
 }
 
 export function SubscriptionsPage() {
@@ -93,10 +98,10 @@ export function SubscriptionsPage() {
 
   const statusOptions: Array<{ value: StatusFilter; label: string }> = [
     { value: "all", label: t("common.all") },
-    { value: "active", label: "active" },
-    { value: "disabled", label: "disabled" },
-    { value: "expired", label: "expired" },
-    { value: "traffic_exceeded", label: "traffic_exceeded" },
+    { value: "active", label: t("users.status.active") },
+    { value: "disabled", label: t("users.status.disabled") },
+    { value: "expired", label: t("users.status.expired") },
+    { value: "traffic_exceeded", label: t("users.status.trafficExceeded") },
   ]
 
   const queryParams = useMemo(

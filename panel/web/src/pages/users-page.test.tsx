@@ -160,7 +160,7 @@ describe("UsersPage", () => {
     await userEvent.click(within(row).getByRole("button", { name: "操作" }))
     await userEvent.click(await screen.findByRole("menuitem", { name: "编辑" }))
     await userEvent.click(screen.getByLabelText("状态"))
-    await userEvent.click(await screen.findByText("expired"))
+    await userEvent.click(await screen.findByText("已过期"))
     await userEvent.clear(screen.getByLabelText("流量上限（GB）"))
     await userEvent.type(screen.getByLabelText("流量上限（GB）"), "1")
     await userEvent.clear(screen.getByLabelText("重置日"))
@@ -169,7 +169,7 @@ describe("UsersPage", () => {
 
     expect(fetchMock).toHaveBeenCalled()
     const table = screen.getByRole("table")
-    expect(await within(table).findByText("expired")).toBeInTheDocument()
+    expect(await within(table).findByText("已过期")).toBeInTheDocument()
 
     // Flush any background refetches so unexpected endpoints don't surface as unhandled rejections.
     await new Promise((r) => setTimeout(r, 0))
