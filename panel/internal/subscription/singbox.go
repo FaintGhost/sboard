@@ -4,6 +4,8 @@ import (
   "encoding/json"
   "errors"
   "fmt"
+
+  "sboard/panel/internal/sskey"
 )
 
 type User struct {
@@ -96,9 +98,22 @@ func injectCredentials(user User, inboundType string, settings map[string]any) {
     if _, ok := settings["username"]; !ok && user.Username != "" {
       settings["username"] = user.Username
     }
-  case "trojan", "shadowsocks":
+  case "trojan":
     if _, ok := settings["password"]; !ok {
       settings["password"] = user.UUID
+    }
+    if _, ok := settings["username"]; !ok && user.Username != "" {
+      settings["username"] = user.Username
+    }
+  case "shadowsocks":
+    method, _ := settings["method"].(string)
+    if _, ok := settings["password"]; !ok {
+      // For SS2022, derive a base64 key from user UUID
+      pw, err := sskey.DerivePassword(user.UUID, method)
+      if err != nil {
+        pw = user.UUID
+      }
+      settings["password"] = pw
     }
     if _, ok := settings["username"]; !ok && user.Username != "" {
       settings["username"] = user.Username

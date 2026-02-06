@@ -1,15 +1,13 @@
 package node
 
 import (
-  "crypto/sha256"
-  "encoding/base64"
   "encoding/json"
   "errors"
   "fmt"
   "strings"
 
   "sboard/panel/internal/db"
-  "github.com/google/uuid"
+  "sboard/panel/internal/sskey"
 )
 
 type SyncPayload struct {
@@ -49,7 +47,7 @@ func BuildSyncPayload(node db.Node, inbounds []db.Inbound, users []db.User) (Syn
         // for classic methods per sing-box docs; `none` is the only exception).
         if method != "none" {
           if pw, ok := settings["password"].(string); !ok || strings.TrimSpace(pw) == "" {
-            derived, err := deriveShadowsocksPasswordFromUUID(inb.UUID, method)
+            derived, err := sskey.DerivePassword(inb.UUID, method)
             if err != nil {
               return SyncPayload{}, fmt.Errorf("invalid shadowsocks password seed for %s: %w", tag, err)
             }
@@ -116,9 +114,9 @@ func buildUsersForProtocol(protocol string, users []db.User, settings map[string
       }
       out = append(out, item)
     case "trojan", "shadowsocks":
-      if protocol == "shadowsocks" && strings.HasPrefix(method, "2022-") {
+      if protocol == "shadowsocks" && sskey.Is2022Method(method) {
         // 2022 methods require base64 keys (16/32 bytes).
-        pw, err := deriveShadowsocksUserPasswordFromUUID(u.UUID, method)
+        pw, err := sskey.DerivePassword(u.UUID, method)
         if err == nil && pw != "" {
           out = append(out, map[string]any{"name": name, "password": pw})
           continue
@@ -131,49 +129,4 @@ func buildUsersForProtocol(protocol string, users []db.User, settings map[string
     }
   }
   return out
-}
-
-func ss2022KeyLength(method string) int {
-  switch strings.TrimSpace(method) {
-  case "2022-blake3-aes-128-gcm":
-    return 16
-  case "2022-blake3-aes-256-gcm", "2022-blake3-chacha20-poly1305":
-    return 32
-  default:
-    return 0
-  }
-}
-
-func deriveShadowsocksPasswordFromUUID(uuidStr, method string) (string, error) {
-  // For non-2022 methods, any string works; we still prefer a deterministic value.
-  keyLen := ss2022KeyLength(method)
-  if keyLen == 0 {
-    // Classic methods still require password; use UUID string.
-    return uuidStr, nil
-  }
-  return deriveBase64KeyFromUUID(uuidStr, keyLen)
-}
-
-func deriveShadowsocksUserPasswordFromUUID(uuidStr, method string) (string, error) {
-  keyLen := ss2022KeyLength(method)
-  if keyLen == 0 {
-    return "", nil
-  }
-  return deriveBase64KeyFromUUID(uuidStr, keyLen)
-}
-
-func deriveBase64KeyFromUUID(uuidStr string, keyLen int) (string, error) {
-  id, err := uuid.Parse(strings.TrimSpace(uuidStr))
-  if err != nil {
-    return "", err
-  }
-  b := id[:]
-  if keyLen == 16 {
-    return base64.StdEncoding.EncodeToString(b), nil
-  }
-  if keyLen == 32 {
-    sum := sha256.Sum256(b)
-    return base64.StdEncoding.EncodeToString(sum[:]), nil
-  }
-  return "", errors.New("unsupported key length")
 }
