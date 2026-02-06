@@ -6,9 +6,13 @@ import {
   IconServer2,
   IconArrowsExchange,
   IconListCheck,
+  IconCloud,
 } from "@tabler/icons-react"
 import { Link, useLocation } from "react-router-dom"
 
+import { NavDocuments } from "@/components/nav-documents"
+import { NavMain } from "@/components/nav-main"
+import { NavSecondary } from "@/components/nav-secondary"
 import { NavUser } from "@/components/nav-user"
 import {
   Sidebar,
@@ -20,15 +24,54 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 
-const navItems = [
-  { to: "/", label: "仪表盘", icon: IconInnerShadowTop },
-  { to: "/users", label: "用户", icon: IconUsers },
-  { to: "/groups", label: "分组", icon: IconListCheck },
-  { to: "/nodes", label: "节点", icon: IconServer2 },
-  { to: "/inbounds", label: "入站", icon: IconArrowsExchange },
-  { to: "/subscriptions", label: "订阅", icon: IconArrowsExchange },
-  { to: "/settings", label: "设置", icon: IconSettings },
-] as const
+const data = {
+  user: {
+    name: "admin",
+    email: "admin",
+    avatar: "/avatars/shadcn.jpg",
+  },
+  navMain: [
+    {
+      title: "仪表盘",
+      url: "/",
+      icon: IconInnerShadowTop,
+    },
+    {
+      title: "用户",
+      url: "/users",
+      icon: IconUsers,
+    },
+    {
+      title: "分组",
+      url: "/groups",
+      icon: IconListCheck,
+    },
+    {
+      title: "节点",
+      url: "/nodes",
+      icon: IconServer2,
+    },
+    {
+      title: "入站",
+      url: "/inbounds",
+      icon: IconArrowsExchange,
+    },
+  ],
+  navSecondary: [
+    {
+      title: "系统设置",
+      url: "/settings",
+      icon: IconSettings,
+    },
+  ],
+  documents: [
+    {
+      name: "订阅",
+      url: "/subscriptions",
+      icon: IconCloud,
+    },
+  ],
+}
 
 export function AppSidebar({
   onLogout,
@@ -41,10 +84,10 @@ export function AppSidebar({
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton
-              asChild
-              className="data-[slot=sidebar-menu-button]:!p-1.5"
-            >
+              <SidebarMenuButton
+                asChild
+                className="data-[slot=sidebar-menu-button]:!p-1.5"
+              >
               <Link to="/">
                 <IconInnerShadowTop className="!size-5" />
                 <span className="text-base font-semibold">SBoard</span>
@@ -54,28 +97,20 @@ export function AppSidebar({
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <SidebarMenu className="px-2">
-          {navItems.map((item) => {
-            const active =
-              item.to === "/"
+        <NavMain
+          items={data.navMain.map((item) => ({
+            ...item,
+            isActive:
+              item.url === "/"
                 ? location.pathname === "/"
-                : location.pathname.startsWith(item.to)
-            const Icon = item.icon
-            return (
-              <SidebarMenuItem key={item.to}>
-                <SidebarMenuButton asChild isActive={active} tooltip={item.label}>
-                  <Link to={item.to}>
-                    <Icon />
-                    <span>{item.label}</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            )
-          })}
-        </SidebarMenu>
+                : location.pathname.startsWith(item.url),
+          }))}
+        />
+        <NavDocuments items={data.documents} />
+        <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={{ name: "admin" }} onLogout={onLogout} />
+        <NavUser user={data.user} onLogout={onLogout} />
       </SidebarFooter>
     </Sidebar>
   )

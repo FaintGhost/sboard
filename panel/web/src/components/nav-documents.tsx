@@ -7,6 +7,7 @@ import {
   IconTrash,
   type Icon,
 } from "@tabler/icons-react"
+import { Link } from "react-router-dom"
 
 import {
   DropdownMenu,
@@ -43,10 +44,17 @@ export function NavDocuments({
         {items.map((item) => (
           <SidebarMenuItem key={item.name}>
             <SidebarMenuButton asChild>
-              <a href={item.url}>
-                <item.icon />
-                <span>{item.name}</span>
-              </a>
+              {item.url.startsWith("/") ? (
+                <Link to={item.url}>
+                  <item.icon />
+                  <span>{item.name}</span>
+                </Link>
+              ) : (
+                <a href={item.url}>
+                  <item.icon />
+                  <span>{item.name}</span>
+                </a>
+              )}
             </SidebarMenuButton>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
