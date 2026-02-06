@@ -12,6 +12,8 @@ import { GroupsPage } from "@/pages/groups-page"
 import { InboundsPage } from "@/pages/inbounds-page"
 import { LoginPage } from "@/pages/login-page"
 import { NodesPage } from "@/pages/nodes-page"
+import { SettingsPage } from "@/pages/settings-page"
+import { SubscriptionsPage } from "@/pages/subscriptions-page"
 import { UsersPage } from "@/pages/users-page"
 import { useAuthStore } from "@/store/auth"
 
@@ -24,17 +26,6 @@ function RequireAuth() {
   }
 
   return <Outlet />
-}
-
-function PlaceholderPage({ title }: { title: string }) {
-  return (
-    <div className="px-4 lg:px-6">
-      <div className="space-y-2">
-        <h1 className="text-xl font-semibold text-slate-900">{title}</h1>
-        <p className="text-sm text-slate-500">该页面在下一阶段继续实现。</p>
-      </div>
-    </div>
-  )
 }
 
 const router = createBrowserRouter([
@@ -53,8 +44,8 @@ const router = createBrowserRouter([
           { path: "/groups", element: <GroupsPage /> },
           { path: "/nodes", element: <NodesPage /> },
           { path: "/inbounds", element: <InboundsPage /> },
-          { path: "/subscriptions", element: <PlaceholderPage title="订阅管理" /> },
-          { path: "/settings", element: <PlaceholderPage title="系统设置" /> },
+          { path: "/subscriptions", element: <SubscriptionsPage /> },
+          { path: "/settings", element: <SettingsPage /> },
         ],
       },
     ],
