@@ -5,6 +5,7 @@ import { MoreHorizontal, Pencil, RefreshCw, Stethoscope, Trash2 } from "lucide-r
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Separator } from "@/components/ui/separator"
 import {
   Dialog,
   DialogContent,
@@ -42,6 +43,7 @@ import { ApiError } from "@/lib/api/client"
 import { listGroups } from "@/lib/api/groups"
 import { createNode, deleteNode, listNodes, nodeHealth, nodeSync, updateNode } from "@/lib/api/nodes"
 import type { Group, Node } from "@/lib/api/types"
+import { buildNodeDockerCompose, generateNodeSecretKey } from "@/lib/node-compose"
 
 type EditState = {
   mode: "create" | "edit"
@@ -345,14 +347,64 @@ export function NodesPage() {
                   <Label className="text-sm text-slate-700" htmlFor="node-secret">
                     {t("nodes.secretKey")}
                   </Label>
-                  <Input
-                    id="node-secret"
-                    value={upserting.secretKey}
-                    onChange={(e) =>
-                      setUpserting((p) => (p ? { ...p, secretKey: e.target.value } : p))
-                    }
-                    placeholder={t("nodes.secretKeyPlaceholder")}
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      id="node-secret"
+                      value={upserting.secretKey}
+                      onChange={(e) =>
+                        setUpserting((p) => (p ? { ...p, secretKey: e.target.value } : p))
+                      }
+                      placeholder={t("nodes.secretKeyPlaceholder")}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        const key = generateNodeSecretKey(32)
+                        setUpserting((p) => (p ? { ...p, secretKey: key } : p))
+                      }}
+                    >
+                      {t("nodes.generateSecret")}
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="md:col-span-2">
+                  <Separator className="my-1" />
+                  <div className="space-y-2">
+                    <div>
+                      <div className="text-sm font-medium">{t("nodes.deployTitle")}</div>
+                      <div className="text-xs text-muted-foreground">{t("nodes.deploySubtitle")}</div>
+                    </div>
+
+                    <pre className="bg-muted overflow-x-auto rounded-md p-3 text-xs leading-relaxed">
+                      <code>
+                        {buildNodeDockerCompose({
+                          port: upserting.apiPort,
+                          secretKey: upserting.secretKey.trim() || "change-me",
+                          logLevel: "info",
+                        })}
+                      </code>
+                    </pre>
+
+                    <div className="flex justify-end">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={async () => {
+                          const yaml = buildNodeDockerCompose({
+                            port: upserting.apiPort,
+                            secretKey: upserting.secretKey.trim() || "change-me",
+                            logLevel: "info",
+                          })
+                          await navigator.clipboard.writeText(yaml)
+                          setActionMessage(t("nodes.composeCopied"))
+                        }}
+                      >
+                        {t("nodes.copyCompose")}
+                      </Button>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="space-y-1 md:col-span-2">
