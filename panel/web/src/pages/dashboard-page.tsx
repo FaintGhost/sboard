@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
+import { useTranslation } from "react-i18next"
 
 import { listUsers } from "@/lib/api/users"
 import dashboardData from "@/app/dashboard/data.json"
@@ -14,6 +15,7 @@ import {
 } from "@/components/ui/card"
 
 export function DashboardPage() {
+  const { t } = useTranslation()
   const usersQuery = useQuery({
     queryKey: ["users", "dashboard-preview"],
     queryFn: () => listUsers({ limit: 10, offset: 0 }),
@@ -26,18 +28,18 @@ export function DashboardPage() {
       <div className="grid gap-4 px-4 lg:px-6">
         <Card className="@container/card">
           <CardHeader>
-            <CardTitle>后端连通性</CardTitle>
-            <CardDescription>用户预览（GET /api/users）</CardDescription>
+            <CardTitle>{t("dashboard.backendConnectivityTitle")}</CardTitle>
+            <CardDescription>{t("dashboard.usersPreviewSubtitle")}</CardDescription>
           </CardHeader>
           <CardContent className="text-sm">
-            {usersQuery.isLoading ? <p>加载中...</p> : null}
+            {usersQuery.isLoading ? <p>{t("common.loading")}</p> : null}
             {usersQuery.isError ? (
               <p className="text-destructive">
-                请求失败，请检查 token 或后端服务。
+                {t("dashboard.requestFailedHint")}
               </p>
             ) : null}
             {usersQuery.data ? (
-              <p>已返回 {usersQuery.data.length} 条用户记录</p>
+              <p>{t("dashboard.usersReturned", { count: usersQuery.data.length })}</p>
             ) : null}
           </CardContent>
         </Card>

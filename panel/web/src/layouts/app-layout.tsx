@@ -1,27 +1,29 @@
 import type { CSSProperties } from "react"
 import { Outlet, useLocation, useNavigate } from "react-router-dom"
+import { useTranslation } from "react-i18next"
 
 import { AppSidebar } from "@/components/app-sidebar"
 import { SiteHeader } from "@/components/site-header"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { useAuthStore } from "@/store/auth"
 
-function titleForPath(pathname: string): string {
-  if (pathname === "/") return "仪表盘"
-  if (pathname.startsWith("/users")) return "用户管理"
-  if (pathname.startsWith("/groups")) return "分组管理"
-  if (pathname.startsWith("/nodes")) return "节点管理"
-  if (pathname.startsWith("/inbounds")) return "入站管理"
-  if (pathname.startsWith("/subscriptions")) return "订阅管理"
-  if (pathname.startsWith("/settings")) return "系统设置"
-  return "面板"
+function titleForPath(t: (key: string) => string, pathname: string): string {
+  if (pathname === "/") return t("nav.dashboard")
+  if (pathname.startsWith("/users")) return t("nav.users")
+  if (pathname.startsWith("/groups")) return t("nav.groups")
+  if (pathname.startsWith("/nodes")) return t("nav.nodes")
+  if (pathname.startsWith("/inbounds")) return t("nav.inbounds")
+  if (pathname.startsWith("/subscriptions")) return t("nav.subscriptions")
+  if (pathname.startsWith("/settings")) return t("nav.settings")
+  return t("app.title")
 }
 
 export function AppLayout() {
+  const { t } = useTranslation()
   const clearToken = useAuthStore((state) => state.clearToken)
   const navigate = useNavigate()
   const location = useLocation()
-  const title = titleForPath(location.pathname)
+  const title = titleForPath(t, location.pathname)
 
   return (
     <SidebarProvider

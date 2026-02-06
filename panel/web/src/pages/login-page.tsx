@@ -1,5 +1,6 @@
 import { useMutation } from "@tanstack/react-query"
 import { Navigate, useLocation, useNavigate } from "react-router-dom"
+import { useTranslation } from "react-i18next"
 
 import { LoginForm } from "@/components/login-form"
 import { loginAdmin } from "@/lib/api/auth"
@@ -7,6 +8,7 @@ import { ApiError } from "@/lib/api/client"
 import { useAuthStore } from "@/store/auth"
 
 export function LoginPage() {
+  const { t } = useTranslation()
   const token = useAuthStore((state) => state.token)
   const setToken = useAuthStore((state) => state.setToken)
   const navigate = useNavigate()
@@ -34,7 +36,7 @@ export function LoginPage() {
             mutation.isError
               ? mutation.error instanceof ApiError
                 ? mutation.error.message
-                : "登录失败，请稍后再试"
+                : t("auth.loginFailed")
               : null
           }
           onLogin={(values) => mutation.mutate(values)}

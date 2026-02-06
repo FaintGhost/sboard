@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next"
 import {
   Card,
   CardContent,
@@ -6,77 +7,93 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+
+const languages = [
+  { code: "zh", nameKey: "settings.langZh" },
+  { code: "en", nameKey: "settings.langEn" },
+]
 
 export function SettingsPage() {
+  const { t, i18n } = useTranslation()
   const apiBaseUrl = window.location.origin
+
+  const handleLanguageChange = (lang: string) => {
+    i18n.changeLanguage(lang)
+  }
 
   return (
     <div className="px-4 lg:px-6 space-y-6">
       <div className="space-y-2">
-        <h1 className="text-xl font-semibold text-slate-900">系统设置</h1>
+        <h1 className="text-xl font-semibold text-slate-900">{t("settings.title")}</h1>
         <p className="text-sm text-slate-500">
-          查看系统信息和配置（更多设置项将在后续版本中添加）。
+          {t("settings.subtitle")}
         </p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>API 信息</CardTitle>
-            <CardDescription>当前系统的 API 端点信息</CardDescription>
+            <CardTitle>{t("settings.language")}</CardTitle>
+            <CardDescription>{t("settings.selectLanguage")}</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <div className="text-sm font-medium text-slate-700">API 基础地址</div>
-              <code className="block text-xs bg-slate-100 px-3 py-2 rounded font-mono">
-                {apiBaseUrl}
-              </code>
-            </div>
-            <div className="space-y-2">
-              <div className="text-sm font-medium text-slate-700">订阅端点</div>
-              <code className="block text-xs bg-slate-100 px-3 py-2 rounded font-mono">
-                {apiBaseUrl}/api/sub/{"<user_uuid>"}
-              </code>
-            </div>
+          <CardContent>
+            <Select value={i18n.language} onValueChange={handleLanguageChange}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {languages.map((lang) => (
+                  <SelectItem key={lang.code} value={lang.code}>
+                    {t(lang.nameKey)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>系统状态</CardTitle>
-            <CardDescription>当前系统运行状态</CardDescription>
+            <CardTitle>{t("settings.systemInfo")}</CardTitle>
+            <CardDescription>{t("settings.apiEndpoint")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-slate-700">前端版本</span>
+              <span className="text-sm text-slate-700">{t("settings.version")}</span>
               <Badge variant="outline">v0.1.0</Badge>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-slate-700">环境</span>
-              <Badge variant="secondary">
-                {import.meta.env.DEV ? "开发" : "生产"}
-              </Badge>
+            <div className="space-y-2">
+              <div className="text-sm font-medium text-slate-700">{t("settings.apiEndpoint")}</div>
+              <code className="block text-xs bg-slate-100 px-3 py-2 rounded font-mono">
+                {apiBaseUrl}
+              </code>
             </div>
           </CardContent>
         </Card>
 
         <Card className="md:col-span-2">
           <CardHeader>
-            <CardTitle>订阅格式说明</CardTitle>
-            <CardDescription>支持的订阅格式及其用途</CardDescription>
+            <CardTitle>{t("settings.subscriptionFormats")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2 p-4 bg-slate-50 rounded-lg">
-                <div className="font-medium">sing-box</div>
+                <div className="font-medium">{t("subscriptions.formatSingbox")}</div>
                 <p className="text-sm text-slate-600">
-                  原生 JSON 配置格式，适用于 sing-box、SFA (Android)、SFI (iOS) 客户端
+                  {t("settings.singboxFormatHint")}
                 </p>
               </div>
               <div className="space-y-2 p-4 bg-slate-50 rounded-lg">
-                <div className="font-medium">v2ray (Base64)</div>
+                <div className="font-medium">{t("subscriptions.formatV2ray")} (Base64)</div>
                 <p className="text-sm text-slate-600">
-                  Base64 编码的订阅链接，兼容 V2RayN、Shadowrocket 等客户端
+                  {t("settings.v2rayFormatHint")}
                 </p>
               </div>
             </div>

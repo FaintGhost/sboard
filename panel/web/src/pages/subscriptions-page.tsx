@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 import { useState, useMemo } from "react"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 import { Copy, Check, ExternalLink, Info } from "lucide-react"
 
@@ -38,30 +39,23 @@ import type { User, UserStatus } from "@/lib/api/types"
 
 type StatusFilter = UserStatus | "all"
 
-const statusOptions: Array<{ value: StatusFilter; label: string }> = [
-  { value: "all", label: "全部" },
-  { value: "active", label: "active" },
-  { value: "disabled", label: "disabled" },
-  { value: "expired", label: "expired" },
-  { value: "traffic_exceeded", label: "traffic_exceeded" },
-]
-
 function getSubscriptionUrl(userUuid: string, format?: string): string {
   const base = `${window.location.origin}/api/sub/${userUuid}`
   return format ? `${base}?format=${format}` : base
 }
 
 function CopyButton({ text, label }: { text: string; label?: string }) {
+  const { t } = useTranslation()
   const [copied, setCopied] = useState(false)
 
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(text)
       setCopied(true)
-      toast.success(label ? `${label} 已复制` : "已复制到剪贴板")
+      toast.success(label ? `${label} ${t("common.copied")}` : t("common.copiedToClipboard"))
       setTimeout(() => setCopied(false), 2000)
     } catch {
-      toast.error("复制失败")
+      toast.error(t("common.copyFailed"))
     }
   }
 
@@ -93,8 +87,17 @@ function StatusBadge({ status }: { status: UserStatus }) {
 }
 
 export function SubscriptionsPage() {
+  const { t } = useTranslation()
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("active")
   const [search, setSearch] = useState("")
+
+  const statusOptions: Array<{ value: StatusFilter; label: string }> = [
+    { value: "all", label: t("common.all") },
+    { value: "active", label: "active" },
+    { value: "disabled", label: "disabled" },
+    { value: "expired", label: "expired" },
+    { value: "traffic_exceeded", label: "traffic_exceeded" },
+  ]
 
   const queryParams = useMemo(
     () => ({
@@ -124,27 +127,27 @@ export function SubscriptionsPage() {
   return (
     <div className="px-4 lg:px-6 space-y-6">
       <div className="space-y-2">
-        <h1 className="text-xl font-semibold text-slate-900">订阅管理</h1>
+        <h1 className="text-xl font-semibold text-slate-900">{t("subscriptions.title")}</h1>
         <p className="text-sm text-slate-500">
-          查看和复制用户订阅链接，分享给客户端使用。
+          {t("subscriptions.subtitle")}
         </p>
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            订阅行为说明
+            {t("subscriptions.behaviorTitle")}
             <Tooltip>
               <TooltipTrigger>
                 <Info className="h-4 w-4 text-slate-400" />
               </TooltipTrigger>
               <TooltipContent className="max-w-xs">
-                <p>订阅链接会根据客户端 User-Agent 自动返回对应格式</p>
+                <p>{t("subscriptions.behaviorTooltip")}</p>
               </TooltipContent>
             </Tooltip>
           </CardTitle>
           <CardDescription>
-            订阅由后端生成，根据请求参数和客户端 UA 返回不同格式
+            {t("subscriptions.behaviorDescription")}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3 text-sm">
@@ -154,7 +157,7 @@ export function SubscriptionsPage() {
                 ?format=singbox
               </Badge>
               <span className="text-slate-600">
-                显式指定格式，返回 sing-box JSON 配置
+                {t("subscriptions.ruleSingbox")}
               </span>
             </div>
             <div className="flex items-start gap-2">
@@ -162,23 +165,23 @@ export function SubscriptionsPage() {
                 ?format=v2ray
               </Badge>
               <span className="text-slate-600">
-                返回 Base64 编码的订阅链接（兼容 V2rayN/Shadowrocket）
+                {t("subscriptions.ruleV2ray")}
               </span>
             </div>
             <div className="flex items-start gap-2">
               <Badge variant="secondary" className="shrink-0 mt-0.5">
-                UA: sing-box/SFA/SFI
+                {t("subscriptions.uaMatchLabel")}
               </Badge>
               <span className="text-slate-600">
-                客户端 User-Agent 匹配时，自动返回 JSON 格式
+                {t("subscriptions.ruleUaMatch")}
               </span>
             </div>
             <div className="flex items-start gap-2">
               <Badge variant="secondary" className="shrink-0 mt-0.5">
-                其他 UA
+                {t("subscriptions.uaOtherLabel")}
               </Badge>
               <span className="text-slate-600">
-                默认返回 Base64 编码的 JSON（兼容性最好）
+                {t("subscriptions.ruleUaOther")}
               </span>
             </div>
           </div>
@@ -188,7 +191,7 @@ export function SubscriptionsPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
           <Input
-            placeholder="搜索用户名或 UUID..."
+            placeholder={t("subscriptions.searchPlaceholder")}
             className="w-64"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -215,23 +218,23 @@ export function SubscriptionsPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[180px]">用户名</TableHead>
-              <TableHead className="w-[100px]">状态</TableHead>
-              <TableHead>订阅链接</TableHead>
-              <TableHead className="w-[140px] text-right">操作</TableHead>
+              <TableHead className="w-[180px]">{t("users.username")}</TableHead>
+              <TableHead className="w-[100px]">{t("common.status")}</TableHead>
+              <TableHead>{t("subscriptions.subscriptionUrl")}</TableHead>
+              <TableHead className="w-[140px] text-right">{t("common.actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {usersQuery.isLoading ? (
               <TableRow>
                 <TableCell colSpan={4} className="text-center text-slate-500">
-                  加载中...
+                  {t("common.loading")}
                 </TableCell>
               </TableRow>
             ) : filteredUsers.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={4} className="text-center text-slate-500">
-                  暂无用户
+                  {t("common.noData")}
                 </TableCell>
               </TableRow>
             ) : (
@@ -247,6 +250,7 @@ export function SubscriptionsPage() {
 }
 
 function UserSubscriptionRow({ user }: { user: User }) {
+  const { t } = useTranslation()
   const subUrl = getSubscriptionUrl(user.uuid)
   const singboxUrl = getSubscriptionUrl(user.uuid, "singbox")
 
@@ -261,7 +265,7 @@ function UserSubscriptionRow({ user }: { user: User }) {
           <code className="flex-1 truncate text-xs bg-slate-100 px-2 py-1 rounded font-mono">
             {subUrl}
           </code>
-          <CopyButton text={subUrl} label="订阅链接" />
+          <CopyButton text={subUrl} label={t("subscriptions.subscriptionUrl")} />
         </div>
       </TableCell>
       <TableCell className="text-right">
@@ -277,9 +281,9 @@ function UserSubscriptionRow({ user }: { user: User }) {
                 <ExternalLink className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>在新窗口预览 (sing-box 格式)</TooltipContent>
+            <TooltipContent>{t("subscriptions.previewSingbox")}</TooltipContent>
           </Tooltip>
-          <CopyButton text={singboxUrl} label="sing-box 链接" />
+          <CopyButton text={singboxUrl} label={t("subscriptions.copySingboxUrl")} />
         </div>
       </TableCell>
     </TableRow>

@@ -1,4 +1,5 @@
 import * as React from "react"
+import { useTranslation } from "react-i18next"
 import {
   IconInnerShadowTop,
   IconSettings,
@@ -24,60 +25,61 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 
-const data = {
-  user: {
-    name: "admin",
-    email: "admin",
-    avatar: "/avatars/shadcn.jpg",
-  },
-  navMain: [
-    {
-      title: "仪表盘",
-      url: "/",
-      icon: IconInnerShadowTop,
-    },
-    {
-      title: "用户",
-      url: "/users",
-      icon: IconUsers,
-    },
-    {
-      title: "分组",
-      url: "/groups",
-      icon: IconListCheck,
-    },
-    {
-      title: "节点",
-      url: "/nodes",
-      icon: IconServer2,
-    },
-    {
-      title: "入站",
-      url: "/inbounds",
-      icon: IconArrowsExchange,
-    },
-  ],
-  navSecondary: [
-    {
-      title: "系统设置",
-      url: "/settings",
-      icon: IconSettings,
-    },
-  ],
-  documents: [
-    {
-      name: "订阅",
-      url: "/subscriptions",
-      icon: IconCloud,
-    },
-  ],
-}
-
 export function AppSidebar({
   onLogout,
   ...props
 }: React.ComponentProps<typeof Sidebar> & { onLogout: () => void }) {
+  const { t } = useTranslation()
   const location = useLocation()
+
+  const data = {
+    user: {
+      name: "admin",
+      email: "admin",
+      avatar: "/avatars/shadcn.jpg",
+    },
+    navMain: [
+      {
+        title: t("nav.dashboard"),
+        url: "/",
+        icon: IconInnerShadowTop,
+      },
+      {
+        title: t("nav.users"),
+        url: "/users",
+        icon: IconUsers,
+      },
+      {
+        title: t("nav.groups"),
+        url: "/groups",
+        icon: IconListCheck,
+      },
+      {
+        title: t("nav.nodes"),
+        url: "/nodes",
+        icon: IconServer2,
+      },
+      {
+        title: t("nav.inbounds"),
+        url: "/inbounds",
+        icon: IconArrowsExchange,
+      },
+    ],
+    navSecondary: [
+      {
+        title: t("nav.settings"),
+        url: "/settings",
+        icon: IconSettings,
+      },
+    ],
+    documents: [
+      {
+        name: t("nav.subscriptions"),
+        url: "/subscriptions",
+        icon: IconCloud,
+      },
+    ],
+  }
 
   return (
     <Sidebar collapsible="offcanvas" {...props}>

@@ -1,4 +1,5 @@
 import "@testing-library/jest-dom/vitest"
+import "@/i18n"
 
 // Make React act() warnings behave correctly in tests.
 ;(globalThis as any).IS_REACT_ACT_ENVIRONMENT = true

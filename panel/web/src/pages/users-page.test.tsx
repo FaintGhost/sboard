@@ -62,6 +62,7 @@ describe("UsersPage", () => {
     let currentStatus: "active" | "expired" = "active"
     let currentTrafficLimit = 0
     let currentTrafficResetDay = 0
+    const unexpectedRequests: Array<{ method: string; pathname: string }> = []
 
     const fetchMock = vi
       .spyOn(globalThis, "fetch")
@@ -104,6 +105,15 @@ describe("UsersPage", () => {
           })
         }
 
+        if (req.method === "PUT" && pathname === "/api/users/1/groups") {
+          const body = (await req.json()) as Record<string, unknown>
+          expect(body.group_ids).toEqual([])
+          return new Response(JSON.stringify({ data: { group_ids: [] } }), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          })
+        }
+
         if (req.method === "PUT" && pathname === "/api/users/1") {
           const body = (await req.json()) as Record<string, unknown>
           expect(body.status).toBe("expired")
@@ -131,8 +141,9 @@ describe("UsersPage", () => {
           )
         }
 
-        return new Response(JSON.stringify({ error: "not found" }), {
-          status: 404,
+        unexpectedRequests.push({ method: req.method, pathname })
+        return new Response(JSON.stringify({ data: null }), {
+          status: 200,
           headers: { "Content-Type": "application/json" },
         })
       })
@@ -145,11 +156,13 @@ describe("UsersPage", () => {
 
     expect(await screen.findByText("alice")).toBeInTheDocument()
 
-    await userEvent.click(screen.getByRole("button", { name: "编辑" }))
+    const row = screen.getByRole("row", { name: /alice/i })
+    await userEvent.click(within(row).getByRole("button", { name: "操作" }))
+    await userEvent.click(await screen.findByRole("menuitem", { name: "编辑" }))
     await userEvent.click(screen.getByLabelText("状态"))
     await userEvent.click(await screen.findByText("expired"))
-    await userEvent.clear(screen.getByLabelText("流量上限"))
-    await userEvent.type(screen.getByLabelText("流量上限"), "1")
+    await userEvent.clear(screen.getByLabelText("流量上限（GB）"))
+    await userEvent.type(screen.getByLabelText("流量上限（GB）"), "1")
     await userEvent.clear(screen.getByLabelText("重置日"))
     await userEvent.type(screen.getByLabelText("重置日"), "1")
     await userEvent.click(screen.getByRole("button", { name: "保存" }))
@@ -157,5 +170,9 @@ describe("UsersPage", () => {
     expect(fetchMock).toHaveBeenCalled()
     const table = screen.getByRole("table")
     expect(await within(table).findByText("expired")).toBeInTheDocument()
+
+    // Flush any background refetches so unexpected endpoints don't surface as unhandled rejections.
+    await new Promise((r) => setTimeout(r, 0))
+    expect(unexpectedRequests).toEqual([])
   })
 })

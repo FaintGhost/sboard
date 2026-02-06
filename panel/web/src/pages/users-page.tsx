@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useEffect, useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { format } from "date-fns"
 import { MoreHorizontal, Pencil, Ban, Search, Trash2 } from "lucide-react"
 
@@ -51,42 +52,30 @@ import { bytesToGBString, gbStringToBytes, rfc3339FromDateOnlyUTC } from "@/lib/
 
 type StatusFilter = UserStatus | "all"
 
-const statusOptions: Array<{ value: StatusFilter; label: string }> = [
-  { value: "all", label: "全部" },
-  { value: "active", label: "active" },
-  { value: "disabled", label: "disabled" },
-  { value: "expired", label: "expired" },
-  { value: "traffic_exceeded", label: "traffic_exceeded" },
-]
-
-const editableStatusOptions: Array<{ value: UserStatus; label: string }> = [
-  { value: "active", label: "active" },
-  { value: "disabled", label: "disabled" },
-  { value: "expired", label: "expired" },
-  { value: "traffic_exceeded", label: "traffic_exceeded" },
-]
-
 function StatusBadge({ status }: { status: UserStatus }) {
+  const { t } = useTranslation()
   const variant = status === "active"
     ? "default"
     : status === "disabled"
       ? "secondary"
       : "destructive"
-  const label = status === "traffic_exceeded" ? "流量超限" : status
+  const label = status === "traffic_exceeded"
+    ? t("users.status.trafficExceeded")
+    : t(`users.status.${status}`)
   return <Badge variant={variant}>{label}</Badge>
 }
 
-function formatTraffic(used: number, limit: number): string {
+function formatTraffic(used: number, limit: number, t: (key: string, options?: Record<string, unknown>) => string): string {
   const usedGB = bytesToGBString(used)
-  if (limit === 0) return `${usedGB} GB / 无限`
+  if (limit === 0) return t("users.trafficUnlimited", { used: usedGB })
   const limitGB = bytesToGBString(limit)
-  return `${usedGB} / ${limitGB} GB`
+  return t("users.trafficFormat", { used: usedGB, limit: limitGB })
 }
 
-function formatExpireDate(expireAt: string | null): string {
-  if (!expireAt) return "永久"
+function formatExpireDate(expireAt: string | null, t: (key: string) => string): string {
+  if (!expireAt) return t("common.permanent")
   const date = new Date(expireAt)
-  if (Number.isNaN(date.getTime())) return "永久"
+  if (Number.isNaN(date.getTime())) return t("common.permanent")
   return format(date, "yyyy-MM-dd")
 }
 
@@ -115,12 +104,28 @@ const defaultNewUser: User = {
 }
 
 export function UsersPage() {
+  const { t } = useTranslation()
   const qc = useQueryClient()
   const [status, setStatus] = useState<StatusFilter>("all")
   const [search, setSearch] = useState("")
   const [upserting, setUpserting] = useState<EditState | null>(null)
   const [disablingUser, setDisablingUser] = useState<User | null>(null)
   const [deletingUser, setDeletingUser] = useState<User | null>(null)
+
+  const statusOptions: Array<{ value: StatusFilter; label: string }> = [
+    { value: "all", label: t("common.all") },
+    { value: "active", label: t("users.status.active") },
+    { value: "disabled", label: t("users.status.disabled") },
+    { value: "expired", label: t("users.status.expired") },
+    { value: "traffic_exceeded", label: t("users.status.trafficExceeded") },
+  ]
+
+  const editableStatusOptions: Array<{ value: UserStatus; label: string }> = [
+    { value: "active", label: t("users.status.active") },
+    { value: "disabled", label: t("users.status.disabled") },
+    { value: "expired", label: t("users.status.expired") },
+    { value: "traffic_exceeded", label: t("users.status.trafficExceeded") },
+  ]
 
   const queryParams = useMemo(
     () => ({
@@ -217,9 +222,9 @@ export function UsersPage() {
       <section className="space-y-6">
         <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">用户管理</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">{t("users.title")}</h1>
             <p className="text-sm text-muted-foreground">
-              管理系统中的所有用户账号
+              {t("users.subtitle")}
             </p>
           </div>
           <Button
@@ -240,7 +245,7 @@ export function UsersPage() {
               })
             }}
           >
-            创建用户
+            {t("users.createUser")}
           </Button>
         </header>
 
@@ -248,18 +253,18 @@ export function UsersPage() {
           <CardHeader className="pb-3">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex flex-col gap-1.5">
-                <CardTitle className="text-base">用户列表</CardTitle>
+                <CardTitle className="text-base">{t("users.list")}</CardTitle>
                 <CardDescription>
-                  {usersQuery.isLoading ? "加载中..." : null}
-                  {usersQuery.isError ? "加载失败" : null}
-                  {usersQuery.data ? `共 ${filteredUsers.length} 个用户` : null}
+                  {usersQuery.isLoading ? t("common.loading") : null}
+                  {usersQuery.isError ? t("common.loadFailed") : null}
+                  {usersQuery.data ? t("users.count", { count: filteredUsers.length }) : null}
                 </CardDescription>
               </div>
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                 <div className="relative">
                   <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
-                    placeholder="搜索用户名..."
+                    placeholder={t("users.searchPlaceholder")}
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     className="pl-8 w-full sm:w-48"
@@ -269,8 +274,8 @@ export function UsersPage() {
                   value={status}
                   onValueChange={(value) => setStatus(value as StatusFilter)}
                 >
-                  <SelectTrigger className="w-full sm:w-36" aria-label="状态筛选">
-                    <SelectValue placeholder="选择状态" />
+                  <SelectTrigger className="w-full sm:w-36" aria-label={t("users.statusFilter")}>
+                    <SelectValue placeholder={t("users.statusFilter")} />
                   </SelectTrigger>
                   <SelectContent>
                     {statusOptions.map((opt) => (
@@ -287,12 +292,12 @@ export function UsersPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="pl-6">用户名</TableHead>
-                  <TableHead>状态</TableHead>
-                  <TableHead className="hidden md:table-cell">流量</TableHead>
-                  <TableHead className="hidden sm:table-cell">到期日期</TableHead>
+                  <TableHead className="pl-6">{t("users.username")}</TableHead>
+                  <TableHead>{t("common.status")}</TableHead>
+                  <TableHead className="hidden md:table-cell">{t("users.traffic")}</TableHead>
+                  <TableHead className="hidden sm:table-cell">{t("users.expireDate")}</TableHead>
                   <TableHead className="w-12 pr-6">
-                    <span className="sr-only">操作</span>
+                    <span className="sr-only">{t("common.actions")}</span>
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -315,17 +320,17 @@ export function UsersPage() {
                     <TableCell className="pl-6 font-medium">{u.username}</TableCell>
                     <TableCell><StatusBadge status={u.status} /></TableCell>
                     <TableCell className="hidden md:table-cell text-muted-foreground">
-                      {formatTraffic(u.traffic_used, u.traffic_limit)}
+                      {formatTraffic(u.traffic_used, u.traffic_limit, t)}
                     </TableCell>
                     <TableCell className="hidden sm:table-cell text-muted-foreground">
-                      {formatExpireDate(u.expire_at)}
+                      {formatExpireDate(u.expire_at, t)}
                     </TableCell>
                     <TableCell className="pr-6">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon" className="size-8">
                             <MoreHorizontal className="size-4" />
-                            <span className="sr-only">操作菜单</span>
+                            <span className="sr-only">{t("common.actions")}</span>
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
@@ -352,7 +357,7 @@ export function UsersPage() {
                             }}
                           >
                             <Pencil className="mr-2 size-4" />
-                            编辑
+                            {t("common.edit")}
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
@@ -364,7 +369,7 @@ export function UsersPage() {
                             }}
                           >
                             <Ban className="mr-2 size-4" />
-                            禁用
+                            {t("common.disable")}
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             variant="destructive"
@@ -374,7 +379,7 @@ export function UsersPage() {
                             }}
                           >
                             <Trash2 className="mr-2 size-4" />
-                            删除
+                            {t("common.delete")}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -384,7 +389,7 @@ export function UsersPage() {
                 {!usersQuery.isLoading && filteredUsers.length === 0 ? (
                   <TableRow>
                     <TableCell className="pl-6 py-8 text-center text-muted-foreground" colSpan={5}>
-                      暂无数据
+                      {t("common.noData")}
                     </TableCell>
                   </TableRow>
                 ) : null}
@@ -397,10 +402,10 @@ export function UsersPage() {
           open={!!upserting}
           onOpenChange={(open) => (!open ? setUpserting(null) : null)}
         >
-          <DialogContent aria-label={upserting?.mode === "create" ? "创建用户" : "编辑用户"}>
+          <DialogContent aria-label={upserting?.mode === "create" ? t("users.createUser") : t("users.editUser")}>
             <DialogHeader>
               <DialogTitle>
-                {upserting?.mode === "create" ? "创建用户" : "编辑用户"}
+                {upserting?.mode === "create" ? t("users.createUser") : t("users.editUser")}
               </DialogTitle>
               {upserting?.mode === "edit" ? (
                 <DialogDescription>
@@ -413,7 +418,7 @@ export function UsersPage() {
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="space-y-1 md:col-span-2">
                   <Label className="text-sm text-slate-700" htmlFor="edit-username">
-                    用户名（username）
+                    {t("users.username")}
                   </Label>
                   <Input
                     id="edit-username"
@@ -423,15 +428,15 @@ export function UsersPage() {
                         prev ? { ...prev, username: e.target.value } : prev,
                       )
                     }
-                    placeholder="例如 alice"
+                    placeholder={t("users.usernamePlaceholder")}
                     autoFocus={upserting.mode === "create"}
                   />
                 </div>
 
                 <div className="space-y-2 md:col-span-2">
-                  <Label className="text-sm text-slate-700">分组</Label>
+                  <Label className="text-sm text-slate-700">{t("users.groups")}</Label>
                   <p className="text-xs text-slate-500">
-                    用户可以属于多个分组。订阅下发按分组生效。
+                    {t("users.groupsHint")}
                   </p>
                   <div className="rounded-lg border border-slate-200 p-3">
                     <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-2">
@@ -459,14 +464,14 @@ export function UsersPage() {
                       })}
                       {groupsQuery.data && groupsQuery.data.length === 0 ? (
                         <div className="text-sm text-slate-500 md:col-span-2">
-                          还没有分组，请先去"分组管理"创建。
+                          {t("users.noGroups")}
                         </div>
                       ) : null}
                     </div>
                   </div>
                   <div className="text-sm text-amber-700">
                     {saveGroupsMutation.isError ? (
-                      saveGroupsMutation.error instanceof ApiError ? saveGroupsMutation.error.message : "保存分组失败"
+                      saveGroupsMutation.error instanceof ApiError ? saveGroupsMutation.error.message : t("users.saveGroupsFailed")
                     ) : null}
                   </div>
                 </div>
@@ -474,7 +479,7 @@ export function UsersPage() {
                 {upserting.mode === "edit" ? (
                   <>
                     <div className="space-y-1">
-                      <Label className="text-sm text-slate-700">状态</Label>
+                      <Label className="text-sm text-slate-700">{t("common.status")}</Label>
                       <Select
                         value={upserting.status}
                         onValueChange={(value) =>
@@ -483,8 +488,8 @@ export function UsersPage() {
                           )
                         }
                       >
-                        <SelectTrigger className="w-full" aria-label="状态">
-                          <SelectValue placeholder="选择状态" />
+                        <SelectTrigger className="w-full" aria-label={t("common.status")}>
+                          <SelectValue placeholder={t("users.statusFilter")} />
                         </SelectTrigger>
                         <SelectContent>
                           {editableStatusOptions.map((opt) => (
@@ -498,7 +503,7 @@ export function UsersPage() {
 
                     <div className="space-y-1">
                       <Label className="text-sm text-slate-700" htmlFor="edit-traffic-limit">
-                        流量上限（GB）
+                        {t("users.trafficLimit")}
                       </Label>
                       <div className="relative">
                         <Input
@@ -511,18 +516,18 @@ export function UsersPage() {
                             )
                           }
                           className="pr-12"
-                          aria-label="流量上限"
+                          aria-label={t("users.trafficLimit")}
                         />
                         <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">
                           GB
                         </span>
                       </div>
-                      <p className="text-xs text-slate-500">0 表示不限流量。</p>
+                      <p className="text-xs text-slate-500">{t("users.trafficLimitHint")}</p>
                     </div>
 
                     <div className="space-y-1">
                       <Label className="text-sm text-slate-700" htmlFor="edit-traffic-reset-day">
-                        重置日
+                        {t("users.trafficResetDay")}
                       </Label>
                       <Input
                         id="edit-traffic-reset-day"
@@ -551,16 +556,16 @@ export function UsersPage() {
                             return { ...prev, trafficResetDay: clamped }
                           })
                         }
-                        aria-label="重置日"
+                        aria-label={t("users.trafficResetDay")}
                       />
                       <p className="text-xs text-slate-500">
-                        取值范围 0-31。0 表示不自动重置。若填写 29/30/31 且当月无该日期，则按当月最后一天计算。
+                        {t("users.trafficResetDayHint")}
                       </p>
                     </div>
 
                     <div className="space-y-1 md:col-span-2">
                       <Label className="text-sm text-slate-700" htmlFor="edit-expire">
-                        到期日期
+                        {t("users.expireDate")}
                       </Label>
                       <div className="flex flex-col gap-2 md:flex-row md:items-center">
                         <Popover>
@@ -573,7 +578,7 @@ export function UsersPage() {
                               {upserting.expireDate ? (
                                 format(upserting.expireDate, "yyyy-MM-dd")
                               ) : (
-                                <span className="text-slate-500">选择日期</span>
+                                <span className="text-slate-500">{t("users.selectDate")}</span>
                               )}
                             </Button>
                           </PopoverTrigger>
@@ -610,7 +615,7 @@ export function UsersPage() {
                           }
                           disabled={upserting.clearExpireAt}
                         >
-                          清空
+                          {t("users.clearDate")}
                         </Button>
                       </div>
                     </div>
@@ -623,7 +628,7 @@ export function UsersPage() {
               <p className="text-sm text-red-600">
                 {createMutation.error instanceof ApiError
                   ? createMutation.error.message
-                  : "创建失败"}
+                  : t("users.createFailed")}
               </p>
             ) : null}
 
@@ -631,13 +636,13 @@ export function UsersPage() {
               <p className="text-sm text-red-600">
                 {updateMutation.error instanceof ApiError
                   ? updateMutation.error.message
-                  : "保存失败"}
+                  : t("users.saveFailed")}
               </p>
             ) : null}
 
             <DialogFooter>
               <Button variant="outline" onClick={() => setUpserting(null)}>
-                取消
+                {t("common.cancel")}
               </Button>
               <Button
                 onClick={async () => {
@@ -687,11 +692,11 @@ export function UsersPage() {
               >
                 {upserting?.mode === "create"
                   ? createMutation.isPending
-                    ? "创建中..."
-                    : "创建"
+                    ? t("common.creating")
+                    : t("common.create")
                   : updateMutation.isPending
-                    ? "保存中..."
-                    : "保存"}
+                    ? t("common.saving")
+                    : t("common.save")}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -701,11 +706,11 @@ export function UsersPage() {
           open={!!disablingUser}
           onOpenChange={(open) => (!open ? setDisablingUser(null) : null)}
         >
-          <DialogContent aria-label="禁用用户">
+          <DialogContent aria-label={t("users.disableUser")}>
             <DialogHeader>
-              <DialogTitle>禁用用户</DialogTitle>
+              <DialogTitle>{t("users.disableUser")}</DialogTitle>
               <DialogDescription>
-                确定要禁用用户 <strong>{disablingUser?.username}</strong> 吗？禁用后该用户将无法使用订阅。
+                {t("users.disableConfirm", { username: disablingUser?.username })}
               </DialogDescription>
             </DialogHeader>
 
@@ -713,13 +718,13 @@ export function UsersPage() {
               <p className="text-sm text-red-600">
                 {disableMutation.error instanceof ApiError
                   ? disableMutation.error.message
-                  : "禁用失败"}
+                  : t("users.disableFailed")}
               </p>
             ) : null}
 
             <DialogFooter>
               <Button variant="outline" onClick={() => setDisablingUser(null)}>
-                取消
+                {t("common.cancel")}
               </Button>
               <Button
                 variant="destructive"
@@ -729,7 +734,7 @@ export function UsersPage() {
                 }}
                 disabled={disableMutation.isPending}
               >
-                {disableMutation.isPending ? "禁用中..." : "确认禁用"}
+                {disableMutation.isPending ? t("common.disabling") : t("common.confirm")}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -739,11 +744,11 @@ export function UsersPage() {
           open={!!deletingUser}
           onOpenChange={(open) => (!open ? setDeletingUser(null) : null)}
         >
-          <DialogContent aria-label="删除用户">
+          <DialogContent aria-label={t("users.deleteUser")}>
             <DialogHeader>
-              <DialogTitle>删除用户</DialogTitle>
+              <DialogTitle>{t("users.deleteUser")}</DialogTitle>
               <DialogDescription>
-                确定要永久删除用户 <strong>{deletingUser?.username}</strong> 吗？此操作不可撤销，用户数据将被彻底清除。
+                {t("users.deleteConfirm", { username: deletingUser?.username })}
               </DialogDescription>
             </DialogHeader>
 
@@ -751,13 +756,13 @@ export function UsersPage() {
               <p className="text-sm text-red-600">
                 {deleteMutation.error instanceof ApiError
                   ? deleteMutation.error.message
-                  : "删除失败"}
+                  : t("users.deleteFailed")}
               </p>
             ) : null}
 
             <DialogFooter>
               <Button variant="outline" onClick={() => setDeletingUser(null)}>
-                取消
+                {t("common.cancel")}
               </Button>
               <Button
                 variant="destructive"
@@ -767,7 +772,7 @@ export function UsersPage() {
                 }}
                 disabled={deleteMutation.isPending}
               >
-                {deleteMutation.isPending ? "删除中..." : "确认删除"}
+                {deleteMutation.isPending ? t("common.deleting") : t("common.confirm")}
               </Button>
             </DialogFooter>
           </DialogContent>

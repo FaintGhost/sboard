@@ -16,15 +16,14 @@ import {
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { zodResolver } from "@hookform/resolvers/zod"
+import { useTranslation } from "react-i18next"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 
-const loginSchema = z.object({
-  username: z.string().min(1, "请输入用户名"),
-  password: z.string().min(1, "请输入密码"),
-})
-
-type LoginValues = z.infer<typeof loginSchema>
+type LoginValues = {
+  username: string
+  password: string
+}
 
 export function LoginForm({
   className,
@@ -37,6 +36,13 @@ export function LoginForm({
   errorMessage?: string | null
   onLogin: (values: LoginValues) => void
 }) {
+  const { t } = useTranslation()
+
+  const loginSchema = z.object({
+    username: z.string().min(1, t("auth.usernameRequired")),
+    password: z.string().min(1, t("auth.passwordRequired")),
+  })
+
   const form = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: { username: "", password: "" },
@@ -46,8 +52,8 @@ export function LoginForm({
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card>
         <CardHeader className="text-center">
-          <CardTitle className="text-xl">管理员登录</CardTitle>
-          <CardDescription>登录后可访问管理面板</CardDescription>
+          <CardTitle className="text-xl">{t("auth.adminLoginTitle")}</CardTitle>
+          <CardDescription>{t("auth.adminLoginSubtitle")}</CardDescription>
         </CardHeader>
         <CardContent>
           <form
@@ -55,7 +61,7 @@ export function LoginForm({
           >
             <FieldGroup>
               <Field>
-                <FieldLabel htmlFor="username">用户名</FieldLabel>
+                <FieldLabel htmlFor="username">{t("auth.username")}</FieldLabel>
                 <Input
                   id="username"
                   autoComplete="username"
@@ -64,7 +70,7 @@ export function LoginForm({
                 <FieldError errors={[form.formState.errors.username]} />
               </Field>
               <Field>
-                <FieldLabel htmlFor="password">密码</FieldLabel>
+                <FieldLabel htmlFor="password">{t("auth.password")}</FieldLabel>
                 <Input
                   id="password"
                   type="password"
@@ -76,7 +82,7 @@ export function LoginForm({
               <Field>
                 {errorMessage ? <FieldError>{errorMessage}</FieldError> : null}
                 <Button type="submit" disabled={isPending}>
-                  {isPending ? "登录中..." : "登录"}
+                  {isPending ? t("auth.loggingIn") : t("auth.login")}
                 </Button>
               </Field>
             </FieldGroup>
@@ -84,7 +90,7 @@ export function LoginForm({
         </CardContent>
       </Card>
       <FieldDescription className="px-6 text-center">
-        Token 会保存在本地浏览器存储中。
+        {t("auth.tokenStoredHint")}
       </FieldDescription>
     </div>
   )

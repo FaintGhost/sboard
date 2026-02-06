@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -38,6 +39,7 @@ const defaultNewGroup: Group = {
 }
 
 export function GroupsPage() {
+  const { t } = useTranslation()
   const qc = useQueryClient()
   const [upserting, setUpserting] = useState<EditState | null>(null)
 
@@ -77,18 +79,18 @@ export function GroupsPage() {
       <section className="space-y-6">
         <header className="space-y-1">
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
-            分组管理
+            {t("groups.title")}
           </h1>
           <p className="text-sm text-slate-500">
-            分组用于控制订阅下发范围：用户属于分组，节点属于单一分组。
+            {t("groups.hint")}
           </p>
         </header>
 
         <div className="flex items-center justify-between gap-3">
           <div className="text-sm text-slate-600">
-            {groupsQuery.isLoading ? "加载中..." : null}
-            {groupsQuery.isError ? "加载失败" : null}
-            {groupsQuery.data ? `共 ${groupsQuery.data.length} 个分组` : null}
+            {groupsQuery.isLoading ? t("common.loading") : null}
+            {groupsQuery.isError ? t("common.loadFailed") : null}
+            {groupsQuery.data ? t("groups.count", { count: groupsQuery.data.length }) : null}
           </div>
           <Button
             onClick={() => {
@@ -102,7 +104,7 @@ export function GroupsPage() {
               })
             }}
           >
-            创建分组
+            {t("groups.createGroup")}
           </Button>
         </div>
 
@@ -110,9 +112,9 @@ export function GroupsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="px-4">name</TableHead>
-                <TableHead className="px-4">description</TableHead>
-                <TableHead className="px-4">action</TableHead>
+                <TableHead className="px-4">{t("common.name")}</TableHead>
+                <TableHead className="px-4">{t("common.description")}</TableHead>
+                <TableHead className="px-4">{t("common.actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -140,7 +142,7 @@ export function GroupsPage() {
                           })
                         }}
                       >
-                        编辑
+                        {t("common.edit")}
                       </Button>
                       <Button
                         size="sm"
@@ -148,7 +150,7 @@ export function GroupsPage() {
                         disabled={deleteMutation.isPending}
                         onClick={() => deleteMutation.mutate(g.id)}
                       >
-                        删除
+                        {t("common.delete")}
                       </Button>
                     </div>
                   </TableCell>
@@ -157,7 +159,7 @@ export function GroupsPage() {
               {groupsQuery.data && groupsQuery.data.length === 0 ? (
                 <TableRow>
                   <TableCell className="px-4 py-6 text-slate-500" colSpan={3}>
-                    暂无数据
+                    {t("common.noData")}
                   </TableCell>
                 </TableRow>
               ) : null}
@@ -169,10 +171,18 @@ export function GroupsPage() {
           open={!!upserting}
           onOpenChange={(open) => (!open ? setUpserting(null) : null)}
         >
-          <DialogContent aria-label={upserting?.mode === "create" ? "创建分组" : "编辑分组"}>
+          <DialogContent
+            aria-label={
+              upserting?.mode === "create"
+                ? t("groups.createGroup")
+                : t("groups.editGroup")
+            }
+          >
             <DialogHeader>
               <DialogTitle>
-                {upserting?.mode === "create" ? "创建分组" : "编辑分组"}
+                {upserting?.mode === "create"
+                  ? t("groups.createGroup")
+                  : t("groups.editGroup")}
               </DialogTitle>
               {upserting?.mode === "edit" ? (
                 <DialogDescription>{upserting.group.name}</DialogDescription>
@@ -183,7 +193,7 @@ export function GroupsPage() {
               <div className="space-y-4">
                 <div className="space-y-1">
                   <Label htmlFor="group-name" className="text-sm text-slate-700">
-                    名称（name）
+                    {t("groups.name")}
                   </Label>
                   <Input
                     id="group-name"
@@ -191,13 +201,13 @@ export function GroupsPage() {
                     onChange={(e) =>
                       setUpserting((prev) => (prev ? { ...prev, name: e.target.value } : prev))
                     }
-                    placeholder="例如 hk-1"
+                    placeholder={t("groups.namePlaceholder")}
                     autoFocus={upserting.mode === "create"}
                   />
                 </div>
                 <div className="space-y-1">
                   <Label htmlFor="group-desc" className="text-sm text-slate-700">
-                    描述（description）
+                    {t("groups.description")}
                   </Label>
                   <Input
                     id="group-desc"
@@ -207,7 +217,7 @@ export function GroupsPage() {
                         prev ? { ...prev, description: e.target.value } : prev,
                       )
                     }
-                    placeholder="可选"
+                    placeholder={t("groups.descriptionPlaceholder")}
                   />
                 </div>
 
@@ -217,7 +227,7 @@ export function GroupsPage() {
                       ? createMutation.error.message
                       : updateMutation.error instanceof ApiError
                         ? updateMutation.error.message
-                        : "保存失败")
+                        : t("groups.saveFailed"))
                   ) : null}
                 </div>
               </div>
@@ -229,7 +239,7 @@ export function GroupsPage() {
                 onClick={() => setUpserting(null)}
                 disabled={createMutation.isPending || updateMutation.isPending}
               >
-                取消
+                {t("common.cancel")}
               </Button>
               <Button
                 onClick={() => {
@@ -245,7 +255,7 @@ export function GroupsPage() {
                 }}
                 disabled={createMutation.isPending || updateMutation.isPending}
               >
-                保存
+                {t("common.save")}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -254,4 +264,3 @@ export function GroupsPage() {
     </div>
   )
 }
-

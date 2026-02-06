@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -62,6 +63,7 @@ function groupName(groups: Group[] | undefined, id: number | null): string {
 }
 
 export function NodesPage() {
+  const { t } = useTranslation()
   const qc = useQueryClient()
   const [upserting, setUpserting] = useState<EditState | null>(null)
   const [actionMessage, setActionMessage] = useState<string | null>(null)
@@ -103,14 +105,14 @@ export function NodesPage() {
 
   const healthMutation = useMutation({
     mutationFn: (id: number) => nodeHealth(id),
-    onSuccess: () => setActionMessage("Node 健康检查: OK"),
-    onError: (e) => setActionMessage(e instanceof ApiError ? e.message : "健康检查失败"),
+    onSuccess: () => setActionMessage(t("nodes.healthOk")),
+    onError: (e) => setActionMessage(e instanceof ApiError ? e.message : t("nodes.healthFailed")),
   })
 
   const syncMutation = useMutation({
     mutationFn: (id: number) => nodeSync(id),
-    onSuccess: () => setActionMessage("已下发配置到 Node"),
-    onError: (e) => setActionMessage(e instanceof ApiError ? e.message : "下发失败"),
+    onSuccess: () => setActionMessage(t("nodes.syncOk")),
+    onError: (e) => setActionMessage(e instanceof ApiError ? e.message : t("nodes.syncFailed")),
   })
 
   return (
@@ -118,18 +120,18 @@ export function NodesPage() {
       <section className="space-y-6">
         <header className="space-y-1">
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
-            节点管理
+            {t("nodes.title")}
           </h1>
           <p className="text-sm text-slate-500">
-            节点属于单一分组，Panel 会按分组把用户和入站同步到 Node。
+            {t("nodes.hint")}
           </p>
         </header>
 
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div className="text-sm text-slate-600">
-            {nodesQuery.isLoading ? "加载中..." : null}
-            {nodesQuery.isError ? "加载失败" : null}
-            {nodesQuery.data ? `共 ${nodesQuery.data.length} 个节点` : null}
+            {nodesQuery.isLoading ? t("common.loading") : null}
+            {nodesQuery.isError ? t("common.loadFailed") : null}
+            {nodesQuery.data ? t("nodes.count", { count: nodesQuery.data.length }) : null}
             {actionMessage ? <span className="ml-3 text-slate-500">{actionMessage}</span> : null}
           </div>
           <Button
@@ -149,7 +151,7 @@ export function NodesPage() {
               })
             }}
           >
-            创建节点
+            {t("nodes.createNode")}
           </Button>
         </div>
 
@@ -157,11 +159,11 @@ export function NodesPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="px-4">name</TableHead>
-                <TableHead className="px-4">group</TableHead>
-                <TableHead className="px-4">api</TableHead>
-                <TableHead className="px-4">public</TableHead>
-                <TableHead className="px-4">action</TableHead>
+                <TableHead className="px-4">{t("nodes.name")}</TableHead>
+                <TableHead className="px-4">{t("nodes.group")}</TableHead>
+                <TableHead className="px-4">{t("nodes.apiAddress")}</TableHead>
+                <TableHead className="px-4">{t("nodes.publicAddress")}</TableHead>
+                <TableHead className="px-4">{t("common.actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -196,7 +198,7 @@ export function NodesPage() {
                           })
                         }}
                       >
-                        编辑
+                        {t("common.edit")}
                       </Button>
                       <Button
                         size="sm"
@@ -204,7 +206,7 @@ export function NodesPage() {
                         disabled={healthMutation.isPending}
                         onClick={() => healthMutation.mutate(n.id)}
                       >
-                        健康
+                        {t("nodes.health")}
                       </Button>
                       <Button
                         size="sm"
@@ -212,7 +214,7 @@ export function NodesPage() {
                         disabled={syncMutation.isPending}
                         onClick={() => syncMutation.mutate(n.id)}
                       >
-                        同步
+                        {t("nodes.sync")}
                       </Button>
                       <Button
                         size="sm"
@@ -220,7 +222,7 @@ export function NodesPage() {
                         disabled={deleteMutation.isPending}
                         onClick={() => deleteMutation.mutate(n.id)}
                       >
-                        删除
+                        {t("common.delete")}
                       </Button>
                     </div>
                   </TableCell>
@@ -229,7 +231,7 @@ export function NodesPage() {
               {nodesQuery.data && nodesQuery.data.length === 0 ? (
                 <TableRow>
                   <TableCell className="px-4 py-6 text-slate-500" colSpan={5}>
-                    暂无数据
+                    {t("common.noData")}
                   </TableCell>
                 </TableRow>
               ) : null}
@@ -238,9 +240,13 @@ export function NodesPage() {
         </div>
 
         <Dialog open={!!upserting} onOpenChange={(open) => (!open ? setUpserting(null) : null)}>
-          <DialogContent aria-label={upserting?.mode === "create" ? "创建节点" : "编辑节点"}>
+          <DialogContent
+            aria-label={upserting?.mode === "create" ? t("nodes.createNode") : t("nodes.editNode")}
+          >
             <DialogHeader>
-              <DialogTitle>{upserting?.mode === "create" ? "创建节点" : "编辑节点"}</DialogTitle>
+              <DialogTitle>
+                {upserting?.mode === "create" ? t("nodes.createNode") : t("nodes.editNode")}
+              </DialogTitle>
               {upserting?.mode === "edit" ? (
                 <DialogDescription>{upserting.node.name}</DialogDescription>
               ) : null}
@@ -250,20 +256,20 @@ export function NodesPage() {
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="space-y-1 md:col-span-2">
                   <Label className="text-sm text-slate-700" htmlFor="node-name">
-                    名称（name）
+                    {t("nodes.name")}
                   </Label>
                   <Input
                     id="node-name"
                     value={upserting.name}
                     onChange={(e) => setUpserting((p) => (p ? { ...p, name: e.target.value } : p))}
-                    placeholder="例如 tokyo-1"
+                    placeholder={t("nodes.namePlaceholder")}
                     autoFocus={upserting.mode === "create"}
                   />
                 </div>
 
                 <div className="space-y-1">
                   <Label className="text-sm text-slate-700" htmlFor="node-api-addr">
-                    Node API 地址（api_address）
+                    {t("nodes.apiAddress")}
                   </Label>
                   <Input
                     id="node-api-addr"
@@ -271,13 +277,13 @@ export function NodesPage() {
                     onChange={(e) =>
                       setUpserting((p) => (p ? { ...p, apiAddress: e.target.value } : p))
                     }
-                    placeholder="例如 127.0.0.1"
+                    placeholder={t("nodes.apiHostPlaceholder")}
                   />
                 </div>
 
                 <div className="space-y-1">
                   <Label className="text-sm text-slate-700" htmlFor="node-api-port">
-                    Node API 端口（api_port）
+                    {t("nodes.apiPort")}
                   </Label>
                   <Input
                     id="node-api-port"
@@ -294,7 +300,7 @@ export function NodesPage() {
 
                 <div className="space-y-1 md:col-span-2">
                   <Label className="text-sm text-slate-700" htmlFor="node-secret">
-                    密钥（secret_key）
+                    {t("nodes.secretKey")}
                   </Label>
                   <Input
                     id="node-secret"
@@ -302,13 +308,13 @@ export function NodesPage() {
                     onChange={(e) =>
                       setUpserting((p) => (p ? { ...p, secretKey: e.target.value } : p))
                     }
-                    placeholder="Node 端 NODE_SECRET_KEY"
+                    placeholder={t("nodes.secretKeyPlaceholder")}
                   />
                 </div>
 
                 <div className="space-y-1 md:col-span-2">
                   <Label className="text-sm text-slate-700" htmlFor="node-public">
-                    对外地址（public_address）
+                    {t("nodes.publicAddress")}
                   </Label>
                   <Input
                     id="node-public"
@@ -316,12 +322,12 @@ export function NodesPage() {
                     onChange={(e) =>
                       setUpserting((p) => (p ? { ...p, publicAddress: e.target.value } : p))
                     }
-                    placeholder="例如 your.vps.ip 或域名"
+                    placeholder={t("nodes.publicAddressPlaceholder")}
                   />
                 </div>
 
                 <div className="space-y-1 md:col-span-2">
-                  <Label className="text-sm text-slate-700">所属分组（group_id）</Label>
+                  <Label className="text-sm text-slate-700">{t("nodes.group")}</Label>
                   <Select
                     value={upserting.groupID == null ? "none" : String(upserting.groupID)}
                     onValueChange={(v) =>
@@ -330,11 +336,11 @@ export function NodesPage() {
                       )
                     }
                   >
-                    <SelectTrigger aria-label="选择分组">
-                      <SelectValue placeholder="选择分组" />
+                    <SelectTrigger aria-label={t("nodes.selectGroup")}>
+                      <SelectValue placeholder={t("nodes.selectGroup")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">不设置</SelectItem>
+                      <SelectItem value="none">{t("nodes.noGroup")}</SelectItem>
                       {groupsQuery.data?.map((g) => (
                         <SelectItem key={g.id} value={String(g.id)}>
                           {g.name}
@@ -343,7 +349,7 @@ export function NodesPage() {
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-slate-500">
-                    `同步` 时必须设置分组，否则 Panel 不知道要给这个节点下发哪些用户。
+                    {t("nodes.groupRequiredHint")}
                   </p>
                 </div>
 
@@ -353,7 +359,7 @@ export function NodesPage() {
                       ? createMutation.error.message
                       : updateMutation.error instanceof ApiError
                         ? updateMutation.error.message
-                        : "保存失败")
+                        : t("nodes.saveFailed"))
                   ) : null}
                 </div>
               </div>
@@ -365,7 +371,7 @@ export function NodesPage() {
                 onClick={() => setUpserting(null)}
                 disabled={createMutation.isPending || updateMutation.isPending}
               >
-                取消
+                {t("common.cancel")}
               </Button>
               <Button
                 onClick={() => {
@@ -394,7 +400,7 @@ export function NodesPage() {
                 }}
                 disabled={createMutation.isPending || updateMutation.isPending}
               >
-                保存
+                {t("common.save")}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -403,4 +409,3 @@ export function NodesPage() {
     </div>
   )
 }
-

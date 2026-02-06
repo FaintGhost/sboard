@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -79,19 +80,19 @@ function nodeName(nodes: Node[] | undefined, id: number): string {
   return n ? n.name : String(id)
 }
 
-function normalizeJSON(input: string): { ok: true; value: unknown } | { ok: false; message: string } {
+function normalizeJSON(input: string): { ok: true; value: unknown } | { ok: false } {
   const raw = input.trim()
   if (!raw) return { ok: true, value: {} }
   try {
     return { ok: true, value: JSON.parse(raw) }
   } catch {
-    return { ok: false, message: "JSON 解析失败" }
+    return { ok: false }
   }
 }
 
-function jsonHint(input: string): string | null {
+function jsonHint(t: (key: string) => string, input: string): string | null {
   const out = normalizeJSON(input)
-  return out.ok ? null : out.message
+  return out.ok ? null : t("inbounds.jsonParseFailed")
 }
 
 function getObjectFromJSONText(input: string): { ok: true; value: Record<string, unknown> } | { ok: false } {
@@ -115,6 +116,7 @@ function setShadowsocksMethod(settingsText: string, method: string): string {
 }
 
 export function InboundsPage() {
+  const { t } = useTranslation()
   const qc = useQueryClient()
   const [nodeFilter, setNodeFilter] = useState<number | "all">("all")
   const [upserting, setUpserting] = useState<EditState | null>(null)
@@ -165,25 +167,25 @@ export function InboundsPage() {
       <section className="space-y-6">
         <header className="space-y-1">
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
-            入站管理
+            {t("inbounds.title")}
           </h1>
           <p className="text-sm text-slate-500">
-            入站属于节点；同步节点时会把分组内的用户注入到每个入站的 `users` 字段。
+            {t("inbounds.hint")}
           </p>
         </header>
 
         <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
           <div className="space-y-1">
-            <Label className="text-sm text-slate-700">节点筛选</Label>
+            <Label className="text-sm text-slate-700">{t("inbounds.nodeFilter")}</Label>
             <Select
               value={nodeFilter === "all" ? "all" : String(nodeFilter)}
               onValueChange={(v) => setNodeFilter(v === "all" ? "all" : Number(v))}
             >
-              <SelectTrigger className="w-64" aria-label="节点筛选">
-                <SelectValue placeholder="选择节点" />
+              <SelectTrigger className="w-64" aria-label={t("inbounds.nodeFilter")}>
+                <SelectValue placeholder={t("inbounds.selectNode")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">全部节点</SelectItem>
+                <SelectItem value="all">{t("inbounds.allNodes")}</SelectItem>
                 {nodesQuery.data?.map((n) => (
                   <SelectItem key={n.id} value={String(n.id)}>
                     {n.name}
@@ -213,24 +215,24 @@ export function InboundsPage() {
             }}
             disabled={!nodesQuery.data || nodesQuery.data.length === 0}
           >
-            创建入站
+            {t("inbounds.createInbound")}
           </Button>
         </div>
 
         <div className="overflow-hidden rounded-xl border border-slate-200">
           <div className="border-b border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-600">
-            {inboundsQuery.isLoading ? "加载中..." : null}
-            {inboundsQuery.isError ? "加载失败" : null}
-            {inboundsQuery.data ? `共 ${inboundsQuery.data.length} 个入站` : null}
+            {inboundsQuery.isLoading ? t("common.loading") : null}
+            {inboundsQuery.isError ? t("common.loadFailed") : null}
+            {inboundsQuery.data ? t("inbounds.count", { count: inboundsQuery.data.length }) : null}
           </div>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="px-4">node</TableHead>
-                <TableHead className="px-4">tag</TableHead>
-                <TableHead className="px-4">protocol</TableHead>
-                <TableHead className="px-4">port</TableHead>
-                <TableHead className="px-4">action</TableHead>
+                <TableHead className="px-4">{t("inbounds.node")}</TableHead>
+                <TableHead className="px-4">{t("inbounds.tag")}</TableHead>
+                <TableHead className="px-4">{t("inbounds.protocol")}</TableHead>
+                <TableHead className="px-4">{t("inbounds.port")}</TableHead>
+                <TableHead className="px-4">{t("common.actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -242,7 +244,9 @@ export function InboundsPage() {
                   <TableCell className="px-4 font-medium text-slate-900">{i.tag}</TableCell>
                   <TableCell className="px-4 text-slate-700">{i.protocol}</TableCell>
                   <TableCell className="px-4 text-slate-700">
-                    {i.public_port > 0 ? `${i.public_port} (public)` : i.listen_port}
+                    {i.public_port > 0
+                      ? `${i.public_port} (${t("inbounds.publicPortShort")})`
+                      : i.listen_port}
                   </TableCell>
                   <TableCell className="px-4">
                     <div className="flex items-center gap-2">
@@ -268,7 +272,7 @@ export function InboundsPage() {
                           })
                         }}
                       >
-                        编辑
+                        {t("common.edit")}
                       </Button>
                       <Button
                         size="sm"
@@ -276,7 +280,7 @@ export function InboundsPage() {
                         disabled={deleteMutation.isPending}
                         onClick={() => deleteMutation.mutate(i.id)}
                       >
-                        删除
+                        {t("common.delete")}
                       </Button>
                     </div>
                   </TableCell>
@@ -285,7 +289,7 @@ export function InboundsPage() {
               {inboundsQuery.data && inboundsQuery.data.length === 0 ? (
                 <TableRow>
                   <TableCell className="px-4 py-6 text-slate-500" colSpan={5}>
-                    暂无数据
+                    {t("common.noData")}
                   </TableCell>
                 </TableRow>
               ) : null}
@@ -294,9 +298,19 @@ export function InboundsPage() {
         </div>
 
         <Dialog open={!!upserting} onOpenChange={(open) => (!open ? setUpserting(null) : null)}>
-          <DialogContent aria-label={upserting?.mode === "create" ? "创建入站" : "编辑入站"}>
+          <DialogContent
+            aria-label={
+              upserting?.mode === "create"
+                ? t("inbounds.createInbound")
+                : t("inbounds.editInbound")
+            }
+          >
             <DialogHeader>
-              <DialogTitle>{upserting?.mode === "create" ? "创建入站" : "编辑入站"}</DialogTitle>
+              <DialogTitle>
+                {upserting?.mode === "create"
+                  ? t("inbounds.createInbound")
+                  : t("inbounds.editInbound")}
+              </DialogTitle>
               {upserting?.mode === "edit" ? (
                 <DialogDescription>{upserting.inbound.tag}</DialogDescription>
               ) : null}
@@ -305,15 +319,15 @@ export function InboundsPage() {
             {upserting ? (
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="space-y-1 md:col-span-2">
-                  <Label className="text-sm text-slate-700">节点（node_id）</Label>
+                  <Label className="text-sm text-slate-700">{t("inbounds.node")}</Label>
                   <Select
                     value={String(upserting.nodeID)}
                     onValueChange={(v) =>
                       setUpserting((p) => (p ? { ...p, nodeID: Number(v) } : p))
                     }
                   >
-                    <SelectTrigger aria-label="选择节点">
-                      <SelectValue placeholder="选择节点" />
+                    <SelectTrigger aria-label={t("inbounds.selectNode")}>
+                      <SelectValue placeholder={t("inbounds.selectNode")} />
                     </SelectTrigger>
                     <SelectContent>
                       {nodesQuery.data?.map((n) => (
@@ -327,27 +341,27 @@ export function InboundsPage() {
 
                 <div className="space-y-1">
                   <Label className="text-sm text-slate-700" htmlFor="inb-tag">
-                    Tag（tag）
+                    {t("inbounds.tag")}
                   </Label>
                   <Input
                     id="inb-tag"
                     value={upserting.tag}
                     onChange={(e) => setUpserting((p) => (p ? { ...p, tag: e.target.value } : p))}
-                    placeholder="例如 vless-in"
+                    placeholder={t("inbounds.tagPlaceholder")}
                     autoFocus={upserting.mode === "create"}
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <Label className="text-sm text-slate-700">协议（protocol）</Label>
+                  <Label className="text-sm text-slate-700">{t("inbounds.protocol")}</Label>
                   <Select
                     value={upserting.protocol}
                     onValueChange={(v) =>
                       setUpserting((p) => (p ? { ...p, protocol: v } : p))
                     }
                   >
-                    <SelectTrigger aria-label="选择协议">
-                      <SelectValue placeholder="选择协议" />
+                    <SelectTrigger aria-label={t("inbounds.selectProtocol")}>
+                      <SelectValue placeholder={t("inbounds.selectProtocol")} />
                     </SelectTrigger>
                     <SelectContent>
                       {protocolOptions.map((p) => (
@@ -361,7 +375,7 @@ export function InboundsPage() {
 
                 {upserting.protocol === "shadowsocks" ? (
                   <div className="space-y-1 md:col-span-2">
-                    <Label className="text-sm text-slate-700">加密方法（method）</Label>
+                    <Label className="text-sm text-slate-700">{t("inbounds.ssMethod")}</Label>
                     <Select
                       value={getShadowsocksMethod(upserting.settingsText) ?? ""}
                       onValueChange={(v) =>
@@ -370,8 +384,8 @@ export function InboundsPage() {
                         )
                       }
                     >
-                      <SelectTrigger aria-label="选择 shadowsocks method">
-                        <SelectValue placeholder="请选择 method（必填）" />
+                      <SelectTrigger aria-label={t("inbounds.ssMethod")}>
+                        <SelectValue placeholder={t("inbounds.ssMethodPlaceholder")} />
                       </SelectTrigger>
                       <SelectContent>
                         {shadowsocksMethods.map((m) => (
@@ -382,17 +396,17 @@ export function InboundsPage() {
                       </SelectContent>
                     </Select>
                     <p className="text-xs text-slate-500">
-                      说明：括号内是 key length；没有标注则按 sing-box 默认规则处理。
+                      {t("inbounds.ssMethodHelp")}
                     </p>
                     {!getShadowsocksMethod(upserting.settingsText)?.trim() ? (
-                      <p className="text-xs text-amber-700">method 必填，否则节点同步会失败。</p>
+                      <p className="text-xs text-amber-700">{t("inbounds.ssMethodRequiredHint")}</p>
                     ) : null}
                   </div>
                 ) : null}
 
                 <div className="space-y-1">
                   <Label className="text-sm text-slate-700" htmlFor="inb-listen">
-                    监听端口（listen_port）
+                    {t("inbounds.listenPort")}
                   </Label>
                   <Input
                     id="inb-listen"
@@ -409,7 +423,7 @@ export function InboundsPage() {
 
                 <div className="space-y-1">
                   <Label className="text-sm text-slate-700" htmlFor="inb-public">
-                    对外端口（public_port）
+                    {t("inbounds.publicPort")}
                   </Label>
                   <Input
                     id="inb-public"
@@ -423,13 +437,13 @@ export function InboundsPage() {
                     }
                   />
                   <p className="text-xs text-slate-500">
-                    0 表示不设置，对外订阅端口会回退到 listen_port。
+                    {t("inbounds.publicPortHelp")}
                   </p>
                 </div>
 
                 <div className="space-y-1 md:col-span-2">
                   <Label className="text-sm text-slate-700" htmlFor="inb-settings">
-                    settings（JSON）
+                    {t("inbounds.settings")}
                   </Label>
                   <Textarea
                     id="inb-settings"
@@ -439,15 +453,16 @@ export function InboundsPage() {
                     }
                     rows={8}
                     className="font-mono text-xs"
+                    placeholder={t("inbounds.settingsPlaceholder")}
                   />
-                  {jsonHint(upserting.settingsText) ? (
-                    <p className="text-xs text-amber-700">{jsonHint(upserting.settingsText)}</p>
+                  {jsonHint(t, upserting.settingsText) ? (
+                    <p className="text-xs text-amber-700">{jsonHint(t, upserting.settingsText)}</p>
                   ) : null}
                 </div>
 
                 <div className="space-y-1 md:col-span-2">
                   <Label className="text-sm text-slate-700" htmlFor="inb-tls">
-                    tls_settings（JSON，可选）
+                    {t("inbounds.tlsSettings")}
                   </Label>
                   <Textarea
                     id="inb-tls"
@@ -457,15 +472,16 @@ export function InboundsPage() {
                     }
                     rows={5}
                     className="font-mono text-xs"
+                    placeholder={t("inbounds.tlsSettingsPlaceholder")}
                   />
-                  {upserting.tlsText.trim() && jsonHint(upserting.tlsText) ? (
-                    <p className="text-xs text-amber-700">{jsonHint(upserting.tlsText)}</p>
+                  {upserting.tlsText.trim() && jsonHint(t, upserting.tlsText) ? (
+                    <p className="text-xs text-amber-700">{jsonHint(t, upserting.tlsText)}</p>
                   ) : null}
                 </div>
 
                 <div className="space-y-1 md:col-span-2">
                   <Label className="text-sm text-slate-700" htmlFor="inb-transport">
-                    transport_settings（JSON，可选）
+                    {t("inbounds.transportSettings")}
                   </Label>
                   <Textarea
                     id="inb-transport"
@@ -475,9 +491,10 @@ export function InboundsPage() {
                     }
                     rows={5}
                     className="font-mono text-xs"
+                    placeholder={t("inbounds.transportSettingsPlaceholder")}
                   />
-                  {upserting.transportText.trim() && jsonHint(upserting.transportText) ? (
-                    <p className="text-xs text-amber-700">{jsonHint(upserting.transportText)}</p>
+                  {upserting.transportText.trim() && jsonHint(t, upserting.transportText) ? (
+                    <p className="text-xs text-amber-700">{jsonHint(t, upserting.transportText)}</p>
                   ) : null}
                 </div>
 
@@ -487,7 +504,7 @@ export function InboundsPage() {
                       ? createMutation.error.message
                       : updateMutation.error instanceof ApiError
                         ? updateMutation.error.message
-                        : "保存失败")
+                        : t("inbounds.saveFailed"))
                   ) : null}
                 </div>
               </div>
@@ -499,7 +516,7 @@ export function InboundsPage() {
                 onClick={() => setUpserting(null)}
                 disabled={createMutation.isPending || updateMutation.isPending}
               >
-                取消
+                {t("common.cancel")}
               </Button>
               <Button
                 onClick={() => {
@@ -538,7 +555,7 @@ export function InboundsPage() {
                 }}
                 disabled={createMutation.isPending || updateMutation.isPending}
               >
-                保存
+                {t("common.save")}
               </Button>
             </DialogFooter>
           </DialogContent>
