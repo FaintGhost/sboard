@@ -61,6 +61,18 @@ const defaultNewInbound: Inbound = {
 
 const protocolOptions = ["vless", "vmess", "trojan", "shadowsocks"] as const
 
+const shadowsocksMethods = [
+  { value: "2022-blake3-aes-128-gcm", keyLength: 16 },
+  { value: "2022-blake3-aes-256-gcm", keyLength: 32 },
+  { value: "2022-blake3-chacha20-poly1305", keyLength: 32 },
+  { value: "none", keyLength: null },
+  { value: "aes-128-gcm", keyLength: null },
+  { value: "aes-192-gcm", keyLength: null },
+  { value: "aes-256-gcm", keyLength: null },
+  { value: "chacha20-ietf-poly1305", keyLength: null },
+  { value: "xchacha20-ietf-poly1305", keyLength: null },
+] as const
+
 function nodeName(nodes: Node[] | undefined, id: number): string {
   if (!nodes) return String(id)
   const n = nodes.find((x) => x.id === id)
@@ -80,6 +92,26 @@ function normalizeJSON(input: string): { ok: true; value: unknown } | { ok: fals
 function jsonHint(input: string): string | null {
   const out = normalizeJSON(input)
   return out.ok ? null : out.message
+}
+
+function getObjectFromJSONText(input: string): { ok: true; value: Record<string, unknown> } | { ok: false } {
+  const out = normalizeJSON(input)
+  if (!out.ok) return { ok: false }
+  if (!out.value || typeof out.value !== "object" || Array.isArray(out.value)) return { ok: true, value: {} }
+  return { ok: true, value: out.value as Record<string, unknown> }
+}
+
+function getShadowsocksMethod(settingsText: string): string | null {
+  const obj = getObjectFromJSONText(settingsText)
+  if (!obj.ok) return null
+  const method = obj.value.method
+  return typeof method === "string" ? method : null
+}
+
+function setShadowsocksMethod(settingsText: string, method: string): string {
+  const obj = getObjectFromJSONText(settingsText)
+  const next = obj.ok ? { ...obj.value, method } : { method }
+  return JSON.stringify(next, null, 2)
 }
 
 export function InboundsPage() {
@@ -327,6 +359,37 @@ export function InboundsPage() {
                   </Select>
                 </div>
 
+                {upserting.protocol === "shadowsocks" ? (
+                  <div className="space-y-1 md:col-span-2">
+                    <Label className="text-sm text-slate-700">加密方法（method）</Label>
+                    <Select
+                      value={getShadowsocksMethod(upserting.settingsText) ?? ""}
+                      onValueChange={(v) =>
+                        setUpserting((p) =>
+                          p ? { ...p, settingsText: setShadowsocksMethod(p.settingsText, v) } : p,
+                        )
+                      }
+                    >
+                      <SelectTrigger aria-label="选择 shadowsocks method">
+                        <SelectValue placeholder="请选择 method（必填）" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {shadowsocksMethods.map((m) => (
+                          <SelectItem key={m.value} value={m.value}>
+                            {m.keyLength ? `${m.value} (${m.keyLength})` : m.value}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-slate-500">
+                      说明：括号内是 key length；没有标注则按 sing-box 默认规则处理。
+                    </p>
+                    {!getShadowsocksMethod(upserting.settingsText)?.trim() ? (
+                      <p className="text-xs text-amber-700">method 必填，否则节点同步会失败。</p>
+                    ) : null}
+                  </div>
+                ) : null}
+
                 <div className="space-y-1">
                   <Label className="text-sm text-slate-700" htmlFor="inb-listen">
                     监听端口（listen_port）
@@ -447,6 +510,10 @@ export function InboundsPage() {
 
                   const settings = normalizeJSON(upserting.settingsText)
                   if (!settings.ok) return
+                  if (protocol === "shadowsocks") {
+                    const method = getShadowsocksMethod(upserting.settingsText)
+                    if (!method || !method.trim()) return
+                  }
                   const tls = normalizeJSON(upserting.tlsText)
                   if (!tls.ok) return
                   const transport = normalizeJSON(upserting.transportText)

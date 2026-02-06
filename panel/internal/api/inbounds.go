@@ -8,6 +8,7 @@ import (
   "strings"
 
   "sboard/panel/internal/db"
+  inbval "sboard/panel/internal/inbounds"
   "github.com/gin-gonic/gin"
 )
 
@@ -71,7 +72,7 @@ func InboundsCreate(store *db.Store) gin.HandlerFunc {
       c.JSON(http.StatusBadRequest, gin.H{"error": "invalid settings"})
       return
     }
-    if err := validateInboundSettings(proto, settingsMap); err != nil {
+    if err := inbval.ValidateSettings(proto, settingsMap); err != nil {
       c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
       return
     }
@@ -266,7 +267,7 @@ func InboundsUpdate(store *db.Store) gin.HandlerFunc {
       c.JSON(http.StatusBadRequest, gin.H{"error": "invalid settings"})
       return
     }
-    if err := validateInboundSettings(finalProto, settingsMap); err != nil {
+    if err := inbval.ValidateSettings(finalProto, settingsMap); err != nil {
       c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
       return
     }
@@ -329,20 +330,6 @@ func InboundsDelete(store *db.Store) gin.HandlerFunc {
     sync := trySyncNode(c.Request.Context(), store, n)
     c.JSON(http.StatusOK, gin.H{"status": "ok", "sync": sync})
   }
-}
-
-func validateInboundSettings(protocol string, settings map[string]any) error {
-  p := strings.TrimSpace(strings.ToLower(protocol))
-  switch p {
-  case "shadowsocks":
-    // sing-box requires a non-empty method for shadowsocks inbounds.
-    method, _ := settings["method"].(string)
-    if strings.TrimSpace(method) == "" {
-      return errors.New("shadowsocks settings.method required")
-    }
-  default:
-  }
-  return nil
 }
 
 func toInboundDTO(inb db.Inbound) inboundDTO {
