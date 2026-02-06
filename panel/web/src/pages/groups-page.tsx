@@ -1,8 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
+import { MoreHorizontal, Pencil, Trash2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Dialog,
   DialogContent,
@@ -11,8 +13,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   Table,
   TableBody,
@@ -77,20 +87,10 @@ export function GroupsPage() {
   return (
     <div className="px-4 lg:px-6">
       <section className="space-y-6">
-        <header className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
-            {t("groups.title")}
-          </h1>
-          <p className="text-sm text-slate-500">
-            {t("groups.hint")}
-          </p>
-        </header>
-
-        <div className="flex items-center justify-between gap-3">
-          <div className="text-sm text-slate-600">
-            {groupsQuery.isLoading ? t("common.loading") : null}
-            {groupsQuery.isError ? t("common.loadFailed") : null}
-            {groupsQuery.data ? t("groups.count", { count: groupsQuery.data.length }) : null}
+        <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">{t("groups.title")}</h1>
+            <p className="text-sm text-muted-foreground">{t("groups.subtitle")}</p>
           </div>
           <Button
             onClick={() => {
@@ -106,66 +106,104 @@ export function GroupsPage() {
           >
             {t("groups.createGroup")}
           </Button>
-        </div>
+        </header>
 
-        <div className="overflow-hidden rounded-xl border border-slate-200">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="px-4">{t("common.name")}</TableHead>
-                <TableHead className="px-4">{t("common.description")}</TableHead>
-                <TableHead className="px-4">{t("common.actions")}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {groupsQuery.data?.map((g) => (
-                <TableRow key={g.id}>
-                  <TableCell className="px-4 font-medium text-slate-900">
-                    {g.name}
-                  </TableCell>
-                  <TableCell className="px-4 text-slate-700">
-                    {g.description}
-                  </TableCell>
-                  <TableCell className="px-4">
-                    <div className="flex items-center gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          createMutation.reset()
-                          updateMutation.reset()
-                          setUpserting({
-                            mode: "edit",
-                            group: g,
-                            name: g.name,
-                            description: g.description ?? "",
-                          })
-                        }}
-                      >
-                        {t("common.edit")}
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        disabled={deleteMutation.isPending}
-                        onClick={() => deleteMutation.mutate(g.id)}
-                      >
-                        {t("common.delete")}
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {groupsQuery.data && groupsQuery.data.length === 0 ? (
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex flex-col gap-1.5">
+              <CardTitle className="text-base">{t("groups.list")}</CardTitle>
+              <CardDescription>
+                {groupsQuery.isLoading ? t("common.loading") : null}
+                {groupsQuery.isError ? t("common.loadFailed") : null}
+                {groupsQuery.data ? t("groups.count", { count: groupsQuery.data.length }) : null}
+              </CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell className="px-4 py-6 text-slate-500" colSpan={3}>
-                    {t("common.noData")}
-                  </TableCell>
+                  <TableHead className="pl-6">{t("common.name")}</TableHead>
+                  <TableHead>{t("common.description")}</TableHead>
+                  <TableHead className="w-12 pr-6">
+                    <span className="sr-only">{t("common.actions")}</span>
+                  </TableHead>
                 </TableRow>
-              ) : null}
-            </TableBody>
-          </Table>
-        </div>
+              </TableHeader>
+              <TableBody>
+                {groupsQuery.isLoading ? (
+                  <>
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <TableRow key={i}>
+                        <TableCell className="pl-6">
+                          <Skeleton className="h-4 w-28" />
+                        </TableCell>
+                        <TableCell>
+                          <Skeleton className="h-4 w-56" />
+                        </TableCell>
+                        <TableCell className="pr-6">
+                          <Skeleton className="h-8 w-8" />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </>
+                ) : null}
+                {groupsQuery.data?.map((g) => (
+                  <TableRow key={g.id}>
+                    <TableCell className="pl-6 font-medium">{g.name}</TableCell>
+                    <TableCell className="text-muted-foreground">{g.description}</TableCell>
+                    <TableCell className="pr-6">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="size-8">
+                            <MoreHorizontal className="size-4" />
+                            <span className="sr-only">{t("common.actions")}</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => {
+                              createMutation.reset()
+                              updateMutation.reset()
+                              setUpserting({
+                                mode: "edit",
+                                group: g,
+                                name: g.name,
+                                description: g.description ?? "",
+                              })
+                            }}
+                          >
+                            <Pencil className="mr-2 size-4" />
+                            {t("common.edit")}
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            variant="destructive"
+                            disabled={deleteMutation.isPending}
+                            onClick={() => deleteMutation.mutate(g.id)}
+                          >
+                            <Trash2 className="mr-2 size-4" />
+                            {t("common.delete")}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {!groupsQuery.isLoading && groupsQuery.data && groupsQuery.data.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      className="pl-6 py-8 text-center text-muted-foreground"
+                      colSpan={3}
+                    >
+                      {t("common.noData")}
+                    </TableCell>
+                  </TableRow>
+                ) : null}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
 
         <Dialog
           open={!!upserting}

@@ -1,8 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
+import { MoreHorizontal, Pencil, Trash2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Dialog,
   DialogContent,
@@ -11,6 +13,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
@@ -29,6 +38,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Textarea } from "@/components/ui/textarea"
+import { Skeleton } from "@/components/ui/skeleton"
 import { ApiError } from "@/lib/api/client"
 import { createInbound, deleteInbound, listInbounds, updateInbound } from "@/lib/api/inbounds"
 import { listNodes } from "@/lib/api/nodes"
@@ -165,34 +175,10 @@ export function InboundsPage() {
   return (
     <div className="px-4 lg:px-6">
       <section className="space-y-6">
-        <header className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
-            {t("inbounds.title")}
-          </h1>
-          <p className="text-sm text-slate-500">
-            {t("inbounds.hint")}
-          </p>
-        </header>
-
-        <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-          <div className="space-y-1">
-            <Label className="text-sm text-slate-700">{t("inbounds.nodeFilter")}</Label>
-            <Select
-              value={nodeFilter === "all" ? "all" : String(nodeFilter)}
-              onValueChange={(v) => setNodeFilter(v === "all" ? "all" : Number(v))}
-            >
-              <SelectTrigger className="w-64" aria-label={t("inbounds.nodeFilter")}>
-                <SelectValue placeholder={t("inbounds.selectNode")} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t("inbounds.allNodes")}</SelectItem>
-                {nodesQuery.data?.map((n) => (
-                  <SelectItem key={n.id} value={String(n.id)}>
-                    {n.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">{t("inbounds.title")}</h1>
+            <p className="text-sm text-muted-foreground">{t("inbounds.subtitle")}</p>
           </div>
           <Button
             onClick={() => {
@@ -217,85 +203,145 @@ export function InboundsPage() {
           >
             {t("inbounds.createInbound")}
           </Button>
-        </div>
+        </header>
 
-        <div className="overflow-hidden rounded-xl border border-slate-200">
-          <div className="border-b border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-600">
-            {inboundsQuery.isLoading ? t("common.loading") : null}
-            {inboundsQuery.isError ? t("common.loadFailed") : null}
-            {inboundsQuery.data ? t("inbounds.count", { count: inboundsQuery.data.length }) : null}
-          </div>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="px-4">{t("inbounds.node")}</TableHead>
-                <TableHead className="px-4">{t("inbounds.tag")}</TableHead>
-                <TableHead className="px-4">{t("inbounds.protocol")}</TableHead>
-                <TableHead className="px-4">{t("inbounds.port")}</TableHead>
-                <TableHead className="px-4">{t("common.actions")}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {inboundsQuery.data?.map((i) => (
-                <TableRow key={i.id}>
-                  <TableCell className="px-4 text-slate-900">
-                    {nodeName(nodesQuery.data, i.node_id)}
-                  </TableCell>
-                  <TableCell className="px-4 font-medium text-slate-900">{i.tag}</TableCell>
-                  <TableCell className="px-4 text-slate-700">{i.protocol}</TableCell>
-                  <TableCell className="px-4 text-slate-700">
-                    {i.public_port > 0
-                      ? `${i.public_port} (${t("inbounds.publicPortShort")})`
-                      : i.listen_port}
-                  </TableCell>
-                  <TableCell className="px-4">
-                    <div className="flex items-center gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          createMutation.reset()
-                          updateMutation.reset()
-                          setUpserting({
-                            mode: "edit",
-                            inbound: i,
-                            nodeID: i.node_id,
-                            tag: i.tag,
-                            protocol: i.protocol,
-                            listenPort: i.listen_port,
-                            publicPort: i.public_port ?? 0,
-                            settingsText: JSON.stringify(i.settings ?? {}, null, 2),
-                            tlsText: i.tls_settings ? JSON.stringify(i.tls_settings, null, 2) : "",
-                            transportText: i.transport_settings
-                              ? JSON.stringify(i.transport_settings, null, 2)
-                              : "",
-                          })
-                        }}
-                      >
-                        {t("common.edit")}
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        disabled={deleteMutation.isPending}
-                        onClick={() => deleteMutation.mutate(i.id)}
-                      >
-                        {t("common.delete")}
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {inboundsQuery.data && inboundsQuery.data.length === 0 ? (
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-col gap-1.5">
+                <CardTitle className="text-base">{t("inbounds.list")}</CardTitle>
+                <CardDescription>
+                  {inboundsQuery.isLoading ? t("common.loading") : null}
+                  {inboundsQuery.isError ? t("common.loadFailed") : null}
+                  {inboundsQuery.data ? t("inbounds.count", { count: inboundsQuery.data.length }) : null}
+                </CardDescription>
+              </div>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <Select
+                  value={nodeFilter === "all" ? "all" : String(nodeFilter)}
+                  onValueChange={(v) => setNodeFilter(v === "all" ? "all" : Number(v))}
+                >
+                  <SelectTrigger className="w-full sm:w-56" aria-label={t("inbounds.nodeFilter")}>
+                    <SelectValue placeholder={t("inbounds.selectNode")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t("inbounds.allNodes")}</SelectItem>
+                    {nodesQuery.data?.map((n) => (
+                      <SelectItem key={n.id} value={String(n.id)}>
+                        {n.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell className="px-4 py-6 text-slate-500" colSpan={5}>
-                    {t("common.noData")}
-                  </TableCell>
+                  <TableHead className="pl-6">{t("inbounds.node")}</TableHead>
+                  <TableHead>{t("inbounds.tag")}</TableHead>
+                  <TableHead>{t("inbounds.protocol")}</TableHead>
+                  <TableHead>{t("inbounds.port")}</TableHead>
+                  <TableHead className="w-12 pr-6">
+                    <span className="sr-only">{t("common.actions")}</span>
+                  </TableHead>
                 </TableRow>
-              ) : null}
-            </TableBody>
-          </Table>
-        </div>
+              </TableHeader>
+              <TableBody>
+                {inboundsQuery.isLoading ? (
+                  <>
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <TableRow key={i}>
+                        <TableCell className="pl-6">
+                          <Skeleton className="h-4 w-28" />
+                        </TableCell>
+                        <TableCell>
+                          <Skeleton className="h-4 w-28" />
+                        </TableCell>
+                        <TableCell>
+                          <Skeleton className="h-4 w-24" />
+                        </TableCell>
+                        <TableCell>
+                          <Skeleton className="h-4 w-20" />
+                        </TableCell>
+                        <TableCell className="pr-6">
+                          <Skeleton className="h-8 w-8" />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </>
+                ) : null}
+                {inboundsQuery.data?.map((i) => (
+                  <TableRow key={i.id}>
+                    <TableCell className="pl-6 font-medium">
+                      {nodeName(nodesQuery.data, i.node_id)}
+                    </TableCell>
+                    <TableCell className="font-medium">{i.tag}</TableCell>
+                    <TableCell className="text-muted-foreground">{i.protocol}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {i.public_port > 0
+                        ? `${i.public_port} (${t("inbounds.publicPortShort")})`
+                        : i.listen_port}
+                    </TableCell>
+                    <TableCell className="pr-6">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="size-8">
+                            <MoreHorizontal className="size-4" />
+                            <span className="sr-only">{t("common.actions")}</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => {
+                              createMutation.reset()
+                              updateMutation.reset()
+                              setUpserting({
+                                mode: "edit",
+                                inbound: i,
+                                nodeID: i.node_id,
+                                tag: i.tag,
+                                protocol: i.protocol,
+                                listenPort: i.listen_port,
+                                publicPort: i.public_port ?? 0,
+                                settingsText: JSON.stringify(i.settings ?? {}, null, 2),
+                                tlsText: i.tls_settings ? JSON.stringify(i.tls_settings, null, 2) : "",
+                                transportText: i.transport_settings
+                                  ? JSON.stringify(i.transport_settings, null, 2)
+                                  : "",
+                              })
+                            }}
+                          >
+                            <Pencil className="mr-2 size-4" />
+                            {t("common.edit")}
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            variant="destructive"
+                            disabled={deleteMutation.isPending}
+                            onClick={() => deleteMutation.mutate(i.id)}
+                          >
+                            <Trash2 className="mr-2 size-4" />
+                            {t("common.delete")}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {!inboundsQuery.isLoading && inboundsQuery.data && inboundsQuery.data.length === 0 ? (
+                  <TableRow>
+                    <TableCell className="pl-6 py-8 text-center text-muted-foreground" colSpan={5}>
+                      {t("common.noData")}
+                    </TableCell>
+                  </TableRow>
+                ) : null}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
 
         <Dialog open={!!upserting} onOpenChange={(open) => (!open ? setUpserting(null) : null)}>
           <DialogContent

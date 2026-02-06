@@ -1,8 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
+import { MoreHorizontal, Pencil, RefreshCw, Stethoscope, Trash2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Dialog,
   DialogContent,
@@ -11,6 +13,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
@@ -28,6 +37,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { Skeleton } from "@/components/ui/skeleton"
 import { ApiError } from "@/lib/api/client"
 import { listGroups } from "@/lib/api/groups"
 import { createNode, deleteNode, listNodes, nodeHealth, nodeSync, updateNode } from "@/lib/api/nodes"
@@ -118,21 +128,10 @@ export function NodesPage() {
   return (
     <div className="px-4 lg:px-6">
       <section className="space-y-6">
-        <header className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
-            {t("nodes.title")}
-          </h1>
-          <p className="text-sm text-slate-500">
-            {t("nodes.hint")}
-          </p>
-        </header>
-
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div className="text-sm text-slate-600">
-            {nodesQuery.isLoading ? t("common.loading") : null}
-            {nodesQuery.isError ? t("common.loadFailed") : null}
-            {nodesQuery.data ? t("nodes.count", { count: nodesQuery.data.length }) : null}
-            {actionMessage ? <span className="ml-3 text-slate-500">{actionMessage}</span> : null}
+        <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">{t("nodes.title")}</h1>
+            <p className="text-sm text-muted-foreground">{t("nodes.subtitle")}</p>
           </div>
           <Button
             onClick={() => {
@@ -153,91 +152,135 @@ export function NodesPage() {
           >
             {t("nodes.createNode")}
           </Button>
-        </div>
+        </header>
 
-        <div className="overflow-hidden rounded-xl border border-slate-200">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="px-4">{t("nodes.name")}</TableHead>
-                <TableHead className="px-4">{t("nodes.group")}</TableHead>
-                <TableHead className="px-4">{t("nodes.apiAddress")}</TableHead>
-                <TableHead className="px-4">{t("nodes.publicAddress")}</TableHead>
-                <TableHead className="px-4">{t("common.actions")}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {nodesQuery.data?.map((n) => (
-                <TableRow key={n.id}>
-                  <TableCell className="px-4 font-medium text-slate-900">{n.name}</TableCell>
-                  <TableCell className="px-4 text-slate-700">
-                    {groupName(groupsQuery.data, n.group_id)}
-                  </TableCell>
-                  <TableCell className="px-4 text-slate-700">
-                    {n.api_address}:{n.api_port}
-                  </TableCell>
-                  <TableCell className="px-4 text-slate-700">{n.public_address}</TableCell>
-                  <TableCell className="px-4">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setActionMessage(null)
-                          createMutation.reset()
-                          updateMutation.reset()
-                          setUpserting({
-                            mode: "edit",
-                            node: n,
-                            name: n.name,
-                            apiAddress: n.api_address,
-                            apiPort: n.api_port,
-                            secretKey: n.secret_key,
-                            publicAddress: n.public_address,
-                            groupID: n.group_id,
-                          })
-                        }}
-                      >
-                        {t("common.edit")}
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        disabled={healthMutation.isPending}
-                        onClick={() => healthMutation.mutate(n.id)}
-                      >
-                        {t("nodes.health")}
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        disabled={syncMutation.isPending}
-                        onClick={() => syncMutation.mutate(n.id)}
-                      >
-                        {t("nodes.sync")}
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        disabled={deleteMutation.isPending}
-                        onClick={() => deleteMutation.mutate(n.id)}
-                      >
-                        {t("common.delete")}
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {nodesQuery.data && nodesQuery.data.length === 0 ? (
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex flex-col gap-1.5">
+              <CardTitle className="text-base">{t("nodes.list")}</CardTitle>
+              <CardDescription>
+                {nodesQuery.isLoading ? t("common.loading") : null}
+                {nodesQuery.isError ? t("common.loadFailed") : null}
+                {nodesQuery.data ? t("nodes.count", { count: nodesQuery.data.length }) : null}
+                {actionMessage ? <span className="ml-3">{actionMessage}</span> : null}
+              </CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell className="px-4 py-6 text-slate-500" colSpan={5}>
-                    {t("common.noData")}
-                  </TableCell>
+                  <TableHead className="pl-6">{t("nodes.name")}</TableHead>
+                  <TableHead>{t("nodes.group")}</TableHead>
+                  <TableHead>{t("nodes.apiAddress")}</TableHead>
+                  <TableHead>{t("nodes.publicAddress")}</TableHead>
+                  <TableHead className="w-12 pr-6">
+                    <span className="sr-only">{t("common.actions")}</span>
+                  </TableHead>
                 </TableRow>
-              ) : null}
-            </TableBody>
-          </Table>
-        </div>
+              </TableHeader>
+              <TableBody>
+                {nodesQuery.isLoading ? (
+                  <>
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <TableRow key={i}>
+                        <TableCell className="pl-6">
+                          <Skeleton className="h-4 w-28" />
+                        </TableCell>
+                        <TableCell>
+                          <Skeleton className="h-4 w-24" />
+                        </TableCell>
+                        <TableCell>
+                          <Skeleton className="h-4 w-40" />
+                        </TableCell>
+                        <TableCell>
+                          <Skeleton className="h-4 w-40" />
+                        </TableCell>
+                        <TableCell className="pr-6">
+                          <Skeleton className="h-8 w-8" />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </>
+                ) : null}
+                {nodesQuery.data?.map((n) => (
+                  <TableRow key={n.id}>
+                    <TableCell className="pl-6 font-medium">{n.name}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {groupName(groupsQuery.data, n.group_id)}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {n.api_address}:{n.api_port}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">{n.public_address}</TableCell>
+                    <TableCell className="pr-6">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="size-8">
+                            <MoreHorizontal className="size-4" />
+                            <span className="sr-only">{t("common.actions")}</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setActionMessage(null)
+                              createMutation.reset()
+                              updateMutation.reset()
+                              setUpserting({
+                                mode: "edit",
+                                node: n,
+                                name: n.name,
+                                apiAddress: n.api_address,
+                                apiPort: n.api_port,
+                                secretKey: n.secret_key,
+                                publicAddress: n.public_address,
+                                groupID: n.group_id,
+                              })
+                            }}
+                          >
+                            <Pencil className="mr-2 size-4" />
+                            {t("common.edit")}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            disabled={healthMutation.isPending}
+                            onClick={() => healthMutation.mutate(n.id)}
+                          >
+                            <Stethoscope className="mr-2 size-4" />
+                            {t("nodes.health")}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            disabled={syncMutation.isPending}
+                            onClick={() => syncMutation.mutate(n.id)}
+                          >
+                            <RefreshCw className="mr-2 size-4" />
+                            {t("nodes.sync")}
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            variant="destructive"
+                            disabled={deleteMutation.isPending}
+                            onClick={() => deleteMutation.mutate(n.id)}
+                          >
+                            <Trash2 className="mr-2 size-4" />
+                            {t("common.delete")}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {!nodesQuery.isLoading && nodesQuery.data && nodesQuery.data.length === 0 ? (
+                  <TableRow>
+                    <TableCell className="pl-6 py-8 text-center text-muted-foreground" colSpan={5}>
+                      {t("common.noData")}
+                    </TableCell>
+                  </TableRow>
+                ) : null}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
 
         <Dialog open={!!upserting} onOpenChange={(open) => (!open ? setUpserting(null) : null)}>
           <DialogContent
