@@ -36,6 +36,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   libsqlite3-0 \
   && rm -rf /var/lib/apt/lists/*
 COPY --from=builder /out/sboard-panel /app/sboard-panel
+# The binary expects migrations at `internal/db/migrations`.
+COPY --from=builder /src/internal/db/migrations /app/internal/db/migrations
 COPY --from=web /web/dist /app/web/dist
 
 ENV PANEL_HTTP_ADDR=:8080
