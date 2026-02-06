@@ -11,6 +11,13 @@ FROM golang:1.25 AS builder
 WORKDIR /src
 COPY go.mod ./
 
+# Panel uses github.com/mattn/go-sqlite3 which requires CGO.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+  gcc \
+  libc6-dev \
+  libsqlite3-dev \
+  && rm -rf /var/lib/apt/lists/*
+
 # The repo does not necessarily ship with go.sum (fresh clone / early stage),
 # so we must allow the image build to generate a complete go.sum on the fly.
 # Some environments also set GOFLAGS=-mod=readonly; use -mod=mod explicitly.
@@ -19,11 +26,15 @@ COPY . .
 
 # `go mod tidy` does not accept `-mod=...`. Also avoid inheriting GOFLAGS=-mod=readonly.
 RUN GOFLAGS= go mod tidy
-RUN CGO_ENABLED=0 go build -mod=mod -trimpath -ldflags "-s -w" -o /out/sboard-panel ./cmd/panel
+RUN CGO_ENABLED=1 go build -mod=mod -trimpath -ldflags "-s -w" -o /out/sboard-panel ./cmd/panel
 
 FROM debian:stable-slim
 
 WORKDIR /app
+RUN apt-get update && apt-get install -y --no-install-recommends \
+  ca-certificates \
+  libsqlite3-0 \
+  && rm -rf /var/lib/apt/lists/*
 COPY --from=builder /out/sboard-panel /app/sboard-panel
 COPY --from=web /web/dist /app/web/dist
 
