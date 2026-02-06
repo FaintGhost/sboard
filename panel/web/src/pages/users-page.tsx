@@ -1,10 +1,39 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useMemo, useState } from "react"
+import { format } from "date-fns"
 
 import { Button } from "@/components/ui/button"
+import { Calendar } from "@/components/ui/calendar"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import { ApiError } from "@/lib/api/client"
-import { createUser, disableUser, listUsers, updateUser } from "@/lib/api/users"
+import { createUser, listUsers, updateUser } from "@/lib/api/users"
 import type { User, UserStatus } from "@/lib/api/types"
+import { bytesToGBString, gbStringToBytes, rfc3339FromDateOnlyUTC } from "@/lib/units"
 
 type StatusFilter = UserStatus | "all"
 
@@ -24,19 +53,31 @@ const editableStatusOptions: Array<{ value: UserStatus; label: string }> = [
 ]
 
 type EditState = {
+  mode: "create" | "edit"
   user: User
+  username: string
   status: UserStatus
   trafficLimit: string
-  trafficResetDay: string
-  expireAt: string
+  trafficResetDay: number
+  expireDate: Date | null
   clearExpireAt: boolean
+}
+
+const defaultNewUser: User = {
+  id: 0,
+  uuid: "",
+  username: "",
+  traffic_limit: 0,
+  traffic_used: 0,
+  traffic_reset_day: 0,
+  expire_at: null,
+  status: "active",
 }
 
 export function UsersPage() {
   const qc = useQueryClient()
   const [status, setStatus] = useState<StatusFilter>("all")
-  const [newUsername, setNewUsername] = useState("")
-  const [editing, setEditing] = useState<EditState | null>(null)
+  const [upserting, setUpserting] = useState<EditState | null>(null)
 
   const queryParams = useMemo(
     () => ({
@@ -55,21 +96,7 @@ export function UsersPage() {
   const createMutation = useMutation({
     mutationFn: createUser,
     onSuccess: async () => {
-      setNewUsername("")
-      await qc.invalidateQueries({ queryKey: ["users"] })
-    },
-  })
-
-  const disableMutation = useMutation({
-    mutationFn: disableUser,
-    onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey: ["users"] })
-    },
-  })
-
-  const enableMutation = useMutation({
-    mutationFn: (id: number) => updateUser(id, { status: "active" }),
-    onSuccess: async () => {
+      setUpserting(null)
       await qc.invalidateQueries({ queryKey: ["users"] })
     },
   })
@@ -78,13 +105,14 @@ export function UsersPage() {
     mutationFn: (input: { id: number; payload: Record<string, unknown> }) =>
       updateUser(input.id, input.payload),
     onSuccess: async () => {
-      setEditing(null)
+      setUpserting(null)
       await qc.invalidateQueries({ queryKey: ["users"] })
     },
   })
 
   return (
-    <section className="space-y-6">
+    <div className="px-4 lg:px-6">
+      <section className="space-y-6">
       <header className="space-y-1">
         <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
           用户管理
@@ -96,54 +124,43 @@ export function UsersPage() {
 
       <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div className="space-y-1">
-          <label className="text-sm text-slate-700" htmlFor="status">
-            状态筛选
-          </label>
-          <select
-            id="status"
-            className="h-10 w-56 rounded-md border border-slate-300 bg-white px-3 text-sm outline-none focus:border-slate-500"
+          <Label className="text-sm text-slate-700">状态筛选</Label>
+          <Select
             value={status}
-            onChange={(e) => setStatus(e.target.value as StatusFilter)}
+            onValueChange={(value) => setStatus(value as StatusFilter)}
           >
-            {statusOptions.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger className="w-56" aria-label="状态筛选">
+              <SelectValue placeholder="选择状态" />
+            </SelectTrigger>
+            <SelectContent>
+              {statusOptions.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
-        <div className="flex flex-col gap-2 md:flex-row md:items-end">
-          <div className="space-y-1">
-            <label className="text-sm text-slate-700" htmlFor="username">
-              新建用户（username）
-            </label>
-            <input
-              id="username"
-              className="h-10 w-64 rounded-md border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
-              value={newUsername}
-              onChange={(e) => setNewUsername(e.target.value)}
-              placeholder="例如 alice"
-            />
-          </div>
-          <Button
-            onClick={() =>
-              createMutation.mutate({ username: newUsername.trim() })
-            }
-            disabled={!newUsername.trim() || createMutation.isPending}
-          >
-            {createMutation.isPending ? "创建中..." : "创建用户"}
-          </Button>
-        </div>
+        <Button
+          onClick={() => {
+            createMutation.reset()
+            updateMutation.reset()
+            setUpserting({
+              mode: "create",
+              user: defaultNewUser,
+              username: "",
+              status: "active",
+              trafficLimit: "0",
+              trafficResetDay: 0,
+              expireDate: null,
+              clearExpireAt: false,
+            })
+          }}
+        >
+          创建用户
+        </Button>
       </div>
-
-      {createMutation.isError ? (
-        <p className="text-sm text-red-600">
-          {createMutation.error instanceof ApiError
-            ? createMutation.error.message
-            : "创建失败"}
-        </p>
-      ) : null}
 
       <div className="overflow-hidden rounded-xl border border-slate-200">
         <div className="border-b border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-600">
@@ -152,238 +169,319 @@ export function UsersPage() {
           {usersQuery.data ? `共 ${usersQuery.data.length} 个用户` : null}
         </div>
 
-        <table className="w-full text-left text-sm">
-          <thead className="bg-white">
-            <tr className="border-b border-slate-200">
-              <th className="px-4 py-3 font-medium text-slate-700">username</th>
-              <th className="px-4 py-3 font-medium text-slate-700">uuid</th>
-              <th className="px-4 py-3 font-medium text-slate-700">status</th>
-              <th className="px-4 py-3 font-medium text-slate-700">action</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="px-4">username</TableHead>
+              <TableHead className="px-4">status</TableHead>
+              <TableHead className="px-4">action</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {usersQuery.data?.map((u) => (
-              <tr key={u.id} className="border-b border-slate-100">
-                <td className="px-4 py-3 text-slate-900">{u.username}</td>
-                <td className="px-4 py-3 font-mono text-xs text-slate-600">
-                  {u.uuid}
-                </td>
-                <td className="px-4 py-3 text-slate-700">{u.status}</td>
-                <td className="px-4 py-3">
+              <TableRow key={u.id}>
+                <TableCell className="px-4 text-slate-900">
+                  {u.username}
+                </TableCell>
+                <TableCell className="px-4 text-slate-700">{u.status}</TableCell>
+                <TableCell className="px-4">
                   <div className="flex items-center gap-2">
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => {
-                        setEditing({
+                        const parsedExpire =
+                          u.expire_at && !Number.isNaN(Date.parse(u.expire_at))
+                            ? new Date(u.expire_at)
+                            : null
+                        createMutation.reset()
+                        updateMutation.reset()
+                        setUpserting({
+                          mode: "edit",
                           user: u,
+                          username: u.username,
                           status: u.status,
-                          trafficLimit: String(u.traffic_limit ?? 0),
-                          trafficResetDay: String(u.traffic_reset_day ?? 0),
-                          expireAt: u.expire_at ?? "",
+                          trafficLimit: bytesToGBString(u.traffic_limit ?? 0),
+                          trafficResetDay: u.traffic_reset_day ?? 0,
+                          expireDate: parsedExpire,
                           clearExpireAt: false,
                         })
                       }}
                     >
                       编辑
                     </Button>
-                    {u.status === "disabled" ? (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => enableMutation.mutate(u.id)}
-                        disabled={enableMutation.isPending}
-                      >
-                        启用
-                      </Button>
-                    ) : (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          if (!confirm(`禁用用户 ${u.username} ?`)) return
-                          disableMutation.mutate(u.id)
-                        }}
-                        disabled={disableMutation.isPending}
-                      >
-                        禁用
-                      </Button>
-                    )}
                   </div>
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ))}
             {usersQuery.data && usersQuery.data.length === 0 ? (
-              <tr>
-                <td className="px-4 py-6 text-slate-500" colSpan={4}>
+              <TableRow>
+                <TableCell className="px-4 py-6 text-slate-500" colSpan={3}>
                   暂无数据
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ) : null}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
 
-      {editing ? (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center bg-black/40 px-6"
-          role="dialog"
-          aria-modal="true"
-          aria-label="编辑用户"
-        >
-          <div className="w-full max-w-xl rounded-2xl border border-slate-200 bg-white p-6 shadow-xl">
-            <div className="flex items-start justify-between gap-4">
-              <div className="space-y-1">
-                <h2 className="text-lg font-semibold text-slate-900">编辑用户</h2>
-                <p className="text-sm text-slate-500">
-                  {editing.user.username} ({editing.user.uuid})
-                </p>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setEditing(null)}
-              >
-                关闭
-              </Button>
-            </div>
+      <Dialog
+        open={!!upserting}
+        onOpenChange={(open) => (!open ? setUpserting(null) : null)}
+      >
+        <DialogContent aria-label={upserting?.mode === "create" ? "创建用户" : "编辑用户"}>
+          <DialogHeader>
+            <DialogTitle>
+              {upserting?.mode === "create" ? "创建用户" : "编辑用户"}
+            </DialogTitle>
+            {upserting?.mode === "edit" ? (
+              <DialogDescription>
+                {upserting.user.username}
+              </DialogDescription>
+            ) : null}
+          </DialogHeader>
 
-            <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="space-y-1">
-                <label className="text-sm text-slate-700" htmlFor="edit-status">
-                  状态
-                </label>
-                <select
-                  id="edit-status"
-                  className="h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none focus:border-slate-500"
-                  value={editing.status}
+          {upserting ? (
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="space-y-1 md:col-span-2">
+                <Label className="text-sm text-slate-700" htmlFor="edit-username">
+                  用户名（username）
+                </Label>
+                <Input
+                  id="edit-username"
+                  value={upserting.username}
                   onChange={(e) =>
-                    setEditing((prev) =>
-                      prev
-                        ? { ...prev, status: e.target.value as UserStatus }
-                        : prev,
+                    setUpserting((prev) =>
+                      prev ? { ...prev, username: e.target.value } : prev,
                     )
                   }
-                >
-                  {editableStatusOptions.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="space-y-1">
-                <label
-                  className="text-sm text-slate-700"
-                  htmlFor="edit-traffic-limit"
-                >
-                  流量上限
-                </label>
-                <input
-                  id="edit-traffic-limit"
-                  inputMode="numeric"
-                  className="h-10 w-full rounded-md border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
-                  value={editing.trafficLimit}
-                  onChange={(e) =>
-                    setEditing((prev) =>
-                      prev ? { ...prev, trafficLimit: e.target.value } : prev,
-                    )
-                  }
+                  placeholder="例如 alice"
+                  autoFocus={upserting.mode === "create"}
                 />
               </div>
 
+              {upserting.mode === "edit" ? (
+                <>
               <div className="space-y-1">
-                <label
-                  className="text-sm text-slate-700"
-                  htmlFor="edit-traffic-reset-day"
+                <Label className="text-sm text-slate-700">状态</Label>
+                <Select
+                  value={upserting.status}
+                  onValueChange={(value) =>
+                    setUpserting((prev) =>
+                      prev ? { ...prev, status: value as UserStatus } : prev,
+                    )
+                  }
                 >
+                  <SelectTrigger className="w-full" aria-label="状态">
+                    <SelectValue placeholder="选择状态" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {editableStatusOptions.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-sm text-slate-700" htmlFor="edit-traffic-limit">
+                  流量上限（GB）
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="edit-traffic-limit"
+                    inputMode="decimal"
+                    value={upserting.trafficLimit}
+                    onChange={(e) =>
+                      setUpserting((prev) =>
+                        prev ? { ...prev, trafficLimit: e.target.value } : prev,
+                      )
+                    }
+                    className="pr-12"
+                    aria-label="流量上限"
+                  />
+                  <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">
+                    GB
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500">0 表示不限流量。</p>
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-sm text-slate-700" htmlFor="edit-traffic-reset-day">
                   重置日
-                </label>
-                <input
+                </Label>
+                <Input
                   id="edit-traffic-reset-day"
+                  type="number"
+                  min={0}
+                  max={31}
+                  step={1}
                   inputMode="numeric"
-                  className="h-10 w-full rounded-md border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
-                  value={editing.trafficResetDay}
-                  onChange={(e) =>
-                    setEditing((prev) =>
+                  value={String(upserting.trafficResetDay)}
+                  onChange={(e) => {
+                    const v = Number(e.target.value)
+                    setUpserting((prev) =>
                       prev
-                        ? { ...prev, trafficResetDay: e.target.value }
+                        ? {
+                            ...prev,
+                            trafficResetDay: Number.isFinite(v) ? v : 0,
+                          }
                         : prev,
                     )
+                  }}
+                  onBlur={() =>
+                    setUpserting((prev) => {
+                      if (!prev) return prev
+                      const v = Math.trunc(prev.trafficResetDay)
+                      const clamped = Math.min(31, Math.max(0, v))
+                      return { ...prev, trafficResetDay: clamped }
+                    })
                   }
+                  aria-label="重置日"
                 />
+                <p className="text-xs text-slate-500">
+                  取值范围 0-31。0 表示不自动重置。若填写 29/30/31 且当月无该日期，则按当月最后一天计算。
+                </p>
               </div>
 
               <div className="space-y-1 md:col-span-2">
-                <label className="text-sm text-slate-700" htmlFor="edit-expire">
-                  到期时间（RFC3339）
-                </label>
-                <input
-                  id="edit-expire"
-                  className="h-10 w-full rounded-md border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
-                  value={editing.expireAt}
-                  onChange={(e) =>
-                    setEditing((prev) =>
-                      prev ? { ...prev, expireAt: e.target.value } : prev,
-                    )
-                  }
-                  placeholder="例如 2026-02-06T12:00:00Z"
-                />
-                <label className="mt-2 flex items-center gap-2 text-sm text-slate-600">
-                  <input
-                    type="checkbox"
-                    checked={editing.clearExpireAt}
-                    onChange={(e) =>
-                      setEditing((prev) =>
+                <Label className="text-sm text-slate-700" htmlFor="edit-expire">
+                  到期日期
+                </Label>
+                <div className="flex flex-col gap-2 md:flex-row md:items-center">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        id="edit-expire"
+                        variant="outline"
+                        className="w-full justify-start font-normal md:flex-1"
+                      >
+                        {upserting.expireDate ? (
+                          format(upserting.expireDate, "yyyy-MM-dd")
+                        ) : (
+                          <span className="text-slate-500">选择日期</span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={upserting.expireDate ?? undefined}
+                        onSelect={(date) =>
+                          setUpserting((prev) =>
+                            prev
+                              ? {
+                                  ...prev,
+                                  expireDate: date ?? null,
+                                  clearExpireAt: false,
+                                }
+                              : prev,
+                          )
+                        }
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="md:w-24"
+                    onClick={() =>
+                      setUpserting((prev) =>
                         prev
-                          ? { ...prev, clearExpireAt: e.target.checked }
+                          ? { ...prev, expireDate: null, clearExpireAt: true }
                           : prev,
                       )
                     }
-                  />
-                  清空到期时间
-                </label>
+                    disabled={upserting.clearExpireAt}
+                  >
+                    清空
+                  </Button>
+                </div>
               </div>
+                </>
+              ) : null}
             </div>
+          ) : null}
 
-            {updateMutation.isError ? (
-              <p className="mt-4 text-sm text-red-600">
-                {updateMutation.error instanceof ApiError
-                  ? updateMutation.error.message
-                  : "保存失败"}
-              </p>
-            ) : null}
+          {upserting?.mode === "create" && createMutation.isError ? (
+            <p className="text-sm text-red-600">
+              {createMutation.error instanceof ApiError
+                ? createMutation.error.message
+                : "创建失败"}
+            </p>
+          ) : null}
 
-            <div className="mt-6 flex items-center justify-end gap-2">
-              <Button variant="outline" onClick={() => setEditing(null)}>
-                取消
-              </Button>
-              <Button
-                onClick={() => {
-                  const limit = Number(editing.trafficLimit)
-                  const resetDay = Number(editing.trafficResetDay)
-                  const payload: Record<string, unknown> = {
-                    status: editing.status,
-                  }
-                  if (!Number.isNaN(limit)) payload.traffic_limit = limit
-                  if (!Number.isNaN(resetDay)) payload.traffic_reset_day = resetDay
-                  if (editing.clearExpireAt) {
-                    payload.expire_at = ""
-                  } else if (editing.expireAt.trim() !== "") {
-                    payload.expire_at = editing.expireAt.trim()
-                  }
+          {upserting?.mode === "edit" && updateMutation.isError ? (
+            <p className="text-sm text-red-600">
+              {updateMutation.error instanceof ApiError
+                ? updateMutation.error.message
+                : "保存失败"}
+            </p>
+          ) : null}
 
-                  updateMutation.mutate({ id: editing.user.id, payload })
-                }}
-                disabled={updateMutation.isPending}
-              >
-                {updateMutation.isPending ? "保存中..." : "保存"}
-              </Button>
-            </div>
-          </div>
-        </div>
-      ) : null}
-    </section>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setUpserting(null)}>
+              取消
+            </Button>
+            <Button
+              onClick={() => {
+                if (!upserting) return
+
+                if (upserting.mode === "create") {
+                  createMutation.mutate({ username: upserting.username.trim() })
+                  return
+                }
+
+                const payload: Record<string, unknown> = {}
+                const username = upserting.username.trim()
+                if (username && username !== upserting.user.username) {
+                  payload.username = username
+                }
+                payload.status = upserting.status
+
+                const bytes = gbStringToBytes(upserting.trafficLimit)
+                if (bytes !== null) payload.traffic_limit = bytes
+
+                if (
+                  Number.isInteger(upserting.trafficResetDay) &&
+                  upserting.trafficResetDay >= 0 &&
+                  upserting.trafficResetDay <= 31
+                ) {
+                  payload.traffic_reset_day = upserting.trafficResetDay
+                }
+
+                if (upserting.clearExpireAt) {
+                  payload.expire_at = ""
+                } else if (upserting.expireDate) {
+                  payload.expire_at = rfc3339FromDateOnlyUTC(upserting.expireDate)
+                }
+
+                updateMutation.mutate({ id: upserting.user.id, payload })
+              }}
+              disabled={
+                !upserting ||
+                (upserting.mode === "create"
+                  ? createMutation.isPending || !upserting.username.trim()
+                  : updateMutation.isPending || !upserting.username.trim())
+              }
+            >
+              {upserting?.mode === "create"
+                ? createMutation.isPending
+                  ? "创建中..."
+                  : "创建"
+                : updateMutation.isPending
+                  ? "保存中..."
+                  : "保存"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      </section>
+    </div>
   )
 }

@@ -25,9 +25,11 @@ function RequireAuth() {
 
 function PlaceholderPage({ title }: { title: string }) {
   return (
-    <div className="space-y-2">
-      <h1 className="text-xl font-semibold text-slate-900">{title}</h1>
-      <p className="text-sm text-slate-500">该页面在下一阶段继续实现。</p>
+    <div className="px-4 lg:px-6">
+      <div className="space-y-2">
+        <h1 className="text-xl font-semibold text-slate-900">{title}</h1>
+        <p className="text-sm text-slate-500">该页面在下一阶段继续实现。</p>
+      </div>
     </div>
   )
 }

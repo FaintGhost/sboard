@@ -79,11 +79,11 @@ describe("UsersPage", () => {
         if (req.method === "PUT" && pathname === "/api/users/1") {
           const body = (await req.json()) as Record<string, unknown>
           expect(body.status).toBe("expired")
-          expect(body.traffic_limit).toBe(1024)
+          expect(body.traffic_limit).toBe(1024 * 1024 * 1024)
           expect(body.traffic_reset_day).toBe(1)
 
           currentStatus = "expired"
-          currentTrafficLimit = 1024
+          currentTrafficLimit = 1024 * 1024 * 1024
           currentTrafficResetDay = 1
 
           return new Response(
@@ -92,7 +92,7 @@ describe("UsersPage", () => {
                 id: 1,
                 uuid: "u-1",
                 username: "alice",
-                traffic_limit: 1024,
+                traffic_limit: 1024 * 1024 * 1024,
                 traffic_used: 0,
                 traffic_reset_day: 1,
                 expire_at: null,
@@ -118,9 +118,10 @@ describe("UsersPage", () => {
     expect(await screen.findByText("alice")).toBeInTheDocument()
 
     await userEvent.click(screen.getByRole("button", { name: "编辑" }))
-    await userEvent.selectOptions(screen.getByLabelText("状态"), "expired")
+    await userEvent.click(screen.getByLabelText("状态"))
+    await userEvent.click(await screen.findByText("expired"))
     await userEvent.clear(screen.getByLabelText("流量上限"))
-    await userEvent.type(screen.getByLabelText("流量上限"), "1024")
+    await userEvent.type(screen.getByLabelText("流量上限"), "1")
     await userEvent.clear(screen.getByLabelText("重置日"))
     await userEvent.type(screen.getByLabelText("重置日"), "1")
     await userEvent.click(screen.getByRole("button", { name: "保存" }))
