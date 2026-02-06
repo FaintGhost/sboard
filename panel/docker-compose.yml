@@ -19,11 +19,9 @@ services:
       PANEL_WEB_DIR: "/app/web/dist"
 
       # Required:
-      ADMIN_USER: "${ADMIN_USER:-admin}"
-      ADMIN_PASS: "${ADMIN_PASS:-change-me}"
       PANEL_JWT_SECRET: "${PANEL_JWT_SECRET:-change-me}"
+      PANEL_SETUP_TOKEN: "${PANEL_SETUP_TOKEN:-}"
 
       # Optional (dev / custom frontends):
       PANEL_CORS_ALLOW_ORIGINS: "${PANEL_CORS_ALLOW_ORIGINS:-http://localhost:5173}"
       PANEL_LOG_REQUESTS: "${PANEL_LOG_REQUESTS:-true}"
-

@@ -21,6 +21,20 @@ func main() {
     log.Fatal(err)
   }
   store := db.NewStore(database)
+
+  // If the panel is not initialized yet, require a setup token for secure onboarding.
+  // If not provided via env, generate one and print it once at startup.
+  if n, err := db.AdminCount(store); err == nil && n == 0 {
+    if cfg.SetupToken == "" {
+      token, err := api.GenerateSetupToken()
+      if err != nil {
+        log.Fatal(err)
+      }
+      cfg.SetupToken = token
+    }
+    log.Printf("[setup] no admin found. setup token: %s", cfg.SetupToken)
+  }
+
   r := api.NewRouter(cfg, store)
   if err := r.Run(cfg.HTTPAddr); err != nil {
     log.Fatal(err)

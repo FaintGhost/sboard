@@ -22,8 +22,6 @@ func TestServeWebUI_IndexAndFallback(t *testing.T) {
   require.NoError(t, os.WriteFile(filepath.Join(webDir, "index.html"), []byte("<html>ok</html>"), 0o644))
 
   cfg := config.Config{
-    AdminUser: "admin",
-    AdminPass: "pass",
     JWTSecret: "secret",
     ServeWeb:  true,
     WebDir:    webDir,
@@ -53,8 +51,6 @@ func TestServeWebUI_DoesNotCatchAPIRoutes(t *testing.T) {
   require.NoError(t, os.WriteFile(filepath.Join(webDir, "index.html"), []byte("<html>ok</html>"), 0o644))
 
   cfg := config.Config{
-    AdminUser: "admin",
-    AdminPass: "pass",
     JWTSecret: "secret",
     ServeWeb:  true,
     WebDir:    webDir,
@@ -67,4 +63,3 @@ func TestServeWebUI_DoesNotCatchAPIRoutes(t *testing.T) {
   r.ServeHTTP(w, req)
   require.Equal(t, http.StatusNotFound, w.Code)
 }
-

@@ -9,9 +9,8 @@ import (
 type Config struct {
   HTTPAddr  string
   DBPath    string
-  AdminUser string
-  AdminPass string
   JWTSecret string
+  SetupToken string
   CORSAllowOrigins string
   LogRequests bool
 
@@ -34,14 +33,11 @@ func Load() Config {
   if v := os.Getenv("PANEL_DB_PATH"); v != "" {
     cfg.DBPath = v
   }
-  if v := os.Getenv("ADMIN_USER"); v != "" {
-    cfg.AdminUser = v
-  }
-  if v := os.Getenv("ADMIN_PASS"); v != "" {
-    cfg.AdminPass = v
-  }
   if v := os.Getenv("PANEL_JWT_SECRET"); v != "" {
     cfg.JWTSecret = v
+  }
+  if v := os.Getenv("PANEL_SETUP_TOKEN"); v != "" {
+    cfg.SetupToken = v
   }
   if v := os.Getenv("PANEL_CORS_ALLOW_ORIGINS"); v != "" {
     cfg.CORSAllowOrigins = v
@@ -59,8 +55,8 @@ func Load() Config {
 }
 
 func Validate(cfg Config) error {
-  if cfg.AdminUser == "" || cfg.AdminPass == "" || cfg.JWTSecret == "" {
-    return errors.New("missing admin or jwt config")
+  if cfg.JWTSecret == "" {
+    return errors.New("missing jwt config")
   }
   return nil
 }

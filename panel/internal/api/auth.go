@@ -7,6 +7,8 @@ import (
   "time"
 
   "sboard/panel/internal/config"
+  "sboard/panel/internal/db"
+  "sboard/panel/internal/password"
   "github.com/gin-gonic/gin"
   "github.com/golang-jwt/jwt/v5"
 )
@@ -21,14 +23,31 @@ type loginResp struct {
   ExpiresAt string `json:"expires_at"`
 }
 
-func AdminLogin(cfg config.Config) gin.HandlerFunc {
+func AdminLogin(cfg config.Config, store *db.Store) gin.HandlerFunc {
   return func(c *gin.Context) {
     var req loginReq
     if err := c.ShouldBindJSON(&req); err != nil {
       c.JSON(http.StatusBadRequest, gin.H{"error": "invalid body"})
       return
     }
-    if req.Username != cfg.AdminUser || req.Password != cfg.AdminPass {
+
+    // Onboarding: must bootstrap admin first.
+    n, err := db.AdminCount(store)
+    if err != nil {
+      c.JSON(http.StatusInternalServerError, gin.H{"error": "db error"})
+      return
+    }
+    if n == 0 {
+      c.JSON(http.StatusPreconditionRequired, gin.H{"error": "needs setup"})
+      return
+    }
+
+    a, ok, err := db.AdminGetByUsername(store, req.Username)
+    if err != nil {
+      c.JSON(http.StatusInternalServerError, gin.H{"error": "db error"})
+      return
+    }
+    if !ok || !password.Verify(a.PasswordHash, req.Password) {
       c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
       return
     }

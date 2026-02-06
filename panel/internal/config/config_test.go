@@ -12,6 +12,6 @@ func TestValidateConfig(t *testing.T) {
   err := config.Validate(cfg)
   require.Error(t, err)
 
-  cfg = config.Config{AdminUser: "admin", AdminPass: "pass", JWTSecret: "secret"}
+  cfg = config.Config{JWTSecret: "secret"}
   require.NoError(t, config.Validate(cfg))
 }

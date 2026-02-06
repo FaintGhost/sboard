@@ -8,6 +8,21 @@ export type LoginResponse = {
   expires_at: string
 }
 
+export type BootstrapStatus = {
+  needs_setup: boolean
+}
+
+export type BootstrapRequest = {
+  setup_token: string
+  username: string
+  password: string
+  confirm_password: string
+}
+
+export type BootstrapResponse = {
+  ok: boolean
+}
+
 export type UserStatus = "active" | "disabled" | "expired" | "traffic_exceeded"
 
 export type User = {

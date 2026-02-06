@@ -18,9 +18,9 @@ cd /root/workspace/sboard/panel
 PANEL_HTTP_ADDR=:8080 \
 PANEL_DB_PATH=panel.db \
 PANEL_CORS_ALLOW_ORIGINS=http://localhost:5173 \
-ADMIN_USER=admin \
-ADMIN_PASS=admin123 \
 PANEL_JWT_SECRET=change-me-in-prod \
+# 可选：自定义 onboarding token；不设置会在首次启动日志里生成并打印
+PANEL_SETUP_TOKEN= \
 go run ./cmd/panel
 ```
 
@@ -58,9 +58,8 @@ curl -X POST http://127.0.0.1:3000/api/config/sync \
 
 ```bash
 cd sboard/panel
-export ADMIN_USER=admin
-export ADMIN_PASS='change-me'
 export PANEL_JWT_SECRET='change-me'
+export PANEL_SETUP_TOKEN='' # 可选：不设置会在首次启动日志里生成并打印
 docker compose up -d
 ```
 
@@ -99,9 +98,8 @@ docker push faintghost/sboard-panel:latest
   - `PANEL_DB_PATH`：SQLite 路径，默认 `panel.db`
   - `PANEL_SERVE_WEB`：是否由 Panel 静态托管前端，默认 `false`
   - `PANEL_WEB_DIR`：前端构建产物目录（`dist`），默认 `web/dist`
-  - `ADMIN_USER`：管理员登录用户名（必填）
-  - `ADMIN_PASS`：管理员登录密码（必填）
   - `PANEL_JWT_SECRET`：JWT 签名密钥（必填）
+  - `PANEL_SETUP_TOKEN`：首次初始化管理员所需的一次性 token（可选；为空时首次启动会生成并打印）
   - `PANEL_CORS_ALLOW_ORIGINS`：允许的前端 Origin（逗号分隔或 `*`），默认 `http://localhost:5173`
   - `PANEL_LOG_REQUESTS`：是否打印每个 HTTP 请求（`true/false`），默认 `true`
 - Node
@@ -110,7 +108,7 @@ docker push faintghost/sboard-panel:latest
   - `NODE_LOG_LEVEL`：日志级别，默认 `info`
 
 **前后端联调（本地）**
-1. 启动 Panel（如上，确保设置 `ADMIN_USER/ADMIN_PASS/PANEL_JWT_SECRET`）
+1. 启动 Panel（如上，确保设置 `PANEL_JWT_SECRET`）
 2. 启动前端：
 ```bash
 cd /root/workspace/sboard/panel/web
@@ -120,8 +118,9 @@ npm run dev
 ```bash
 VITE_PROXY_TARGET=http://127.0.0.1:8080 npm run dev
 ```
-3. 前端登录账号密码：使用你启动 Panel 时传入的 `ADMIN_USER` 和 `ADMIN_PASS`  
-   示例即 `admin / admin123`
+3. 首次访问前端：
+  - 如果还未初始化管理员，会出现 onboarding 页面，要求输入 Setup Token 并创建管理员账号密码
+  - Setup Token 默认会在 Panel 启动日志中打印（或你也可以通过 `PANEL_SETUP_TOKEN` 自定义）
 
 **基础 API**
 - `GET /api/health`：Panel 与 Node 均提供健康检查
