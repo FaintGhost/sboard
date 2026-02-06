@@ -1,0 +1,13 @@
+.git
+.worktrees
+**/*.db
+**/*.db-*
+**/*.sqlite
+**/*.sqlite-*
+data/
+web/node_modules/
+web/dist/
+web/.env
+web/.env.*
+node_modules/
+dist/
