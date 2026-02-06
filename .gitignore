@@ -7,3 +7,4 @@
 **/*.db-*
 **/*.sqlite
 **/*.sqlite-*
+CLAUDE.md

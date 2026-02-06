@@ -14,6 +14,10 @@ type Config struct {
   JWTSecret string
   CORSAllowOrigins string
   LogRequests bool
+
+  // Optional: serve the built web UI (Vite dist) from the Panel process.
+  ServeWeb bool
+  WebDir   string
 }
 
 func Load() Config {
@@ -21,6 +25,8 @@ func Load() Config {
     HTTPAddr: ":8080",
     DBPath:   "panel.db",
     LogRequests: true,
+    ServeWeb: false,
+    WebDir:   "web/dist",
   }
   if v := os.Getenv("PANEL_HTTP_ADDR"); v != "" {
     cfg.HTTPAddr = v
@@ -42,6 +48,12 @@ func Load() Config {
   }
   if v := os.Getenv("PANEL_LOG_REQUESTS"); v != "" {
     cfg.LogRequests = parseBool(v, cfg.LogRequests)
+  }
+  if v := os.Getenv("PANEL_SERVE_WEB"); v != "" {
+    cfg.ServeWeb = parseBool(v, cfg.ServeWeb)
+  }
+  if v := os.Getenv("PANEL_WEB_DIR"); v != "" {
+    cfg.WebDir = v
   }
   return cfg
 }

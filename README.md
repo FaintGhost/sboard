@@ -41,67 +41,64 @@ curl -X POST http://127.0.0.1:3000/api/config/sync \
 ```
 
 **Docker 部署**
-Node 侧已内置 Docker 部署文件（见下方 Compose）。Panel 侧暂未内置 Dockerfile，以下为参考示例，按需调整。
+仓库内置：
+- `panel/Dockerfile`、`panel/docker-compose.yml`
+- `node/Dockerfile`、`node/docker-compose.yml`、`node/docker-compose.build.yml`
 
-示例 `Dockerfile.panel`：
-```Dockerfile
-FROM golang:1.25 as builder
-WORKDIR /app
-COPY . .
-WORKDIR /app/panel
-RUN go build -o /out/panel ./cmd/panel
+说明：
+- `panel/docker-compose.yml` 与 `node/docker-compose.yml` 默认拉取 Docker Hub 预构建镜像（适配低配 VPS）
+- 如需自建镜像，请在本地 build 后 push，再通过 `SBOARD_PANEL_IMAGE` / `SBOARD_NODE_IMAGE` 指定
 
-FROM debian:stable-slim
-WORKDIR /app
-COPY --from=builder /out/panel /app/panel
-ENV PANEL_HTTP_ADDR=:8080
-ENV PANEL_DB_PATH=/data/panel.db
-EXPOSE 8080
-CMD ["/app/panel"]
+## Panel Docker Compose（推荐）
+
+仓库已内置 `panel/docker-compose.yml` 与 `panel/Dockerfile`（用于构建镜像）。  
+在 VPS 上建议直接拉取预构建镜像（避免低配机器构建失败），并挂载数据目录保存 SQLite。
+
+在服务器上：
+
+```bash
+cd sboard/panel
+export ADMIN_USER=admin
+export ADMIN_PASS='change-me'
+export PANEL_JWT_SECRET='change-me'
+docker compose up -d
 ```
 
-示例 `Dockerfile.node`：
-```Dockerfile
-FROM golang:1.25 as builder
-WORKDIR /app
-COPY . .
-WORKDIR /app/node
-RUN go build -o /out/node ./cmd/node
-
-FROM debian:stable-slim
-WORKDIR /app
-COPY --from=builder /out/node /app/node
-ENV NODE_HTTP_ADDR=:3000
-ENV NODE_SECRET_KEY=secret
-ENV NODE_LOG_LEVEL=info
-EXPOSE 3000
-CMD ["/app/node"]
-```
+说明：
+  - 默认镜像为 `faintghost/sboard-panel:latest`，可用 `SBOARD_PANEL_IMAGE` 覆盖
+  - Panel 默认会在同一进程内静态托管前端（`PANEL_SERVE_WEB=true`）
+  - 数据库默认路径为 `/data/panel.db`（通过 volume 映射到宿主机 `panel/data/`）
 
 **Node Docker Compose（推荐，海外 VPS）**
-仓库已内置 `node/docker-compose.yml` 与 `node/Dockerfile`，可以在海外 VPS 直接构建运行：
+仓库已内置 `node/docker-compose.yml` 与 `node/Dockerfile`。默认 compose 直接拉取预构建镜像：
 ```bash
 cd node
 export NODE_SECRET_KEY='change-me'
-docker compose up -d --build
+docker compose up -d
 ```
 说明：
 - compose 使用 `network_mode: host`，方便入站直接监听宿主机端口（例如 443）
 - 这会让 Node API（默认 `:3000`）暴露在公网：请用防火墙只允许 Panel 服务器 IP 访问 3000
 
-构建与运行示例：
+如果你希望在本机 build 并推送（推荐）：
 ```bash
-docker build -t sboard-panel -f Dockerfile.panel .
-docker build -t sboard-node -f Dockerfile.node .
+# Node（从仓库构建并推送）
+cd sboard/node
+docker build -t faintghost/sboard-node:latest .
+docker push faintghost/sboard-node:latest
 
-docker run -d --name sboard-panel -p 8080:8080 -v $(pwd)/data:/data sboard-panel
-docker run -d --name sboard-node -p 3000:3000 sboard-node
+# Panel（会同时构建 web 前端 dist 并打包进镜像）
+cd ../panel
+docker build -t faintghost/sboard-panel:latest .
+docker push faintghost/sboard-panel:latest
 ```
 
 **配置说明**
 - Panel
   - `PANEL_HTTP_ADDR`：监听地址，默认 `:8080`
   - `PANEL_DB_PATH`：SQLite 路径，默认 `panel.db`
+  - `PANEL_SERVE_WEB`：是否由 Panel 静态托管前端，默认 `false`
+  - `PANEL_WEB_DIR`：前端构建产物目录（`dist`），默认 `web/dist`
   - `ADMIN_USER`：管理员登录用户名（必填）
   - `ADMIN_PASS`：管理员登录密码（必填）
   - `PANEL_JWT_SECRET`：JWT 签名密钥（必填）

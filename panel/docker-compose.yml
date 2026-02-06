@@ -1,0 +1,29 @@
+services:
+  sboard-panel:
+    container_name: sboard-panel
+    # Default: pull a prebuilt image (recommended for low-spec VPS).
+    # Override by setting `SBOARD_PANEL_IMAGE`.
+    image: "${SBOARD_PANEL_IMAGE:-faintghost/sboard-panel:latest}"
+    restart: unless-stopped
+
+    ports:
+      - "8080:8080"
+
+    volumes:
+      - ./data:/data
+
+    environment:
+      PANEL_HTTP_ADDR: ":8080"
+      PANEL_DB_PATH: "/data/panel.db"
+      PANEL_SERVE_WEB: "true"
+      PANEL_WEB_DIR: "/app/web/dist"
+
+      # Required:
+      ADMIN_USER: "${ADMIN_USER:-admin}"
+      ADMIN_PASS: "${ADMIN_PASS:-change-me}"
+      PANEL_JWT_SECRET: "${PANEL_JWT_SECRET:-change-me}"
+
+      # Optional (dev / custom frontends):
+      PANEL_CORS_ALLOW_ORIGINS: "${PANEL_CORS_ALLOW_ORIGINS:-http://localhost:5173}"
+      PANEL_LOG_REQUESTS: "${PANEL_LOG_REQUESTS:-true}"
+

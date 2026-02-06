@@ -40,5 +40,9 @@ func NewRouter(cfg config.Config, store *db.Store) *gin.Engine {
   auth.GET("/inbounds/:id", InboundsGet(store))
   auth.PUT("/inbounds/:id", InboundsUpdate(store))
   auth.DELETE("/inbounds/:id", InboundsDelete(store))
+
+  if cfg.ServeWeb {
+    ServeWebUI(r, cfg.WebDir)
+  }
   return r
 }
