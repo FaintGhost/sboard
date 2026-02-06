@@ -142,14 +142,127 @@
 - UA 命中 `sing-box/SFA/SFI` 返回 JSON
 - 其他 UA 返回 Base64(JSON)
 
-## 拟定 API 契约（后端需对接实现）
-### 已实现
-- `POST /api/admin/login`
-- `GET /api/users` / `POST /api/users`
-- `GET /api/users/:id` / `PUT /api/users/:id` / `DELETE /api/users/:id`
-- `GET /api/sub/:user_uuid`
+## API 契约（已实现 + 拟定）
 
-### 需实现（前后端对接）
+### 通用约定
+- JSON 成功响应：`{ "data": ... }`
+- JSON 错误响应：`{ "error": "..." }`
+- 认证：除 `/api/sub/:user_uuid` 外，其余管理端 API 需要 `Authorization: Bearer <token>`
+
+### 已实现（对接细节）
+#### 管理员登录
+`POST /api/admin/login`
+- Request:
+  ```json
+  { "username": "admin", "password": "pass" }
+  ```
+- Response `200`:
+  ```json
+  { "data": { "token": "...", "expires_at": "RFC3339" } }
+  ```
+- Errors:
+  - `400` `invalid body`
+  - `401` `unauthorized`
+  - `500` `sign token failed`
+
+#### 用户列表
+`GET /api/users?limit=50&offset=0&status=active`
+- `limit/offset` 默认 `50/0`
+- `status` 可选：`active/disabled/expired/traffic_exceeded`
+- Response `200`:
+  ```json
+  { "data": [User] }
+  ```
+- Errors:
+  - `400` `invalid pagination` / `invalid status`
+  - `500` `list users failed`
+
+#### 创建用户
+`POST /api/users`
+- Request:
+  ```json
+  { "username": "alice" }
+  ```
+- Response `201`:
+  ```json
+  { "data": User }
+  ```
+- Errors:
+  - `400` `invalid body` / `invalid username`
+  - `409` `username already exists`
+  - `500` `create user failed`
+
+#### 查询用户
+`GET /api/users/:id`
+- Response `200`:
+  ```json
+  { "data": User }
+  ```
+- Errors:
+  - `400` `invalid id`
+  - `404` `user not found`
+  - `500` `get user failed`
+
+#### 更新用户
+`PUT /api/users/:id`
+- Request（字段均可选）：
+  ```json
+  {
+    "username": "alice",
+    "status": "active",
+    "expire_at": "RFC3339 或空字符串清空",
+    "traffic_limit": 0,
+    "traffic_reset_day": 1
+  }
+  ```
+- Response `200`:
+  ```json
+  { "data": User }
+  ```
+- Errors:
+  - `400` `invalid body` / `invalid username` / `invalid status` / `invalid expire_at` / `invalid traffic_limit` / `invalid traffic_reset_day`
+  - `404` `user not found`
+  - `409` `username already exists`
+  - `500` `update user failed`
+
+#### 禁用用户（软删除）
+`DELETE /api/users/:id`
+- Response `200`:
+  ```json
+  { "data": User }  // status=disabled
+  ```
+- Errors:
+  - `400` `invalid id`
+  - `404` `user not found`
+  - `500` `disable user failed`
+
+#### 订阅
+`GET /api/sub/:user_uuid[?format=singbox]`
+- 订阅为公开链接，无需认证
+- `format=singbox` 优先；否则 UA 命中 `sing-box/SFA/SFI` 返回 JSON，其余返回 Base64(JSON)
+- `Content-Type`：
+  - JSON：`application/json`
+  - Base64：`text/plain`
+- Errors:
+  - `400` `invalid format`
+  - `404` `user not found`（含用户不存在或非 active）
+  - `500` `get user failed` / `list inbounds failed` / `build subscription failed`
+
+#### User DTO
+```json
+{
+  "id": 1,
+  "uuid": "user-uuid",
+  "username": "alice",
+  "traffic_limit": 0,
+  "traffic_used": 0,
+  "traffic_reset_day": 0,
+  "expire_at": "RFC3339 or null",
+  "status": "active"
+}
+```
+
+### 需实现（前后端对接，字段暂定）
 - 分组
   - `GET /api/groups`
   - `POST /api/groups`
@@ -184,4 +297,3 @@
 - 上述页面与路由
 - API hooks + 类型定义
 - 基础样式与响应式布局
-
