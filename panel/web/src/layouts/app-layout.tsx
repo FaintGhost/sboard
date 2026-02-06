@@ -26,6 +26,7 @@ export function AppLayout() {
   return (
     <SidebarProvider style={{ "--header-height": "3.5rem" } as CSSProperties}>
       <AppSidebar
+        variant="inset"
         onLogout={() => {
           clearToken()
           navigate("/login", { replace: true })
