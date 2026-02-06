@@ -172,6 +172,34 @@ func (s *Store) DisableUser(ctx context.Context, id int64) error {
 	return err
 }
 
+func (s *Store) DeleteUser(ctx context.Context, id int64) error {
+	tx, err := s.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// Delete user_groups associations first
+	if _, err := tx.ExecContext(ctx, "DELETE FROM user_groups WHERE user_id = ?", id); err != nil {
+		return err
+	}
+
+	// Delete the user
+	res, err := tx.ExecContext(ctx, "DELETE FROM users WHERE id = ?", id)
+	if err != nil {
+		return err
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return ErrNotFound
+	}
+
+	return tx.Commit()
+}
+
 type rowScanner interface {
 	Scan(dest ...any) error
 }

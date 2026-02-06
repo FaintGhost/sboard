@@ -36,6 +36,12 @@ export function disableUser(id: number) {
   })
 }
 
+export function deleteUser(id: number) {
+  return apiRequest<{ message: string }>(`/api/users/${id}?hard=true`, {
+    method: "DELETE",
+  })
+}
+
 export function listUsers(params: ListUsersParams = {}) {
   const query = new URLSearchParams()
   if (typeof params.limit === "number") {

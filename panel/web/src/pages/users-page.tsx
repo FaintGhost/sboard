@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useEffect, useMemo, useState } from "react"
 import { format } from "date-fns"
-import { MoreHorizontal, Pencil, Ban, Search } from "lucide-react"
+import { MoreHorizontal, Pencil, Ban, Search, Trash2 } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -43,7 +43,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { ApiError } from "@/lib/api/client"
-import { createUser, disableUser, listUsers, updateUser } from "@/lib/api/users"
+import { createUser, deleteUser, disableUser, listUsers, updateUser } from "@/lib/api/users"
 import { listGroups } from "@/lib/api/groups"
 import { getUserGroups, putUserGroups } from "@/lib/api/user-groups"
 import type { User, UserStatus } from "@/lib/api/types"
@@ -119,6 +119,7 @@ export function UsersPage() {
   const [status, setStatus] = useState<StatusFilter>("all")
   const [search, setSearch] = useState("")
   const [upserting, setUpserting] = useState<EditState | null>(null)
+  const [disablingUser, setDisablingUser] = useState<User | null>(null)
   const [deletingUser, setDeletingUser] = useState<User | null>(null)
 
   const queryParams = useMemo(
@@ -187,8 +188,16 @@ export function UsersPage() {
     },
   })
 
-  const deleteMutation = useMutation({
+  const disableMutation = useMutation({
     mutationFn: disableUser,
+    onSuccess: async () => {
+      setDisablingUser(null)
+      await qc.invalidateQueries({ queryKey: ["users"] })
+    },
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteUser,
     onSuccess: async () => {
       setDeletingUser(null)
       await qc.invalidateQueries({ queryKey: ["users"] })
@@ -350,12 +359,22 @@ export function UsersPage() {
                             variant="destructive"
                             disabled={u.status === "disabled"}
                             onClick={() => {
-                              deleteMutation.reset()
-                              setDeletingUser(u)
+                              disableMutation.reset()
+                              setDisablingUser(u)
                             }}
                           >
                             <Ban className="mr-2 size-4" />
                             禁用
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            variant="destructive"
+                            onClick={() => {
+                              deleteMutation.reset()
+                              setDeletingUser(u)
+                            }}
+                          >
+                            <Trash2 className="mr-2 size-4" />
+                            删除
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -679,14 +698,52 @@ export function UsersPage() {
         </Dialog>
 
         <Dialog
-          open={!!deletingUser}
-          onOpenChange={(open) => (!open ? setDeletingUser(null) : null)}
+          open={!!disablingUser}
+          onOpenChange={(open) => (!open ? setDisablingUser(null) : null)}
         >
           <DialogContent aria-label="禁用用户">
             <DialogHeader>
               <DialogTitle>禁用用户</DialogTitle>
               <DialogDescription>
-                确定要禁用用户 <strong>{deletingUser?.username}</strong> 吗？禁用后该用户将无法使用订阅。
+                确定要禁用用户 <strong>{disablingUser?.username}</strong> 吗？禁用后该用户将无法使用订阅。
+              </DialogDescription>
+            </DialogHeader>
+
+            {disableMutation.isError ? (
+              <p className="text-sm text-red-600">
+                {disableMutation.error instanceof ApiError
+                  ? disableMutation.error.message
+                  : "禁用失败"}
+              </p>
+            ) : null}
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDisablingUser(null)}>
+                取消
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  if (!disablingUser) return
+                  disableMutation.mutate(disablingUser.id)
+                }}
+                disabled={disableMutation.isPending}
+              >
+                {disableMutation.isPending ? "禁用中..." : "确认禁用"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog
+          open={!!deletingUser}
+          onOpenChange={(open) => (!open ? setDeletingUser(null) : null)}
+        >
+          <DialogContent aria-label="删除用户">
+            <DialogHeader>
+              <DialogTitle>删除用户</DialogTitle>
+              <DialogDescription>
+                确定要永久删除用户 <strong>{deletingUser?.username}</strong> 吗？此操作不可撤销，用户数据将被彻底清除。
               </DialogDescription>
             </DialogHeader>
 
@@ -694,7 +751,7 @@ export function UsersPage() {
               <p className="text-sm text-red-600">
                 {deleteMutation.error instanceof ApiError
                   ? deleteMutation.error.message
-                  : "禁用失败"}
+                  : "删除失败"}
               </p>
             ) : null}
 
@@ -710,7 +767,7 @@ export function UsersPage() {
                 }}
                 disabled={deleteMutation.isPending}
               >
-                {deleteMutation.isPending ? "禁用中..." : "确认禁用"}
+                {deleteMutation.isPending ? "删除中..." : "确认删除"}
               </Button>
             </DialogFooter>
           </DialogContent>

@@ -169,6 +169,24 @@ func UsersDelete(store *db.Store) gin.HandlerFunc {
       c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
       return
     }
+
+    // Check if hard delete is requested
+    hard := c.Query("hard") == "true"
+
+    if hard {
+      if err := store.DeleteUser(c.Request.Context(), id); err != nil {
+        if errors.Is(err, db.ErrNotFound) {
+          c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+          return
+        }
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "delete user failed"})
+        return
+      }
+      c.JSON(http.StatusOK, gin.H{"message": "user deleted"})
+      return
+    }
+
+    // Soft delete: disable user
     if err := store.DisableUser(c.Request.Context(), id); err != nil {
       if errors.Is(err, db.ErrNotFound) {
         c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
