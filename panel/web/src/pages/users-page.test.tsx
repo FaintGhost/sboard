@@ -15,25 +15,39 @@ describe("UsersPage", () => {
   })
 
   it("renders users returned by API", async () => {
-    vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(
-        JSON.stringify({
-          data: [
-            {
-              id: 1,
-              uuid: "u-1",
-              username: "alice",
-              traffic_limit: 0,
-              traffic_used: 0,
-              traffic_reset_day: 0,
-              expire_at: null,
-              status: "active",
-            },
-          ],
-        }),
-        { status: 200, headers: { "Content-Type": "application/json" } },
-      ),
-    )
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+      const req = input as Request
+      const url = new URL(req.url)
+      if (req.method === "GET" && url.pathname === "/api/users") {
+        return new Response(
+          JSON.stringify({
+            data: [
+              {
+                id: 1,
+                uuid: "u-1",
+                username: "alice",
+                traffic_limit: 0,
+                traffic_used: 0,
+                traffic_reset_day: 0,
+                expire_at: null,
+                status: "active",
+              },
+            ],
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        )
+      }
+      if (req.method === "GET" && url.pathname === "/api/groups") {
+        return new Response(JSON.stringify({ data: [] }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        })
+      }
+      return new Response(JSON.stringify({ error: "not found" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json" },
+      })
+    })
 
     render(
       <AppProviders>
@@ -74,6 +88,20 @@ describe("UsersPage", () => {
             }),
             { status: 200, headers: { "Content-Type": "application/json" } },
           )
+        }
+
+        if (req.method === "GET" && pathname === "/api/groups") {
+          return new Response(JSON.stringify({ data: [] }), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          })
+        }
+
+        if (req.method === "GET" && pathname === "/api/users/1/groups") {
+          return new Response(JSON.stringify({ data: { group_ids: [] } }), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          })
         }
 
         if (req.method === "PUT" && pathname === "/api/users/1") {

@@ -8,7 +8,10 @@ import {
 
 import { AppLayout } from "@/layouts/app-layout"
 import { DashboardPage } from "@/pages/dashboard-page"
+import { GroupsPage } from "@/pages/groups-page"
+import { InboundsPage } from "@/pages/inbounds-page"
 import { LoginPage } from "@/pages/login-page"
+import { NodesPage } from "@/pages/nodes-page"
 import { UsersPage } from "@/pages/users-page"
 import { useAuthStore } from "@/store/auth"
 
@@ -47,9 +50,9 @@ const router = createBrowserRouter([
         children: [
           { path: "/", element: <DashboardPage /> },
           { path: "/users", element: <UsersPage /> },
-          { path: "/groups", element: <PlaceholderPage title="分组管理" /> },
-          { path: "/nodes", element: <PlaceholderPage title="节点管理" /> },
-          { path: "/inbounds", element: <PlaceholderPage title="入站管理" /> },
+          { path: "/groups", element: <GroupsPage /> },
+          { path: "/nodes", element: <NodesPage /> },
+          { path: "/inbounds", element: <InboundsPage /> },
           { path: "/subscriptions", element: <PlaceholderPage title="订阅管理" /> },
           { path: "/settings", element: <PlaceholderPage title="系统设置" /> },
         ],

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { format } from "date-fns"
 
 import { Button } from "@/components/ui/button"
@@ -32,8 +32,11 @@ import {
 } from "@/components/ui/table"
 import { ApiError } from "@/lib/api/client"
 import { createUser, listUsers, updateUser } from "@/lib/api/users"
+import { listGroups } from "@/lib/api/groups"
+import { getUserGroups, putUserGroups } from "@/lib/api/user-groups"
 import type { User, UserStatus } from "@/lib/api/types"
 import { bytesToGBString, gbStringToBytes, rfc3339FromDateOnlyUTC } from "@/lib/units"
+import { Checkbox } from "@/components/ui/checkbox"
 
 type StatusFilter = UserStatus | "all"
 
@@ -61,6 +64,8 @@ type EditState = {
   trafficResetDay: number
   expireDate: Date | null
   clearExpireAt: boolean
+  groupIDs: number[]
+  groupsLoadedFromServer: boolean
 }
 
 const defaultNewUser: User = {
@@ -93,6 +98,32 @@ export function UsersPage() {
     queryFn: () => listUsers(queryParams),
   })
 
+  const groupsQuery = useQuery({
+    queryKey: ["groups", { limit: 200, offset: 0 }],
+    queryFn: () => listGroups({ limit: 200, offset: 0 }),
+  })
+
+  const userGroupsQuery = useQuery({
+    queryKey: ["user-groups", upserting?.user.id ?? 0],
+    queryFn: () => getUserGroups(upserting?.user.id ?? 0),
+    enabled: !!upserting && upserting.mode === "edit" && upserting.user.id > 0,
+  })
+
+  useEffect(() => {
+    if (!upserting || upserting.mode !== "edit") return
+    if (!userGroupsQuery.data) return
+    if (upserting.groupsLoadedFromServer) return
+
+    setUpserting((prev) => {
+      if (!prev || prev.mode !== "edit") return prev
+      return {
+        ...prev,
+        groupIDs: (userGroupsQuery.data?.group_ids ?? []).slice().sort((a, b) => a - b),
+        groupsLoadedFromServer: true,
+      }
+    })
+  }, [upserting, userGroupsQuery.data])
+
   const createMutation = useMutation({
     mutationFn: createUser,
     onSuccess: async () => {
@@ -106,6 +137,15 @@ export function UsersPage() {
       updateUser(input.id, input.payload),
     onSuccess: async () => {
       setUpserting(null)
+      await qc.invalidateQueries({ queryKey: ["users"] })
+    },
+  })
+
+  const saveGroupsMutation = useMutation({
+    mutationFn: (input: { userId: number; groupIDs: number[] }) =>
+      putUserGroups(input.userId, { group_ids: input.groupIDs }),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["user-groups"] })
       await qc.invalidateQueries({ queryKey: ["users"] })
     },
   })
@@ -146,7 +186,7 @@ export function UsersPage() {
           onClick={() => {
             createMutation.reset()
             updateMutation.reset()
-            setUpserting({
+              setUpserting({
               mode: "create",
               user: defaultNewUser,
               username: "",
@@ -155,6 +195,8 @@ export function UsersPage() {
               trafficResetDay: 0,
               expireDate: null,
               clearExpireAt: false,
+              groupIDs: [],
+              groupsLoadedFromServer: true,
             })
           }}
         >
@@ -205,6 +247,8 @@ export function UsersPage() {
                           trafficResetDay: u.traffic_reset_day ?? 0,
                           expireDate: parsedExpire,
                           clearExpireAt: false,
+                          groupIDs: [],
+                          groupsLoadedFromServer: false,
                         })
                       }}
                     >
@@ -258,6 +302,67 @@ export function UsersPage() {
                   placeholder="例如 alice"
                   autoFocus={upserting.mode === "create"}
                 />
+              </div>
+
+              <div className="space-y-2 md:col-span-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm text-slate-700">分组（group_ids）</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={
+                      upserting.mode !== "edit" ||
+                      userGroupsQuery.isLoading ||
+                      saveGroupsMutation.isPending
+                    }
+                    onClick={() => {
+                      if (upserting.mode !== "edit") return
+                      saveGroupsMutation.mutate({ userId: upserting.user.id, groupIDs: upserting.groupIDs })
+                    }}
+                  >
+                    保存分组
+                  </Button>
+                </div>
+                <p className="text-xs text-slate-500">
+                  用户可以属于多个分组。订阅下发按分组生效。
+                </p>
+                <div className="rounded-lg border border-slate-200 p-3">
+                  <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-2">
+                    {groupsQuery.data?.map((g) => {
+                      const checked = upserting.groupIDs.includes(g.id)
+                      return (
+                        <label key={g.id} className="flex cursor-pointer items-center gap-2 text-sm text-slate-800">
+                          <Checkbox
+                            checked={checked}
+                            onCheckedChange={(v) => {
+                              const next = Boolean(v)
+                              setUpserting((p) => {
+                                if (!p) return p
+                                const set = new Set(p.groupIDs)
+                                if (next) set.add(g.id)
+                                else set.delete(g.id)
+                                return { ...p, groupIDs: Array.from(set.values()).sort((a, b) => a - b) }
+                              })
+                            }}
+                          />
+                          <span className="font-medium">{g.name}</span>
+                          <span className="text-xs text-slate-500">{g.description}</span>
+                        </label>
+                      )
+                    })}
+                    {groupsQuery.data && groupsQuery.data.length === 0 ? (
+                      <div className="text-sm text-slate-500 md:col-span-2">
+                        还没有分组，请先去“分组管理”创建。
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+                <div className="text-sm text-amber-700">
+                  {saveGroupsMutation.isError ? (
+                    saveGroupsMutation.error instanceof ApiError ? saveGroupsMutation.error.message : "保存分组失败"
+                  ) : null}
+                </div>
               </div>
 
               {upserting.mode === "edit" ? (
