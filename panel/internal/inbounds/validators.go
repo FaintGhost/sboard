@@ -42,10 +42,26 @@ func ValidateSettings(protocol string, settings map[string]any) error {
   return v(settings)
 }
 
+// ss2022MultiUserMethods lists the SS2022 methods that support multi-user mode.
+// sing-box's shadowaead_2022.NewMultiService only supports aes-128-gcm and aes-256-gcm;
+// chacha20-poly1305 is single-user only.
+var ss2022MultiUserMethods = map[string]struct{}{
+  "2022-blake3-aes-128-gcm": {},
+  "2022-blake3-aes-256-gcm": {},
+}
+
 func validateShadowsocksSettings(settings map[string]any) error {
   method, _ := settings["method"].(string)
-  if strings.TrimSpace(method) == "" {
+  method = strings.TrimSpace(method)
+  if method == "" {
     return errors.New("shadowsocks settings.method required")
+  }
+  // Our system always injects a users list (multi-user mode).
+  // chacha20-poly1305 does not support multi-user in sing-box.
+  if strings.HasPrefix(method, "2022-") {
+    if _, ok := ss2022MultiUserMethods[method]; !ok {
+      return errors.New("shadowsocks method " + method + " does not support multi-user mode; use 2022-blake3-aes-128-gcm or 2022-blake3-aes-256-gcm")
+    }
   }
   return nil
 }

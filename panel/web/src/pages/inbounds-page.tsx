@@ -64,7 +64,7 @@ const protocolOptions = ["vless", "vmess", "trojan", "shadowsocks"] as const
 const shadowsocksMethods = [
   { value: "2022-blake3-aes-128-gcm", keyLength: 16 },
   { value: "2022-blake3-aes-256-gcm", keyLength: 32 },
-  { value: "2022-blake3-chacha20-poly1305", keyLength: 32 },
+  // 2022-blake3-chacha20-poly1305 is excluded: sing-box does not support it in multi-user mode.
   { value: "none", keyLength: null },
   { value: "aes-128-gcm", keyLength: null },
   { value: "aes-192-gcm", keyLength: null },

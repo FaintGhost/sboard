@@ -64,8 +64,15 @@
 - Node 同步联调体验：
   - 入站新增/更新/删除后自动触发对应节点 sync（不需要手动去节点页点同步）
   - Node sync 日志增强：打印每个 inbound 的 `tag/type/method/password_len/users`（不泄露敏感内容）
-  - Node 将明显的 payload 错误映射为 HTTP 400（更易区分“配置问题”与“节点内部错误”）
+  - Node 将明显的 payload 错误映射为 HTTP 400（更易区分"配置问题"与"节点内部错误"）
 - Docker 部署：
   - `node/docker-compose.yml` 默认拉取 Docker Hub 镜像（适配低配 VPS）
   - `node/docker-compose.build.yml` 用于本机构建并推送镜像
+- Shadowsocks 2022 多用户模式：
+  - SS2022 只支持 `2022-blake3-aes-128-gcm` 和 `2022-blake3-aes-256-gcm`（sing-box 的 multi-user 模式不支持 chacha20-poly1305）
+  - Panel 侧校验 `validators.go` 会拦截不支持的 method，返回清晰错误信息
+  - 前端 method 下拉框已移除 `chacha20-poly1305` 选项
+- Node 入站热更新：
+  - `ApplyInbounds` 先移除所有现有 inbound（释放端口），再创建新的
+  - 避免了"编辑入站后再次同步报端口占用"的问题
 
