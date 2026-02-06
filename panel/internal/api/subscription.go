@@ -1,7 +1,6 @@
 package api
 
 import (
-  "encoding/base64"
   "net/http"
   "strings"
 
@@ -53,7 +52,49 @@ func SubscriptionGet(store *db.Store) gin.HandlerFunc {
       })
     }
 
-    payload, err := subscription.BuildSingbox(subscription.User{
+    if format := strings.TrimSpace(c.Query("format")); format != "" {
+      if format != "singbox" && format != "v2ray" {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "invalid format"})
+        return
+      }
+      if format == "singbox" {
+        payload, err := subscription.BuildSingbox(subscription.User{
+          UUID:     user.UUID,
+          Username: user.Username,
+        }, items)
+        if err != nil {
+          c.JSON(http.StatusInternalServerError, gin.H{"error": "build subscription failed"})
+          return
+        }
+        c.Data(http.StatusOK, "application/json; charset=utf-8", payload)
+        return
+      }
+      payload, err := subscription.BuildV2Ray(subscription.User{
+        UUID:     user.UUID,
+        Username: user.Username,
+      }, items)
+      if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "build subscription failed"})
+        return
+      }
+      c.Data(http.StatusOK, "text/plain; charset=utf-8", payload)
+      return
+    }
+
+    if isSingboxUA(c.GetHeader("User-Agent")) {
+      payload, err := subscription.BuildSingbox(subscription.User{
+        UUID:     user.UUID,
+        Username: user.Username,
+      }, items)
+      if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "build subscription failed"})
+        return
+      }
+      c.Data(http.StatusOK, "application/json; charset=utf-8", payload)
+      return
+    }
+
+    payload, err := subscription.BuildV2Ray(subscription.User{
       UUID:     user.UUID,
       Username: user.Username,
     }, items)
@@ -61,23 +102,7 @@ func SubscriptionGet(store *db.Store) gin.HandlerFunc {
       c.JSON(http.StatusInternalServerError, gin.H{"error": "build subscription failed"})
       return
     }
-
-    if format := strings.TrimSpace(c.Query("format")); format != "" {
-      if format != "singbox" {
-        c.JSON(http.StatusBadRequest, gin.H{"error": "invalid format"})
-        return
-      }
-      c.Data(http.StatusOK, "application/json; charset=utf-8", payload)
-      return
-    }
-
-    if isSingboxUA(c.GetHeader("User-Agent")) {
-      c.Data(http.StatusOK, "application/json; charset=utf-8", payload)
-      return
-    }
-
-    encoded := base64.StdEncoding.EncodeToString(payload)
-    c.Data(http.StatusOK, "text/plain; charset=utf-8", []byte(encoded))
+    c.Data(http.StatusOK, "text/plain; charset=utf-8", payload)
   }
 }
 

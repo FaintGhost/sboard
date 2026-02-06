@@ -72,9 +72,18 @@ func insertUser(t *testing.T, store *db.Store, username string) int64 {
   return user.ID
 }
 
-func bindUserNode(t *testing.T, store *db.Store, userID, nodeID int64) {
+func insertGroup(t *testing.T, store *db.Store, name string) int64 {
   t.Helper()
-  _, err := store.DB.Exec("INSERT INTO user_nodes (user_id, node_id) VALUES (?, ?)", userID, nodeID)
+  res, err := store.DB.Exec("INSERT INTO groups (name, description) VALUES (?, ?)", name, "")
+  require.NoError(t, err)
+  id, err := res.LastInsertId()
+  require.NoError(t, err)
+  return id
+}
+
+func bindUserGroup(t *testing.T, store *db.Store, userID, groupID int64) {
+  t.Helper()
+  _, err := store.DB.Exec("INSERT INTO user_groups (user_id, group_id) VALUES (?, ?)", userID, groupID)
   require.NoError(t, err)
 }
 
@@ -82,10 +91,13 @@ func TestSubscriptionQuery(t *testing.T) {
   store := setupSubscriptionStore(t)
   ctx := context.Background()
 
+  groupID := insertGroup(t, store, "g1")
   nodeID := insertNode(t, store, "node-a", "api.local", 2222, "a.example.com")
+  _, err := store.DB.Exec("UPDATE nodes SET group_id = ? WHERE id = ?", groupID, nodeID)
+  require.NoError(t, err)
   _ = insertInbound(t, store, nodeID, "vless", 443, 0)
   userID := insertUser(t, store, "alice")
-  bindUserNode(t, store, userID, nodeID)
+  bindUserGroup(t, store, userID, groupID)
 
   got, err := store.ListUserInbounds(ctx, userID)
   require.NoError(t, err)

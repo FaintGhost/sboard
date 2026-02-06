@@ -1,0 +1,2 @@
+-- MigrateDown is not currently used by the app.
+-- Keeping this file for consistency with other migrations.

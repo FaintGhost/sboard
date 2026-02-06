@@ -38,7 +38,12 @@ func seedSubscriptionData(t *testing.T, store *db.Store) string {
   user, err := store.CreateUser(t.Context(), "alice")
   require.NoError(t, err)
 
-  res, err := store.DB.Exec(
+  res, err := store.DB.Exec("INSERT INTO groups (name, description) VALUES (?, ?)", "g1", "")
+  require.NoError(t, err)
+  groupID, err := res.LastInsertId()
+  require.NoError(t, err)
+
+  res, err = store.DB.Exec(
     "INSERT INTO nodes (uuid, name, address, port, secret_key, api_address, api_port, public_address) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
     uuid.NewString(),
     "node-a",
@@ -53,6 +58,9 @@ func seedSubscriptionData(t *testing.T, store *db.Store) string {
   nodeID, err := res.LastInsertId()
   require.NoError(t, err)
 
+  _, err = store.DB.Exec("UPDATE nodes SET group_id = ? WHERE id = ?", groupID, nodeID)
+  require.NoError(t, err)
+
   _, err = store.DB.Exec(
     "INSERT INTO inbounds (uuid, tag, node_id, protocol, listen_port, settings, public_port) VALUES (?, ?, ?, ?, ?, ?, ?)",
     uuid.NewString(),
@@ -65,7 +73,7 @@ func seedSubscriptionData(t *testing.T, store *db.Store) string {
   )
   require.NoError(t, err)
 
-  _, err = store.DB.Exec("INSERT INTO user_nodes (user_id, node_id) VALUES (?, ?)", user.ID, nodeID)
+  _, err = store.DB.Exec("INSERT INTO user_groups (user_id, group_id) VALUES (?, ?)", user.ID, groupID)
   require.NoError(t, err)
 
   return user.UUID

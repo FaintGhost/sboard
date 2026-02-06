@@ -19,10 +19,10 @@ type SubscriptionInbound struct {
 func (s *Store) ListUserInbounds(ctx context.Context, userID int64) ([]SubscriptionInbound, error) {
   rows, err := s.DB.QueryContext(ctx, `
     SELECT n.public_address, i.protocol, i.tag, i.listen_port, i.public_port, i.settings, i.tls_settings, i.transport_settings
-    FROM user_nodes un
-    JOIN nodes n ON n.id = un.node_id
+    FROM user_groups ug
+    JOIN nodes n ON n.group_id = ug.group_id
     JOIN inbounds i ON i.node_id = n.id
-    WHERE un.user_id = ?
+    WHERE ug.user_id = ?
     ORDER BY i.id ASC
   `, userID)
   if err != nil {
