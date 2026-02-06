@@ -33,6 +33,8 @@ func NewRouter(cfg config.Config, store *db.Store) *gin.Engine {
   auth.GET("/nodes/:id", NodesGet(store))
   auth.PUT("/nodes/:id", NodesUpdate(store))
   auth.DELETE("/nodes/:id", NodesDelete(store))
+  auth.GET("/nodes/:id/health", NodeHealth(store))
+  auth.POST("/nodes/:id/sync", NodeSync(store))
   auth.GET("/inbounds", InboundsList(store))
   auth.POST("/inbounds", InboundsCreate(store))
   auth.GET("/inbounds/:id", InboundsGet(store))
