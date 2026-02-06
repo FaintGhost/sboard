@@ -79,4 +79,33 @@
   - 所有管理页面已实现：登录、仪表盘、用户、分组、节点、入站、订阅、设置
   - 订阅页面：展示用户订阅链接、UA 行为说明、一键复制
   - 设置页面：系统信息、API 端点、订阅格式说明
+  - 用户页面：支持禁用用户（软删除）
+
+## Shadowsocks 2022 订阅生成（关键经验）
+
+### 密码格式规范
+- **服务端 (Inbound)**：顶层 `password` 为服务端 PSK，`users[].password` 为用户密钥
+- **客户端 (Outbound)**：`password` 格式必须为 `<server_psk>:<user_key>`（冒号分隔）
+- 参考规范：[Shadowsocks 2022 EIH Spec](https://github.com/Shadowsocks-NET/shadowsocks-specs/blob/main/2022-2-shadowsocks-2022-extensible-identity-headers.md)
+
+### 密钥长度要求
+| Method | Key Length | Base64 长度 |
+|--------|-----------|------------|
+| 2022-blake3-aes-128-gcm | 16 bytes | 24 chars |
+| 2022-blake3-aes-256-gcm | 32 bytes | 44 chars |
+
+### 实现细节
+- 公共密钥派生模块：`panel/internal/sskey/sskey.go`
+  - `DerivePassword(uuid, method)`：根据 UUID 和方法派生 base64 密钥
+  - `Is2022Method(method)`：判断是否为 2022 方法
+- 订阅生成时需要：
+  1. 从 inbound UUID 派生 server PSK
+  2. 从 user UUID 派生 user key
+  3. 组合为 `psk:userKey` 格式
+- sing-box shadowsocks outbound **不支持** `username` 字段，只有 `password`
+
+### 常见错误
+- `illegal base64 data`：密码不是有效的 base64 编码（如直接使用 UUID 字符串）
+- `missing psk`：服务端缺少顶层 password
+- `invalid argument`：使用了不支持 multi-user 的方法（如 chacha20-poly1305）
 
