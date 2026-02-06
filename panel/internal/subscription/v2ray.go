@@ -45,7 +45,7 @@ func BuildV2Ray(user User, items []Item) ([]byte, error) {
     }
 
     // Mirror sing-box behavior: fill credentials from user UUID unless already present.
-    injectCredentials(user, item.InboundType, settings)
+    injectCredentials(user, item.InboundUUID, item.InboundType, settings)
 
     switch item.InboundType {
     case "vless":
@@ -98,8 +98,12 @@ func buildShadowsocks(user User, host string, port int, tag string, settings map
   if m, ok := settings["method"].(string); ok && strings.TrimSpace(m) != "" {
     method = strings.TrimSpace(m)
   }
+  password := user.UUID
+  if pw, ok := settings["password"].(string); ok && pw != "" {
+    password = pw
+  }
   // ss://BASE64(method:password)@host:port#tag
-  auth := base64.RawURLEncoding.EncodeToString([]byte(method + ":" + user.UUID))
+  auth := base64.RawURLEncoding.EncodeToString([]byte(method + ":" + password))
   return fmt.Sprintf("ss://%s@%s:%d#%s", auth, host, port, url.QueryEscape(tag))
 }
 

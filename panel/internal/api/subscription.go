@@ -41,6 +41,7 @@ func SubscriptionGet(store *db.Store) gin.HandlerFunc {
     items := make([]subscription.Item, 0, len(inbounds))
     for _, inb := range inbounds {
       items = append(items, subscription.Item{
+        InboundUUID:       inb.InboundUUID,
         InboundType:       inb.InboundType,
         InboundTag:        inb.InboundTag,
         NodePublicAddress: inb.NodePublicAddress,

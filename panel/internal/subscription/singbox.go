@@ -14,6 +14,7 @@ type User struct {
 }
 
 type Item struct {
+  InboundUUID       string
   InboundType       string
   InboundTag        string
   NodePublicAddress string
@@ -62,7 +63,7 @@ func BuildSingbox(user User, items []Item) ([]byte, error) {
     }
     outbound["tag"] = tag
 
-    injectCredentials(user, item.InboundType, settings)
+    injectCredentials(user, item.InboundUUID, item.InboundType, settings)
     for k, v := range settings {
       outbound[k] = v
     }
@@ -89,34 +90,41 @@ func BuildSingbox(user User, items []Item) ([]byte, error) {
   return json.Marshal(payload)
 }
 
-func injectCredentials(user User, inboundType string, settings map[string]any) {
+func injectCredentials(user User, inboundUUID, inboundType string, settings map[string]any) {
   switch inboundType {
   case "vless", "vmess":
     if _, ok := settings["uuid"]; !ok {
       settings["uuid"] = user.UUID
     }
-    if _, ok := settings["username"]; !ok && user.Username != "" {
-      settings["username"] = user.Username
-    }
   case "trojan":
     if _, ok := settings["password"]; !ok {
       settings["password"] = user.UUID
     }
-    if _, ok := settings["username"]; !ok && user.Username != "" {
-      settings["username"] = user.Username
-    }
   case "shadowsocks":
     method, _ := settings["method"].(string)
-    if _, ok := settings["password"]; !ok {
-      // For SS2022, derive a base64 key from user UUID
-      pw, err := sskey.DerivePassword(user.UUID, method)
+    serverPSK, _ := settings["password"].(string)
+
+    if sskey.Is2022Method(method) {
+      // SS2022 multi-user: client password = <server_psk>:<user_key>
+      // Derive user key from user UUID
+      userKey, err := sskey.DerivePassword(user.UUID, method)
       if err != nil {
-        pw = user.UUID
+        userKey = user.UUID
       }
-      settings["password"] = pw
-    }
-    if _, ok := settings["username"]; !ok && user.Username != "" {
-      settings["username"] = user.Username
+      // If server PSK is missing in settings, derive it from inbound UUID
+      if serverPSK == "" {
+        serverPSK, _ = sskey.DerivePassword(inboundUUID, method)
+      }
+      if serverPSK != "" {
+        settings["password"] = serverPSK + ":" + userKey
+      } else {
+        settings["password"] = userKey
+      }
+    } else {
+      // Classic methods: just use user UUID as password
+      if serverPSK == "" {
+        settings["password"] = user.UUID
+      }
     }
   }
 }

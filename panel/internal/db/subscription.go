@@ -7,6 +7,7 @@ import (
 
 type SubscriptionInbound struct {
   NodePublicAddress string
+  InboundUUID       string
   InboundType       string
   InboundTag        string
   InboundListenPort int
@@ -18,7 +19,7 @@ type SubscriptionInbound struct {
 
 func (s *Store) ListUserInbounds(ctx context.Context, userID int64) ([]SubscriptionInbound, error) {
   rows, err := s.DB.QueryContext(ctx, `
-    SELECT n.public_address, i.protocol, i.tag, i.listen_port, i.public_port, i.settings, i.tls_settings, i.transport_settings
+    SELECT n.public_address, i.uuid, i.protocol, i.tag, i.listen_port, i.public_port, i.settings, i.tls_settings, i.transport_settings
     FROM user_groups ug
     JOIN nodes n ON n.group_id = ug.group_id
     JOIN inbounds i ON i.node_id = n.id
@@ -39,6 +40,7 @@ func (s *Store) ListUserInbounds(ctx context.Context, userID int64) ([]Subscript
     var settings string
     if err := rows.Scan(
       &item.NodePublicAddress,
+      &item.InboundUUID,
       &item.InboundType,
       &item.InboundTag,
       &item.InboundListenPort,
