@@ -14,4 +14,4 @@ services:
     environment:
       NODE_HTTP_ADDR: ":3000"
       NODE_SECRET_KEY: "${NODE_SECRET_KEY:-change-me}"
-      NODE_LOG_LEVEL: "${NODE_LOG_LEVEL:-info}"
+      NODE_LOG_LEVEL: "${NODE_LOG_LEVEL:-debug}"

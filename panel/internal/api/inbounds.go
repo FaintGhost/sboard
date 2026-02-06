@@ -65,6 +65,16 @@ func InboundsCreate(store *db.Store) gin.HandlerFunc {
       c.JSON(http.StatusBadRequest, gin.H{"error": "invalid settings"})
       return
     }
+    // Protocol-specific validation (best-effort).
+    settingsMap := map[string]any{}
+    if err := json.Unmarshal(req.Settings, &settingsMap); err != nil {
+      c.JSON(http.StatusBadRequest, gin.H{"error": "invalid settings"})
+      return
+    }
+    if err := validateInboundSettings(proto, settingsMap); err != nil {
+      c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+      return
+    }
     if len(req.TLSSettings) > 0 && !json.Valid(req.TLSSettings) {
       c.JSON(http.StatusBadRequest, gin.H{"error": "invalid tls_settings"})
       return
@@ -96,7 +106,13 @@ func InboundsCreate(store *db.Store) gin.HandlerFunc {
       c.JSON(http.StatusInternalServerError, gin.H{"error": "create inbound failed"})
       return
     }
-    c.JSON(http.StatusCreated, gin.H{"data": toInboundDTO(inb)})
+    n, err := store.GetNodeByID(c.Request.Context(), inb.NodeID)
+    if err != nil {
+      c.JSON(http.StatusCreated, gin.H{"data": toInboundDTO(inb), "sync": syncResult{Status: "error", Error: "get node failed"}})
+      return
+    }
+    sync := trySyncNode(c.Request.Context(), store, n)
+    c.JSON(http.StatusCreated, gin.H{"data": toInboundDTO(inb), "sync": sync})
   }
 }
 
@@ -165,6 +181,15 @@ func InboundsUpdate(store *db.Store) gin.HandlerFunc {
       c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
       return
     }
+    cur, err := store.GetInboundByID(c.Request.Context(), id)
+    if err != nil {
+      if errors.Is(err, db.ErrNotFound) {
+        c.JSON(http.StatusNotFound, gin.H{"error": "inbound not found"})
+        return
+      }
+      c.JSON(http.StatusInternalServerError, gin.H{"error": "get inbound failed"})
+      return
+    }
     var req updateInboundReq
     if err := c.ShouldBindJSON(&req); err != nil {
       c.JSON(http.StatusBadRequest, gin.H{"error": "invalid body"})
@@ -222,6 +247,30 @@ func InboundsUpdate(store *db.Store) gin.HandlerFunc {
       }
       upd.TransportSettings = req.TransportSettings
     }
+
+    // Validate final protocol+settings.
+    finalProto := cur.Protocol
+    if upd.Protocol != nil {
+      finalProto = *upd.Protocol
+    }
+    finalSettings := cur.Settings
+    if upd.Settings != nil {
+      finalSettings = *upd.Settings
+    }
+    if len(finalSettings) == 0 || !json.Valid(finalSettings) {
+      c.JSON(http.StatusBadRequest, gin.H{"error": "invalid settings"})
+      return
+    }
+    settingsMap := map[string]any{}
+    if err := json.Unmarshal(finalSettings, &settingsMap); err != nil {
+      c.JSON(http.StatusBadRequest, gin.H{"error": "invalid settings"})
+      return
+    }
+    if err := validateInboundSettings(finalProto, settingsMap); err != nil {
+      c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+      return
+    }
+
     inb, err := store.UpdateInbound(c.Request.Context(), id, upd)
     if err != nil {
       if errors.Is(err, db.ErrNotFound) {
@@ -235,7 +284,13 @@ func InboundsUpdate(store *db.Store) gin.HandlerFunc {
       c.JSON(http.StatusInternalServerError, gin.H{"error": "update inbound failed"})
       return
     }
-    c.JSON(http.StatusOK, gin.H{"data": toInboundDTO(inb)})
+    n, err := store.GetNodeByID(c.Request.Context(), inb.NodeID)
+    if err != nil {
+      c.JSON(http.StatusOK, gin.H{"data": toInboundDTO(inb), "sync": syncResult{Status: "error", Error: "get node failed"}})
+      return
+    }
+    sync := trySyncNode(c.Request.Context(), store, n)
+    c.JSON(http.StatusOK, gin.H{"data": toInboundDTO(inb), "sync": sync})
   }
 }
 
@@ -249,6 +304,15 @@ func InboundsDelete(store *db.Store) gin.HandlerFunc {
       c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
       return
     }
+    cur, err := store.GetInboundByID(c.Request.Context(), id)
+    if err != nil {
+      if errors.Is(err, db.ErrNotFound) {
+        c.JSON(http.StatusNotFound, gin.H{"error": "inbound not found"})
+        return
+      }
+      c.JSON(http.StatusInternalServerError, gin.H{"error": "get inbound failed"})
+      return
+    }
     if err := store.DeleteInbound(c.Request.Context(), id); err != nil {
       if errors.Is(err, db.ErrNotFound) {
         c.JSON(http.StatusNotFound, gin.H{"error": "inbound not found"})
@@ -257,8 +321,28 @@ func InboundsDelete(store *db.Store) gin.HandlerFunc {
       c.JSON(http.StatusInternalServerError, gin.H{"error": "delete inbound failed"})
       return
     }
-    c.JSON(http.StatusOK, gin.H{"status": "ok"})
+    n, err := store.GetNodeByID(c.Request.Context(), cur.NodeID)
+    if err != nil {
+      c.JSON(http.StatusOK, gin.H{"status": "ok", "sync": syncResult{Status: "error", Error: "get node failed"}})
+      return
+    }
+    sync := trySyncNode(c.Request.Context(), store, n)
+    c.JSON(http.StatusOK, gin.H{"status": "ok", "sync": sync})
   }
+}
+
+func validateInboundSettings(protocol string, settings map[string]any) error {
+  p := strings.TrimSpace(strings.ToLower(protocol))
+  switch p {
+  case "shadowsocks":
+    // sing-box requires a non-empty method for shadowsocks inbounds.
+    method, _ := settings["method"].(string)
+    if strings.TrimSpace(method) == "" {
+      return errors.New("shadowsocks settings.method required")
+    }
+  default:
+  }
+  return nil
 }
 
 func toInboundDTO(inb db.Inbound) inboundDTO {
@@ -275,4 +359,3 @@ func toInboundDTO(inb db.Inbound) inboundDTO {
     TransportSettings: inb.TransportSettings,
   }
 }
-

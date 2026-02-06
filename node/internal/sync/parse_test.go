@@ -1,23 +1,27 @@
-package sync_test
+package sync
 
 import (
   "testing"
 
-  "sboard/node/internal/sync"
   "github.com/stretchr/testify/require"
 )
 
-func TestParseAndValidateInbounds(t *testing.T) {
-  ctx := sync.NewSingboxContext()
+func TestParseAndValidateInbounds_WrapsUnmarshalErrorWithMeta(t *testing.T) {
+  ctx := NewSingboxContext()
   body := []byte(`{
     "inbounds": [
-      {"type":"mixed","tag":"m1","listen":"0.0.0.0","listen_port":1080}
+      {
+        "type": "vless",
+        "tag": "vless-in",
+        "listen": "0.0.0.0",
+        "listen_port": 443,
+        "users": "not-an-array"
+      }
     ]
   }`)
-
-  inbounds, err := sync.ParseAndValidateInbounds(ctx, body)
-  require.NoError(t, err)
-  require.Len(t, inbounds, 1)
-  require.Equal(t, "mixed", inbounds[0].Type)
-  require.Equal(t, "m1", inbounds[0].Tag)
+  _, err := ParseAndValidateInbounds(ctx, body)
+  require.Error(t, err)
+  require.Contains(t, err.Error(), "inbounds[0]")
+  require.Contains(t, err.Error(), "tag=vless-in")
+  require.Contains(t, err.Error(), "type=vless")
 }

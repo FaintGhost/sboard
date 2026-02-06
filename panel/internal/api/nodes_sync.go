@@ -73,37 +73,17 @@ func NodeSync(store *db.Store) gin.HandlerFunc {
       c.JSON(http.StatusBadRequest, gin.H{"error": "node group_id not set"})
       return
     }
-
-    inbounds, err := store.ListInbounds(c.Request.Context(), 10000, 0, n.ID)
-    if err != nil {
-      c.JSON(http.StatusInternalServerError, gin.H{"error": "list inbounds failed"})
-      return
-    }
-    users, err := store.ListActiveUsersForGroup(c.Request.Context(), *n.GroupID)
-    if err != nil {
-      c.JSON(http.StatusInternalServerError, gin.H{"error": "list users failed"})
-      return
-    }
-
-    payload, err := node.BuildSyncPayload(n, inbounds, users)
-    if err != nil {
-      c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-      return
-    }
-
-    client := nodeClientFactory()
-    if err := client.SyncConfig(c.Request.Context(), n, payload); err != nil {
+    res := trySyncNode(c.Request.Context(), store, n)
+    if res.Status != "ok" {
       // include a short dump for debugging when node returns 4xx/5xx
-      if strings.Contains(err.Error(), "node sync status") {
+      if strings.Contains(res.Error, "node sync status") {
         // Best-effort: show current request context only, not secrets.
         dump, _ := httputil.DumpRequest(c.Request, false)
         _ = dump
       }
-      c.JSON(http.StatusBadGateway, gin.H{"error": err.Error()})
+      c.JSON(http.StatusBadGateway, gin.H{"error": res.Error})
       return
     }
-
     c.JSON(http.StatusOK, gin.H{"status": "ok"})
   }
 }
-

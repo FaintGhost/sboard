@@ -2,6 +2,7 @@ package core
 
 import (
   "context"
+  "fmt"
 
   "github.com/sagernet/sing-box/adapter"
   "github.com/sagernet/sing-box/log"
@@ -22,7 +23,8 @@ func ApplyInbounds(ctx context.Context, router adapter.Router, loggerFactory Log
       lg = loggerFactory(inb.Type, inb.Tag)
     }
     if err := mgr.Create(ctx, router, lg, inb.Tag, inb.Type, inb.Options); err != nil {
-      return err
+      // sing-box errors are often context-free; add tag/type to speed up debugging.
+      return fmt.Errorf("create inbound (tag=%s type=%s): %w", inb.Tag, inb.Type, err)
     }
   }
   return nil

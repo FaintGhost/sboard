@@ -54,7 +54,8 @@ func ParseAndValidateInbounds(ctx context.Context, body []byte) ([]option.Inboun
 
     var inb option.Inbound
     if err := sbjson.UnmarshalContext(ctx, raw, &inb); err != nil {
-      return nil, err
+      // sing-box errors can be too context-free; include index/tag/type for debugging.
+      return nil, fmt.Errorf("inbounds[%d] (tag=%s type=%s): %w", i, meta.Tag, meta.Type, err)
     }
     inbounds = append(inbounds, inb)
   }

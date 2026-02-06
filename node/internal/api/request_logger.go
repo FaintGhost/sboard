@@ -17,7 +17,10 @@ func RequestLogger() gin.HandlerFunc {
 
     status := c.Writer.Status()
     cost := time.Since(start)
+    if len(c.Errors) > 0 {
+      log.Printf("[http] %s %s -> %d (%s) err=%s", method, path, status, cost.Truncate(time.Microsecond), c.Errors.String())
+      return
+    }
     log.Printf("[http] %s %s -> %d (%s)", method, path, status, cost.Truncate(time.Microsecond))
   }
 }
-
