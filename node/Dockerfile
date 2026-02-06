@@ -3,12 +3,15 @@ FROM golang:1.25 AS builder
 WORKDIR /src
 COPY go.mod ./
 
-# go.sum may be generated in this layer if missing.
+# The repo does not necessarily ship with go.sum (fresh clone / early stage),
+# so we must allow the image build to generate a complete go.sum on the fly.
+# Some environments also set GOFLAGS=-mod=readonly; use -mod=mod explicitly.
 RUN go mod download
 
 COPY . .
 
-RUN CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o /out/sboard-node ./cmd/node
+RUN go mod tidy -mod=mod
+RUN CGO_ENABLED=0 go build -mod=mod -trimpath -ldflags "-s -w" -o /out/sboard-node ./cmd/node
 
 FROM debian:stable-slim
 WORKDIR /app
@@ -19,4 +22,3 @@ ENV NODE_LOG_LEVEL=info
 
 EXPOSE 3000
 ENTRYPOINT ["/app/sboard-node"]
-
