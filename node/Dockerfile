@@ -10,7 +10,8 @@ RUN go mod download
 
 COPY . .
 
-RUN go mod tidy -mod=mod
+# `go mod tidy` does not accept `-mod=...`. Also avoid inheriting GOFLAGS=-mod=readonly.
+RUN GOFLAGS= go mod tidy
 RUN CGO_ENABLED=0 go build -mod=mod -trimpath -ldflags "-s -w" -o /out/sboard-node ./cmd/node
 
 FROM debian:stable-slim
