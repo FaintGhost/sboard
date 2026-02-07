@@ -4,14 +4,19 @@ export type BuildNodeComposeInput = {
   logLevel?: string
   image?: string
   containerName?: string
+  statePath?: string
 }
 
 export function buildNodeDockerCompose(input: BuildNodeComposeInput): string {
-  const port = Number.isFinite(input.port) ? Math.trunc(input.port) : 0
+  const port =
+    Number.isFinite(input.port) && input.port >= 1 && input.port <= 65535
+      ? Math.trunc(input.port)
+      : 3003
   const secretKey = input.secretKey
   const logLevel = input.logLevel?.trim() || "info"
   const image = input.image?.trim() || "faintghost/sboard-node:latest"
   const containerName = input.containerName?.trim() || "sboard-node"
+  const statePath = input.statePath?.trim() || "/data/last_sync.json"
 
   return `services:
   ${containerName}:
@@ -19,10 +24,13 @@ export function buildNodeDockerCompose(input: BuildNodeComposeInput): string {
     image: ${image}
     restart: unless-stopped
     network_mode: host
+    volumes:
+      - ./data:/data
     environment:
       NODE_HTTP_ADDR: ":${port}"
       NODE_SECRET_KEY: "${escapeDoubleQuoted(secretKey)}"
       NODE_LOG_LEVEL: "${escapeDoubleQuoted(logLevel)}"
+      NODE_STATE_PATH: "${escapeDoubleQuoted(statePath)}"
 `
 }
 
@@ -45,4 +53,3 @@ function base64UrlEncode(buf: Uint8Array): string {
   const b64 = btoa(s)
   return b64.replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "")
 }
-

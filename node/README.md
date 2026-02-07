@@ -17,6 +17,7 @@ docker compose up -d
   - `docker-compose.yml` 使用 `network_mode: host`，这样 `panel` 下发的入站端口(例如 443)能直接绑定到宿主机端口。
   - 同时也意味着 `NODE_HTTP_ADDR=:3000` 会暴露在公网。务必在 VPS 防火墙中只允许 `panel` 服务器 IP 访问 `3000/tcp`。
   - 默认会拉取 Docker Hub 镜像：`SBOARD_NODE_IMAGE`（默认 `faintghost/sboard-node:latest`）。
+  - 默认会挂载 `./data:/data` 并设置 `NODE_STATE_PATH=/data/last_sync.json`，用于持久化最后一次成功下发的 payload，使容器重启后自动恢复入站配置。
 
 ## 方式 2: 裸机运行
 

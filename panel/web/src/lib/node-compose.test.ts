@@ -16,11 +16,13 @@ describe("buildNodeDockerCompose", () => {
     image: faintghost/sboard-node:latest
     restart: unless-stopped
     network_mode: host
+    volumes:
+      - ./data:/data
     environment:
       NODE_HTTP_ADDR: ":3003"
       NODE_SECRET_KEY: "69186918"
       NODE_LOG_LEVEL: "info"
+      NODE_STATE_PATH: "/data/last_sync.json"
 `)
   })
 })
-

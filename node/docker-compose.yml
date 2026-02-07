@@ -11,7 +11,12 @@ services:
     # Recommend: allow only the Panel server IP to access port 3000.
     network_mode: host
 
+    # Persist last successful sync payload, so after container restart the node restores inbounds automatically.
+    volumes:
+      - ./data:/data
+
     environment:
       NODE_HTTP_ADDR: ":3000"
       NODE_SECRET_KEY: "${NODE_SECRET_KEY:-change-me}"
       NODE_LOG_LEVEL: "${NODE_LOG_LEVEL:-debug}"
+      NODE_STATE_PATH: "${NODE_STATE_PATH:-/data/last_sync.json}"
