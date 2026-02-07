@@ -156,6 +156,8 @@
     "statusOnline": "Online",
     "statusOffline": "Offline",
     "statusUnknown": "Unknown",
+    "traffic": "Traffic",
+    "lastSampleAt": "Last Sample",
     "sync": "Sync",
     "syncing": "Syncing...",
     "syncSuccess": "Sync successful",

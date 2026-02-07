@@ -1,5 +1,5 @@
 import { apiRequest } from "./client"
-import type { ListNodesParams, Node } from "./types"
+import type { ListNodesParams, Node, NodeTrafficSample } from "./types"
 
 export function listNodes(params: ListNodesParams = {}) {
   const query = new URLSearchParams()
@@ -54,3 +54,13 @@ export function nodeSync(id: number) {
   return apiRequest<{ status: string }>(`/api/nodes/${id}/sync`, { method: "POST" })
 }
 
+export function listNodeTraffic(
+  id: number,
+  params: { limit?: number; offset?: number } = {},
+) {
+  const query = new URLSearchParams()
+  if (typeof params.limit === "number") query.set("limit", String(params.limit))
+  if (typeof params.offset === "number") query.set("offset", String(params.offset))
+  const suffix = query.toString() ? `?${query.toString()}` : ""
+  return apiRequest<{ data: NodeTrafficSample[] }>(`/api/nodes/${id}/traffic${suffix}`)
+}

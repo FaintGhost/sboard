@@ -56,7 +56,7 @@ func main() {
 		log.Printf("[state] restored from path=%s", cfg.StatePath)
 	}
 
-	r := api.NewRouter(cfg.SecretKey, adapter)
+	r := api.NewRouter(cfg.SecretKey, adapter, c)
 	if err := r.Run(cfg.HTTPAddr); err != nil {
 		log.Fatal(err)
 	}

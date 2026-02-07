@@ -57,12 +57,10 @@ func main() {
 		log.Printf("[monitor] nodes enabled interval=%s", cfg.NodeMonitorInterval)
 	}
 
-	if cfg.TrafficMonitorInterval > 0 {
-		ctx := context.Background()
-		tm := monitor.NewTrafficMonitor(store, nil)
-		go tm.Run(ctx, cfg.TrafficMonitorInterval)
-		log.Printf("[monitor] traffic enabled interval=%s", cfg.TrafficMonitorInterval)
-	}
+	ctx := context.Background()
+	tm := monitor.NewTrafficMonitor(store, nil)
+	go tm.Run(ctx, cfg.TrafficMonitorInterval)
+	log.Printf("[monitor] traffic enabled interval=%s", cfg.TrafficMonitorInterval)
 
 	r := api.NewRouter(cfg, store)
 	if err := r.Run(cfg.HTTPAddr); err != nil {

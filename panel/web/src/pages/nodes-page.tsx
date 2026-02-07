@@ -42,8 +42,8 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { StatusDot } from "@/components/status-dot"
 import { ApiError } from "@/lib/api/client"
 import { listGroups } from "@/lib/api/groups"
-import { createNode, deleteNode, listNodes, nodeHealth, nodeSync, updateNode } from "@/lib/api/nodes"
-import type { Group, Node } from "@/lib/api/types"
+import { createNode, deleteNode, listNodeTraffic, listNodes, nodeHealth, nodeSync, updateNode } from "@/lib/api/nodes"
+import type { Group, Node, NodeTrafficSample } from "@/lib/api/types"
 import { buildNodeDockerCompose, generateNodeSecretKey } from "@/lib/node-compose"
 
 type EditState = {
@@ -79,6 +79,7 @@ export function NodesPage() {
   const { t } = useTranslation()
   const qc = useQueryClient()
   const [upserting, setUpserting] = useState<EditState | null>(null)
+  const [trafficNode, setTrafficNode] = useState<Node | null>(null)
   const [actionMessage, setActionMessage] = useState<string | null>(null)
 
   const queryParams = useMemo(() => ({ limit: 50, offset: 0 }), [])
@@ -128,6 +129,33 @@ export function NodesPage() {
     onSuccess: () => setActionMessage(t("nodes.syncOk")),
     onError: (e) => setActionMessage(e instanceof ApiError ? e.message : t("nodes.syncFailed")),
   })
+
+  const trafficQuery = useQuery({
+    queryKey: ["nodes", "traffic", trafficNode?.id ?? 0],
+    queryFn: async () => {
+      if (!trafficNode) return { data: [] as NodeTrafficSample[] }
+      return listNodeTraffic(trafficNode.id, { limit: 300, offset: 0 })
+    },
+    enabled: !!trafficNode,
+    refetchInterval: trafficNode ? 10_000 : false,
+  })
+
+  const trafficByInbound = useMemo(() => {
+    const rows = trafficQuery.data?.data ?? []
+    const map = new Map<string, { inbound: string; upload: number; download: number; last: string }>()
+    for (const r of rows) {
+      const tag = r.inbound_tag ?? "(node)"
+      const prev = map.get(tag)
+      const last = prev ? (prev.last > r.recorded_at ? prev.last : r.recorded_at) : r.recorded_at
+      map.set(tag, {
+        inbound: tag,
+        upload: (prev?.upload ?? 0) + r.upload,
+        download: (prev?.download ?? 0) + r.download,
+        last,
+      })
+    }
+    return Array.from(map.values()).sort((a, b) => (a.inbound < b.inbound ? -1 : 1))
+  }, [trafficQuery.data])
 
   return (
     <div className="px-4 lg:px-6">
@@ -268,6 +296,14 @@ export function NodesPage() {
                           >
                             <RefreshCw className="mr-2 size-4" />
                             {t("nodes.sync")}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setActionMessage(null)
+                              setTrafficNode(n)
+                            }}
+                          >
+                            {t("nodes.traffic")}
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
@@ -507,6 +543,58 @@ export function NodesPage() {
                 disabled={createMutation.isPending || updateMutation.isPending}
               >
                 {t("common.save")}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={!!trafficNode} onOpenChange={(open) => (!open ? setTrafficNode(null) : null)}>
+          <DialogContent aria-label={t("nodes.traffic")} className="max-w-3xl">
+            <DialogHeader>
+              <DialogTitle>{t("nodes.traffic")}</DialogTitle>
+              {trafficNode ? <DialogDescription>{trafficNode.name}</DialogDescription> : null}
+            </DialogHeader>
+
+            <div className="space-y-3">
+              <div className="text-xs text-muted-foreground">
+                {trafficQuery.isLoading ? t("common.loading") : null}
+                {trafficQuery.isError ? t("common.loadFailed") : null}
+              </div>
+
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t("inbounds.tag")}</TableHead>
+                    <TableHead>{t("users.traffic")}</TableHead>
+                    <TableHead>{t("nodes.lastSampleAt")}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {trafficByInbound.map((r) => (
+                    <TableRow key={r.inbound}>
+                      <TableCell className="font-medium">{r.inbound}</TableCell>
+                      <TableCell className="text-muted-foreground">
+                        ↑ {(r.upload / (1024 ** 3)).toFixed(3)} GB
+                        {"  "}
+                        ↓ {(r.download / (1024 ** 3)).toFixed(3)} GB
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{r.last || "-"}</TableCell>
+                    </TableRow>
+                  ))}
+                  {!trafficQuery.isLoading && trafficByInbound.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={3} className="py-8 text-center text-muted-foreground">
+                        {t("common.noData")}
+                      </TableCell>
+                    </TableRow>
+                  ) : null}
+                </TableBody>
+              </Table>
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setTrafficNode(null)}>
+                {t("common.cancel")}
               </Button>
             </DialogFooter>
           </DialogContent>

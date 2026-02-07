@@ -35,6 +35,13 @@ type TrafficSample struct {
 	At        time.Time `json:"at"`
 }
 
+type InboundTraffic struct {
+	Tag      string    `json:"tag"`
+	Uplink   int64     `json:"uplink"`
+	Downlink int64     `json:"downlink"`
+	At       time.Time `json:"at"`
+}
+
 func (c *Client) Health(ctx context.Context, node db.Node) error {
 	url := buildURL(node, "/api/health")
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
@@ -76,6 +83,37 @@ func (c *Client) Traffic(ctx context.Context, node db.Node) (TrafficSample, erro
 		return TrafficSample{}, err
 	}
 	return out, nil
+}
+
+func (c *Client) InboundTraffic(ctx context.Context, node db.Node, reset bool) ([]InboundTraffic, error) {
+	url := buildURL(node, "/api/stats/inbounds")
+	if reset {
+		url += "?reset=1"
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", "Bearer "+node.SecretKey)
+
+	resp, err := c.doer.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode/100 != 2 {
+		b, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+		return nil, fmt.Errorf("node inbound traffic status %d: %s", resp.StatusCode, strings.TrimSpace(string(b)))
+	}
+	var out struct {
+		Data  []InboundTraffic `json:"data"`
+		Reset bool             `json:"reset"`
+	}
+	dec := json.NewDecoder(resp.Body)
+	if err := dec.Decode(&out); err != nil {
+		return nil, err
+	}
+	return out.Data, nil
 }
 
 func (c *Client) SyncConfig(ctx context.Context, node db.Node, payload any) error {

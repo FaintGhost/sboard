@@ -9,8 +9,8 @@ import (
 	"sboard/panel/internal/node"
 )
 
-// TrafficMonitor periodically samples node traffic (host interface counters) and stores it.
-// It is intentionally isolated from sync/subscription flows so it can be disabled without risk.
+// TrafficMonitor periodically pulls inbound-level traffic deltas from nodes and stores them.
+// It is intentionally isolated from sync/subscription flows.
 type TrafficMonitor struct {
 	store  *db.Store
 	client *node.Client
@@ -36,16 +36,18 @@ func (m *TrafficMonitor) SampleOnce(ctx context.Context) error {
 		if n.APIPort <= 0 || n.SecretKey == "" {
 			continue
 		}
-		sample, err := m.client.Traffic(ctx, n)
+		items, err := m.client.InboundTraffic(ctx, n, true)
 		if err != nil {
 			// Sampling should never block core functionality; keep it best-effort.
-			log.Printf("[traffic] node id=%d name=%s sample failed: %v", n.ID, n.Name, err)
+			log.Printf("[traffic] node id=%d name=%s pull failed: %v", n.ID, n.Name, err)
 			continue
 		}
-		_, err = m.store.InsertNodeTrafficSample(ctx, n.ID, int64(sample.TxBytes), int64(sample.RxBytes), sample.At)
-		if err != nil {
-			log.Printf("[traffic] node id=%d name=%s insert failed: %v", n.ID, n.Name, err)
-			continue
+		for _, it := range items {
+			// In sing-box stats naming, uplink = client->server (read), downlink = server->client (write).
+			if _, err := m.store.InsertInboundTrafficDelta(ctx, n.ID, it.Tag, it.Uplink, it.Downlink, it.At); err != nil {
+				log.Printf("[traffic] node id=%d name=%s inbound=%s insert failed: %v", n.ID, n.Name, it.Tag, err)
+				continue
+			}
 		}
 	}
 	return nil

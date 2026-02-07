@@ -10,10 +10,11 @@ import (
 )
 
 type nodeTrafficSampleDTO struct {
-	ID         int64  `json:"id"`
-	Upload     int64  `json:"upload"`
-	Download   int64  `json:"download"`
-	RecordedAt string `json:"recorded_at"`
+	ID         int64   `json:"id"`
+	InboundTag *string `json:"inbound_tag"`
+	Upload     int64   `json:"upload"`
+	Download   int64   `json:"download"`
+	RecordedAt string  `json:"recorded_at"`
 }
 
 func NodeTrafficList(store *db.Store) gin.HandlerFunc {
@@ -50,6 +51,7 @@ func NodeTrafficList(store *db.Store) gin.HandlerFunc {
 		for _, it := range items {
 			out = append(out, nodeTrafficSampleDTO{
 				ID:         it.ID,
+				InboundTag: it.InboundTag,
 				Upload:     it.Upload,
 				Download:   it.Download,
 				RecordedAt: timeRFC3339OrEmpty(it.RecordedAt),

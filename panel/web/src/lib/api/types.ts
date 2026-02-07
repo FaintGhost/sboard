@@ -75,6 +75,14 @@ export type ListNodesParams = {
   offset?: number
 }
 
+export type NodeTrafficSample = {
+  id: number
+  inbound_tag: string | null
+  upload: number
+  download: number
+  recorded_at: string
+}
+
 export type Inbound = {
   id: number
   uuid: string

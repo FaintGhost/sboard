@@ -23,19 +23,19 @@ type Config struct {
 	NodeMonitorInterval time.Duration
 
 	// Traffic monitor: periodically sample node traffic counters.
-	// Disabled by default to avoid any accidental performance impact.
 	TrafficMonitorInterval time.Duration
 }
 
 func Load() Config {
 	cfg := Config{
-		HTTPAddr:               ":8080",
-		DBPath:                 "panel.db",
-		LogRequests:            true,
-		ServeWeb:               false,
-		WebDir:                 "web/dist",
-		NodeMonitorInterval:    10 * time.Second,
-		TrafficMonitorInterval: 0,
+		HTTPAddr:            ":8080",
+		DBPath:              "panel.db",
+		LogRequests:         true,
+		ServeWeb:            false,
+		WebDir:              "web/dist",
+		NodeMonitorInterval: 10 * time.Second,
+		// Always enabled; tune interval via env if needed.
+		TrafficMonitorInterval: 30 * time.Second,
 	}
 	if v := os.Getenv("PANEL_HTTP_ADDR"); v != "" {
 		cfg.HTTPAddr = v
@@ -68,6 +68,10 @@ func Load() Config {
 	}
 	if v := os.Getenv("PANEL_TRAFFIC_MONITOR_INTERVAL"); v != "" {
 		if d, err := time.ParseDuration(strings.TrimSpace(v)); err == nil {
+			// Avoid disabling via env; clamp to a safe minimum.
+			if d < 5*time.Second {
+				d = 5 * time.Second
+			}
 			cfg.TrafficMonitorInterval = d
 		}
 	}
