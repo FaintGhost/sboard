@@ -67,6 +67,7 @@ export type Node = {
   public_address: string
   group_id: number | null
   status: string
+  last_seen_at?: string | null
 }
 
 export type ListNodesParams = {

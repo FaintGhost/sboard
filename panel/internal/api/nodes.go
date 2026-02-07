@@ -4,6 +4,7 @@ import (
   "errors"
   "net/http"
   "strings"
+  "time"
 
   "sboard/panel/internal/db"
   "github.com/gin-gonic/gin"
@@ -19,6 +20,7 @@ type nodeDTO struct {
   PublicAddress string `json:"public_address"`
   GroupID       *int64 `json:"group_id"`
   Status        string `json:"status"`
+  LastSeenAt    *time.Time `json:"last_seen_at"`
 }
 
 type createNodeReq struct {
@@ -235,6 +237,6 @@ func toNodeDTO(n db.Node) nodeDTO {
     PublicAddress: n.PublicAddress,
     GroupID:       n.GroupID,
     Status:        n.Status,
+    LastSeenAt:    n.LastSeenAt,
   }
 }
-
