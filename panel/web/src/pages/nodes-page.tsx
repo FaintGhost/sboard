@@ -133,7 +133,7 @@ export function NodesPage() {
   const trafficQuery = useQuery({
     queryKey: ["nodes", "traffic", trafficNode?.id ?? 0],
     queryFn: async () => {
-      if (!trafficNode) return { data: [] as NodeTrafficSample[] }
+      if (!trafficNode) return [] as NodeTrafficSample[]
       return listNodeTraffic(trafficNode.id, { limit: 300, offset: 0 })
     },
     enabled: !!trafficNode,
@@ -141,7 +141,7 @@ export function NodesPage() {
   })
 
   const trafficByInbound = useMemo(() => {
-    const rows = trafficQuery.data?.data ?? []
+    const rows = trafficQuery.data ?? []
     const map = new Map<string, { inbound: string; upload: number; download: number; last: string }>()
     for (const r of rows) {
       const tag = r.inbound_tag ?? "(node)"

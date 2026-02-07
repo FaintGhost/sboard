@@ -62,5 +62,7 @@ export function listNodeTraffic(
   if (typeof params.limit === "number") query.set("limit", String(params.limit))
   if (typeof params.offset === "number") query.set("offset", String(params.offset))
   const suffix = query.toString() ? `?${query.toString()}` : ""
-  return apiRequest<{ data: NodeTrafficSample[] }>(`/api/nodes/${id}/traffic${suffix}`)
+  // apiRequest() already unwraps the SuccessEnvelope { data: T }.
+  // The backend returns { data: NodeTrafficSample[] }, so here we request T = NodeTrafficSample[].
+  return apiRequest<NodeTrafficSample[]>(`/api/nodes/${id}/traffic${suffix}`)
 }
