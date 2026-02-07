@@ -20,7 +20,9 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if err := db.MigrateUp(database, "internal/db/migrations"); err != nil {
+	// Use embedded migrations by default to make Docker images robust.
+	// Tests can still call db.MigrateUp(db, dir) with a filesystem path when needed.
+	if err := db.MigrateUp(database, ""); err != nil {
 		log.Fatal(err)
 	}
 	store := db.NewStore(database)

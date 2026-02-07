@@ -86,3 +86,10 @@ func (c *Core) InboundTraffic(reset bool) []stats.InboundTraffic {
 	}
 	return c.traffic.Snapshot(reset)
 }
+
+func (c *Core) InboundTrafficMeta() stats.InboundTrafficMeta {
+	if c == nil || c.traffic == nil {
+		return stats.InboundTrafficMeta{}
+	}
+	return c.traffic.Meta()
+}

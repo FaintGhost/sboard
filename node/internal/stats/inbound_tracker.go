@@ -20,6 +20,12 @@ type InboundTraffic struct {
 	At       time.Time `json:"at"`
 }
 
+type InboundTrafficMeta struct {
+	TrackedTags int   `json:"tracked_tags"`
+	TCPConns    int64 `json:"tcp_conns"`
+	UDPConns    int64 `json:"udp_conns"`
+}
+
 // InboundTrafficTracker tracks inbound-level traffic by wrapping routed connections.
 //
 // Notes:
@@ -31,6 +37,9 @@ type InboundTrafficTracker struct {
 	mu        sync.Mutex
 	uplink    map[string]*atomic.Int64
 	downlink  map[string]*atomic.Int64
+
+	tcpConns atomic.Int64
+	udpConns atomic.Int64
 }
 
 func NewInboundTrafficTracker() *InboundTrafficTracker {
@@ -42,18 +51,21 @@ func NewInboundTrafficTracker() *InboundTrafficTracker {
 }
 
 func (t *InboundTrafficTracker) RoutedConnection(ctx context.Context, conn net.Conn, metadata adapter.InboundContext, _ adapter.Rule, _ adapter.Outbound) net.Conn {
+	t.tcpConns.Add(1)
 	tag := metadata.Inbound
 	if tag == "" {
-		return conn
+		// Keep an explicit bucket for debugging; metadata.Inbound should normally be set by inbound implementations.
+		tag = "_unknown"
 	}
 	up, down := t.counter(tag)
 	return sbufio.NewInt64CounterConn(conn, []*atomic.Int64{up}, []*atomic.Int64{down})
 }
 
 func (t *InboundTrafficTracker) RoutedPacketConnection(ctx context.Context, conn N.PacketConn, metadata adapter.InboundContext, _ adapter.Rule, _ adapter.Outbound) N.PacketConn {
+	t.udpConns.Add(1)
 	tag := metadata.Inbound
 	if tag == "" {
-		return conn
+		tag = "_unknown"
 	}
 	up, down := t.counter(tag)
 	return sbufio.NewInt64CounterPacketConn(conn, []*atomic.Int64{up}, nil, []*atomic.Int64{down}, nil)
@@ -110,4 +122,18 @@ func (t *InboundTrafficTracker) Snapshot(reset bool) []InboundTraffic {
 	}
 	t.mu.Unlock()
 	return out
+}
+
+func (t *InboundTrafficTracker) Meta() InboundTrafficMeta {
+	if t == nil {
+		return InboundTrafficMeta{}
+	}
+	t.mu.Lock()
+	tracked := len(t.uplink)
+	t.mu.Unlock()
+	return InboundTrafficMeta{
+		TrackedTags: tracked,
+		TCPConns:    t.tcpConns.Load(),
+		UDPConns:    t.udpConns.Load(),
+	}
 }

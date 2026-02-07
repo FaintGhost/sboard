@@ -42,6 +42,12 @@ type InboundTraffic struct {
 	At       time.Time `json:"at"`
 }
 
+type InboundTrafficMeta struct {
+	TrackedTags int   `json:"tracked_tags"`
+	TCPConns    int64 `json:"tcp_conns"`
+	UDPConns    int64 `json:"udp_conns"`
+}
+
 func (c *Client) Health(ctx context.Context, node db.Node) error {
 	url := buildURL(node, "/api/health")
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
@@ -106,14 +112,47 @@ func (c *Client) InboundTraffic(ctx context.Context, node db.Node, reset bool) (
 		return nil, fmt.Errorf("node inbound traffic status %d: %s", resp.StatusCode, strings.TrimSpace(string(b)))
 	}
 	var out struct {
-		Data  []InboundTraffic `json:"data"`
-		Reset bool             `json:"reset"`
+		Data  []InboundTraffic    `json:"data"`
+		Reset bool                `json:"reset"`
+		Meta  *InboundTrafficMeta `json:"meta"`
 	}
 	dec := json.NewDecoder(resp.Body)
 	if err := dec.Decode(&out); err != nil {
 		return nil, err
 	}
 	return out.Data, nil
+}
+
+func (c *Client) InboundTrafficWithMeta(ctx context.Context, node db.Node, reset bool) ([]InboundTraffic, *InboundTrafficMeta, error) {
+	url := buildURL(node, "/api/stats/inbounds")
+	if reset {
+		url += "?reset=1"
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, nil, err
+	}
+	req.Header.Set("Authorization", "Bearer "+node.SecretKey)
+
+	resp, err := c.doer.Do(req)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode/100 != 2 {
+		b, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+		return nil, nil, fmt.Errorf("node inbound traffic status %d: %s", resp.StatusCode, strings.TrimSpace(string(b)))
+	}
+	var out struct {
+		Data  []InboundTraffic    `json:"data"`
+		Reset bool                `json:"reset"`
+		Meta  *InboundTrafficMeta `json:"meta"`
+	}
+	dec := json.NewDecoder(resp.Body)
+	if err := dec.Decode(&out); err != nil {
+		return nil, nil, err
+	}
+	return out.Data, out.Meta, nil
 }
 
 func (c *Client) SyncConfig(ctx context.Context, node db.Node, payload any) error {

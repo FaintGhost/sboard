@@ -36,11 +36,25 @@ func (m *TrafficMonitor) SampleOnce(ctx context.Context) error {
 		if n.APIPort <= 0 || n.SecretKey == "" {
 			continue
 		}
-		items, err := m.client.InboundTraffic(ctx, n, true)
+		items, meta, err := m.client.InboundTrafficWithMeta(ctx, n, true)
 		if err != nil {
 			// Sampling should never block core functionality; keep it best-effort.
 			log.Printf("[traffic] node id=%d name=%s pull failed: %v", n.ID, n.Name, err)
 			continue
+		}
+		var sumUp, sumDown int64
+		for _, it := range items {
+			sumUp += it.Uplink
+			sumDown += it.Downlink
+		}
+		// Log only when we have something actionable: either no tracked tags, or non-zero deltas.
+		if len(items) == 0 || sumUp > 0 || sumDown > 0 {
+			if meta != nil {
+				log.Printf("[traffic] node id=%d name=%s inbounds=%d uplink=%d downlink=%d meta={tags:%d tcp:%d udp:%d}",
+					n.ID, n.Name, len(items), sumUp, sumDown, meta.TrackedTags, meta.TCPConns, meta.UDPConns)
+			} else {
+				log.Printf("[traffic] node id=%d name=%s inbounds=%d uplink=%d downlink=%d", n.ID, n.Name, len(items), sumUp, sumDown)
+			}
 		}
 		for _, it := range items {
 			// In sing-box stats naming, uplink = client->server (read), downlink = server->client (write).

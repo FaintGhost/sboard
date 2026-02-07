@@ -558,7 +558,13 @@ export function NodesPage() {
             <div className="space-y-3">
               <div className="text-xs text-muted-foreground">
                 {trafficQuery.isLoading ? t("common.loading") : null}
-                {trafficQuery.isError ? t("common.loadFailed") : null}
+                {trafficQuery.isError ? (
+                  trafficQuery.error instanceof ApiError ? (
+                    trafficQuery.error.message
+                  ) : (
+                    t("common.loadFailed")
+                  )
+                ) : null}
               </div>
 
               <Table>

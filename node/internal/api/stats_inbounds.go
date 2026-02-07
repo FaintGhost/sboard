@@ -26,6 +26,12 @@ func StatsInboundsGet(secret string, provider InboundTrafficProvider) gin.Handle
 			reset = true
 		}
 		items := provider.InboundTraffic(reset)
-		c.JSON(http.StatusOK, gin.H{"data": items, "reset": reset})
+		resp := gin.H{"data": items, "reset": reset}
+		if mp, ok := provider.(interface {
+			InboundTrafficMeta() stats.InboundTrafficMeta
+		}); ok {
+			resp["meta"] = mp.InboundTrafficMeta()
+		}
+		c.JSON(http.StatusOK, resp)
 	}
 }
