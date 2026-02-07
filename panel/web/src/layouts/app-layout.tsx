@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next"
 import { AppSidebar } from "@/components/app-sidebar"
 import { SiteHeader } from "@/components/site-header"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
+import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/store/auth"
 
 function titleForPath(t: (key: string) => string, pathname: string): string {
@@ -39,7 +40,14 @@ export function AppLayout() {
       />
       <SidebarInset>
         <SiteHeader title={title} />
-        <div className="@container/main flex flex-1 flex-col gap-4 py-4">
+        <div
+          key={location.pathname}
+          className={cn(
+            "@container/main flex flex-1 flex-col gap-4 py-4",
+            // Trigger a smooth page-level transition on route changes.
+            "motion-reduce:animate-none animate-in fade-in-0 slide-in-from-bottom-1 duration-300",
+          )}
+        >
           <Outlet />
         </div>
       </SidebarInset>
