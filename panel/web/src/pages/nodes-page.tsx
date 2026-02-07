@@ -4,7 +4,6 @@ import { useTranslation } from "react-i18next"
 import { MoreHorizontal, Pencil, RefreshCw, Stethoscope, Trash2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import {
@@ -40,6 +39,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Skeleton } from "@/components/ui/skeleton"
+import { StatusDot } from "@/components/status-dot"
 import { ApiError } from "@/lib/api/client"
 import { listGroups } from "@/lib/api/groups"
 import { createNode, deleteNode, listNodes, nodeHealth, nodeSync, updateNode } from "@/lib/api/nodes"
@@ -73,29 +73,6 @@ function groupName(groups: Group[] | undefined, id: number | null): string {
   if (!groups || id == null) return "-"
   const g = groups.find((x) => x.id === id)
   return g ? g.name : String(id)
-}
-
-function statusBadge(status: string, t: (k: string) => string) {
-  const s = (status || "").toLowerCase()
-  if (s === "online") {
-    return (
-      <Badge className="bg-emerald-600 text-white hover:bg-emerald-600">
-        {t("nodes.statusOnline")}
-      </Badge>
-    )
-  }
-  if (s === "offline") {
-    return (
-      <Badge variant="secondary" className="bg-slate-200 text-slate-700 hover:bg-slate-200">
-        {t("nodes.statusOffline")}
-      </Badge>
-    )
-  }
-  return (
-    <Badge variant="outline" className="text-slate-600">
-      {t("nodes.statusUnknown")}
-    </Badge>
-  )
 }
 
 export function NodesPage() {
@@ -241,7 +218,14 @@ export function NodesPage() {
                       {n.api_address}:{n.api_port}
                     </TableCell>
                     <TableCell className="text-muted-foreground">{n.public_address}</TableCell>
-                    <TableCell>{statusBadge(n.status, t)}</TableCell>
+                    <TableCell>
+                      <StatusDot
+                        status={n.status}
+                        labelOnline={t("nodes.statusOnline")}
+                        labelOffline={t("nodes.statusOffline")}
+                        labelUnknown={t("nodes.statusUnknown")}
+                      />
+                    </TableCell>
                     <TableCell className="pr-6">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>

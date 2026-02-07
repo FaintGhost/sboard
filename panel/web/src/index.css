@@ -118,6 +118,33 @@ body {
   --sidebar-ring: oklch(0.556 0 0);
 }
 
+@keyframes sboard-status-breathe {
+  0%,
+  100% {
+    transform: scale(0.92);
+    opacity: 0.55;
+  }
+  50% {
+    transform: scale(1.18);
+    opacity: 0.9;
+  }
+}
+
+@keyframes sboard-status-ripple {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.45;
+  }
+  70% {
+    transform: scale(1.9);
+    opacity: 0.0;
+  }
+  100% {
+    transform: scale(1.9);
+    opacity: 0.0;
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
