@@ -21,3 +21,13 @@ func NewStore(db *sql.DB) *Store {
 		Now: time.Now,
 	}
 }
+
+func (s *Store) NowUTC() time.Time {
+	if s == nil {
+		return time.Now().UTC()
+	}
+	if s.Now != nil {
+		return s.Now().UTC()
+	}
+	return time.Now().UTC()
+}

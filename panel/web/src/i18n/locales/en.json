@@ -262,7 +262,28 @@
     "backendConnectivityTitle": "Backend Connectivity",
     "usersPreviewSubtitle": "Users preview (GET /api/users)",
     "requestFailedHint": "Request failed. Please check the token or backend service.",
-    "usersReturned": "{{count}} user records returned"
+    "usersReturned": "{{count}} user records returned",
+    "uplink": "Uplink",
+    "downlink": "Downlink",
+    "uplinkLast1h": "Uplink (Last 1h)",
+    "downlinkLast1h": "Downlink (Last 1h)",
+    "uplinkLast24h": "Uplink (Last 24h)",
+    "downlinkLast24h": "Downlink (Last 24h)",
+    "samples": "{{count}} samples",
+    "nodesInbounds": "{{nodes}} nodes · {{inbounds}} inbounds",
+    "lastSampleAt": "Last sample: {{time}}",
+    "trafficTrendTitle": "Traffic Trend",
+    "trafficTrendSubtitle": "Aggregated traffic from all nodes",
+    "range24h": "Last 24h",
+    "range7d": "Last 7 days",
+    "range30d": "Last 30 days",
+    "selectRange": "Select range",
+    "topNodesTitle": "Top Nodes",
+    "topNodesSubtitle": "Top nodes by traffic (Last 24h)"
+  },
+  "traffic": {
+    "window1h": "Last 1h",
+    "window24h": "Last 24h"
   },
   "app": {
     "title": "Panel"

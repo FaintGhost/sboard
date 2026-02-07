@@ -1,4 +1,5 @@
-import { IconTrendingDown, IconTrendingUp } from "@tabler/icons-react"
+import { IconArrowDown, IconArrowUp } from "@tabler/icons-react"
+import { useTranslation } from "react-i18next"
 
 import { Badge } from "@/components/ui/badge"
 import {
@@ -9,92 +10,104 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import type { TrafficTotalSummary } from "@/lib/api/traffic"
+import { bytesToGBString } from "@/lib/units"
 
-export function SectionCards() {
+type SectionCardsProps = {
+  total1h?: TrafficTotalSummary
+  total24h?: TrafficTotalSummary
+  isLoading?: boolean
+}
+
+export function SectionCards(props: SectionCardsProps) {
+  const { t } = useTranslation()
+  const up1 = props.total1h?.upload ?? 0
+  const down1 = props.total1h?.download ?? 0
+  const up24 = props.total24h?.upload ?? 0
+  const down24 = props.total24h?.download ?? 0
+
   return (
     <div className="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
       <Card className="@container/card">
         <CardHeader>
-          <CardDescription>Total Revenue</CardDescription>
+          <CardDescription>{t("dashboard.uplinkLast1h")}</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            $1,250.00
+            {props.isLoading ? "-" : `${bytesToGBString(up1)} GB`}
           </CardTitle>
           <CardAction>
             <Badge variant="outline">
-              <IconTrendingUp />
-              +12.5%
+              <IconArrowUp />
+              {t("dashboard.uplink")}
             </Badge>
           </CardAction>
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
-          <div className="line-clamp-1 flex gap-2 font-medium">
-            Trending up this month <IconTrendingUp className="size-4" />
-          </div>
           <div className="text-muted-foreground">
-            Visitors for the last 6 months
+            {t("dashboard.samples", { count: props.total1h?.samples ?? 0 })}
           </div>
         </CardFooter>
       </Card>
       <Card className="@container/card">
         <CardHeader>
-          <CardDescription>New Customers</CardDescription>
+          <CardDescription>{t("dashboard.downlinkLast1h")}</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            1,234
+            {props.isLoading ? "-" : `${bytesToGBString(down1)} GB`}
           </CardTitle>
           <CardAction>
             <Badge variant="outline">
-              <IconTrendingDown />
-              -20%
+              <IconArrowDown />
+              {t("dashboard.downlink")}
             </Badge>
           </CardAction>
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
-          <div className="line-clamp-1 flex gap-2 font-medium">
-            Down 20% this period <IconTrendingDown className="size-4" />
-          </div>
           <div className="text-muted-foreground">
-            Acquisition needs attention
+            {t("dashboard.nodesInbounds", {
+              nodes: props.total1h?.nodes ?? 0,
+              inbounds: props.total1h?.inbounds ?? 0,
+            })}
           </div>
         </CardFooter>
       </Card>
       <Card className="@container/card">
         <CardHeader>
-          <CardDescription>Active Accounts</CardDescription>
+          <CardDescription>{t("dashboard.uplinkLast24h")}</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            45,678
+            {props.isLoading ? "-" : `${bytesToGBString(up24)} GB`}
           </CardTitle>
           <CardAction>
             <Badge variant="outline">
-              <IconTrendingUp />
-              +12.5%
+              <IconArrowUp />
+              {t("dashboard.uplink")}
             </Badge>
           </CardAction>
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
-          <div className="line-clamp-1 flex gap-2 font-medium">
-            Strong user retention <IconTrendingUp className="size-4" />
+          <div className="text-muted-foreground">
+            {t("dashboard.lastSampleAt", { time: props.total24h?.last_recorded_at || "-" })}
           </div>
-          <div className="text-muted-foreground">Engagement exceed targets</div>
         </CardFooter>
       </Card>
       <Card className="@container/card">
         <CardHeader>
-          <CardDescription>Growth Rate</CardDescription>
+          <CardDescription>{t("dashboard.downlinkLast24h")}</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            4.5%
+            {props.isLoading ? "-" : `${bytesToGBString(down24)} GB`}
           </CardTitle>
           <CardAction>
             <Badge variant="outline">
-              <IconTrendingUp />
-              +4.5%
+              <IconArrowDown />
+              {t("dashboard.downlink")}
             </Badge>
           </CardAction>
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
-          <div className="line-clamp-1 flex gap-2 font-medium">
-            Steady performance increase <IconTrendingUp className="size-4" />
+          <div className="text-muted-foreground">
+            {t("dashboard.nodesInbounds", {
+              nodes: props.total24h?.nodes ?? 0,
+              inbounds: props.total24h?.inbounds ?? 0,
+            })}
           </div>
-          <div className="text-muted-foreground">Meets growth projections</div>
         </CardFooter>
       </Card>
     </div>

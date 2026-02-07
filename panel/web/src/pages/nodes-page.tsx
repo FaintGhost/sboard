@@ -44,7 +44,9 @@ import { ApiError } from "@/lib/api/client"
 import { listGroups } from "@/lib/api/groups"
 import { createNode, deleteNode, listNodeTraffic, listNodes, nodeHealth, nodeSync, updateNode } from "@/lib/api/nodes"
 import type { Group, Node, NodeTrafficSample } from "@/lib/api/types"
+import { listTrafficNodesSummary, type TrafficNodeSummary } from "@/lib/api/traffic"
 import { buildNodeDockerCompose, generateNodeSecretKey } from "@/lib/node-compose"
+import { bytesToGBString } from "@/lib/units"
 
 type EditState = {
   mode: "create" | "edit"
@@ -93,6 +95,26 @@ export function NodesPage() {
     queryKey: ["groups", queryParams],
     queryFn: () => listGroups(queryParams),
   })
+
+  const trafficSummary24hQuery = useQuery({
+    queryKey: ["traffic", "nodes", "summary", "24h"],
+    queryFn: () => listTrafficNodesSummary({ window: "24h" }),
+    refetchInterval: 30_000,
+  })
+
+  const trafficSummary1hQuery = useQuery({
+    queryKey: ["traffic", "nodes", "summary", "1h"],
+    queryFn: () => listTrafficNodesSummary({ window: "1h" }),
+    refetchInterval: 30_000,
+  })
+
+  const trafficSummaryByNodeID = useMemo(() => {
+    const map24 = new Map<number, TrafficNodeSummary>()
+    const map1 = new Map<number, TrafficNodeSummary>()
+    for (const it of trafficSummary24hQuery.data ?? []) map24.set(it.node_id, it)
+    for (const it of trafficSummary1hQuery.data ?? []) map1.set(it.node_id, it)
+    return { map24, map1 }
+  }, [trafficSummary24hQuery.data, trafficSummary1hQuery.data])
 
   const createMutation = useMutation({
     mutationFn: createNode,
@@ -185,6 +207,117 @@ export function NodesPage() {
             {t("nodes.createNode")}
           </Button>
         </header>
+
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {nodesQuery.isLoading ? (
+            <>
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Card key={i} className="shadow-xs">
+                  <CardHeader className="space-y-2">
+                    <Skeleton className="h-5 w-40" />
+                    <Skeleton className="h-4 w-56" />
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <Skeleton className="h-4 w-52" />
+                    <Skeleton className="h-4 w-52" />
+                    <Skeleton className="h-4 w-44" />
+                  </CardContent>
+                </Card>
+              ))}
+            </>
+          ) : null}
+
+          {nodesQuery.data?.map((n) => {
+            const s24 = trafficSummaryByNodeID.map24.get(n.id)
+            const s1 = trafficSummaryByNodeID.map1.get(n.id)
+            const last = s24?.last_recorded_at || s1?.last_recorded_at || n.last_seen_at || ""
+            const up24 = s24?.upload ?? 0
+            const down24 = s24?.download ?? 0
+            const up1 = s1?.upload ?? 0
+            const down1 = s1?.download ?? 0
+
+            return (
+              <Card
+                key={n.id}
+                className="bg-gradient-to-t from-primary/5 to-card shadow-xs"
+              >
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <CardTitle className="truncate text-base">{n.name}</CardTitle>
+                      <CardDescription className="truncate">
+                        {groupName(groupsQuery.data, n.group_id)} · {n.api_address}:{n.api_port}
+                      </CardDescription>
+                    </div>
+                    <StatusDot
+                      status={n.status}
+                      labelOnline={t("nodes.statusOnline")}
+                      labelOffline={t("nodes.statusOffline")}
+                      labelUnknown={t("nodes.statusUnknown")}
+                      className="shrink-0"
+                    />
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-muted-foreground">{t("traffic.window1h")}</span>
+                    <span className="tabular-nums">
+                      ↑ {bytesToGBString(up1)} GB{"  "}↓ {bytesToGBString(down1)} GB
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-muted-foreground">{t("traffic.window24h")}</span>
+                    <span className="tabular-nums">
+                      ↑ {bytesToGBString(up24)} GB{"  "}↓ {bytesToGBString(down24)} GB
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-muted-foreground">{t("nodes.lastSampleAt")}</span>
+                    <span className="truncate tabular-nums">{last || "-"}</span>
+                  </div>
+                  <div className="flex justify-end gap-2 pt-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={healthMutation.isPending}
+                      onClick={() => healthMutation.mutate(n.id)}
+                    >
+                      {t("nodes.health")}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={syncMutation.isPending}
+                      onClick={() => syncMutation.mutate(n.id)}
+                    >
+                      {t("nodes.sync")}
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => {
+                        setActionMessage(null)
+                        setTrafficNode(n)
+                      }}
+                    >
+                      {t("nodes.traffic")}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )
+          })}
+
+          {!nodesQuery.isLoading && nodesQuery.data && nodesQuery.data.length === 0 ? (
+            <Card className="shadow-xs md:col-span-2 xl:col-span-3">
+              <CardContent className="py-10 text-center text-sm text-muted-foreground">
+                {t("common.noData")}
+              </CardContent>
+            </Card>
+          ) : null}
+        </div>
 
         <Card>
           <CardHeader className="pb-3">
