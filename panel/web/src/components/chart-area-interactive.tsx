@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/chart"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
-import { listTrafficTimeseries } from "@/lib/api/traffic"
+import { listTrafficTimeseries, type TrafficTimeseriesPoint } from "@/lib/api/traffic"
 import { bytesToGBString } from "@/lib/units"
 
 type RangeKey = "24h" | "7d" | "30d"
@@ -48,6 +48,8 @@ export function ChartAreaInteractive() {
   const { t, i18n } = useTranslation()
   const isMobile = useIsMobile()
   const [timeRange, setTimeRange] = React.useState<RangeKey>("24h")
+  const [displayRows, setDisplayRows] = React.useState<TrafficTimeseriesPoint[]>([])
+  const [animNonce, setAnimNonce] = React.useState(0)
 
   React.useEffect(() => {
     if (isMobile) setTimeRange("24h")
@@ -60,14 +62,23 @@ export function ChartAreaInteractive() {
     refetchInterval: 30_000,
   })
 
-  const chartData = React.useMemo(() => {
+  React.useEffect(() => {
     const rows = tsQuery.data ?? []
+    if (rows.length === 0) return
+    setDisplayRows(rows)
+    setAnimNonce((x) => x + 1)
+  }, [tsQuery.data])
+
+  const chartData = React.useMemo(() => {
+    const rows = (tsQuery.data && tsQuery.data.length > 0) ? tsQuery.data : displayRows
     return rows.map((r) => ({
       at: r.bucket_start,
       upload: r.upload,
       download: r.download,
     }))
-  }, [tsQuery.data])
+  }, [tsQuery.data, displayRows])
+
+  const isUpdating = tsQuery.isFetching && !tsQuery.isLoading
 
   return (
     <Card className="@container/card">
@@ -111,8 +122,14 @@ export function ChartAreaInteractive() {
       </CardHeader>
 
       <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
-        <ChartContainer config={chartConfig} className="aspect-auto h-[260px] w-full">
-          <AreaChart data={chartData}>
+        <div
+          className={
+            "transition-opacity duration-300 " +
+            (isUpdating ? "opacity-80" : "opacity-100")
+          }
+        >
+          <ChartContainer config={chartConfig} className="aspect-auto h-[260px] w-full">
+            <AreaChart data={chartData}>
             <defs>
               <linearGradient id="fillUpload" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="var(--color-upload)" stopOpacity={0.9} />
@@ -170,6 +187,11 @@ export function ChartAreaInteractive() {
               fill="url(#fillUpload)"
               strokeWidth={2}
               dot={false}
+              isAnimationActive
+              animationId={animNonce}
+              animationDuration={720}
+              animationEasing="ease-out"
+              animationBegin={0}
             />
             <Area
               dataKey="download"
@@ -178,9 +200,15 @@ export function ChartAreaInteractive() {
               fill="url(#fillDownload)"
               strokeWidth={2}
               dot={false}
+              isAnimationActive
+              animationId={animNonce}
+              animationDuration={720}
+              animationEasing="ease-out"
+              animationBegin={0}
             />
           </AreaChart>
-        </ChartContainer>
+          </ChartContainer>
+        </div>
 
         {tsQuery.isLoading ? (
           <div className="pt-3 text-xs text-muted-foreground">{t("common.loading")}</div>
@@ -192,4 +220,3 @@ export function ChartAreaInteractive() {
     </Card>
   )
 }
-

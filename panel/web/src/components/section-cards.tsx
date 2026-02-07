@@ -2,6 +2,7 @@ import { IconArrowDown, IconArrowUp } from "@tabler/icons-react"
 import { useTranslation } from "react-i18next"
 
 import { Badge } from "@/components/ui/badge"
+import { FlashValue } from "@/components/flash-value"
 import {
   Card,
   CardAction,
@@ -32,7 +33,7 @@ export function SectionCards(props: SectionCardsProps) {
         <CardHeader>
           <CardDescription>{t("dashboard.uplinkLast1h")}</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            {props.isLoading ? "-" : `${bytesToGBString(up1)} GB`}
+            {props.isLoading ? "-" : <FlashValue value={`${bytesToGBString(up1)} GB`} />}
           </CardTitle>
           <CardAction>
             <Badge variant="outline">
@@ -51,7 +52,7 @@ export function SectionCards(props: SectionCardsProps) {
         <CardHeader>
           <CardDescription>{t("dashboard.downlinkLast1h")}</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            {props.isLoading ? "-" : `${bytesToGBString(down1)} GB`}
+            {props.isLoading ? "-" : <FlashValue value={`${bytesToGBString(down1)} GB`} />}
           </CardTitle>
           <CardAction>
             <Badge variant="outline">
@@ -73,7 +74,7 @@ export function SectionCards(props: SectionCardsProps) {
         <CardHeader>
           <CardDescription>{t("dashboard.uplinkLast24h")}</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            {props.isLoading ? "-" : `${bytesToGBString(up24)} GB`}
+            {props.isLoading ? "-" : <FlashValue value={`${bytesToGBString(up24)} GB`} />}
           </CardTitle>
           <CardAction>
             <Badge variant="outline">
@@ -92,7 +93,7 @@ export function SectionCards(props: SectionCardsProps) {
         <CardHeader>
           <CardDescription>{t("dashboard.downlinkLast24h")}</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            {props.isLoading ? "-" : `${bytesToGBString(down24)} GB`}
+            {props.isLoading ? "-" : <FlashValue value={`${bytesToGBString(down24)} GB`} />}
           </CardTitle>
           <CardAction>
             <Badge variant="outline">

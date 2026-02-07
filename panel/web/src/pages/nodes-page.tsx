@@ -40,6 +40,7 @@ import {
 } from "@/components/ui/table"
 import { Skeleton } from "@/components/ui/skeleton"
 import { StatusDot } from "@/components/status-dot"
+import { FlashValue } from "@/components/flash-value"
 import { ApiError } from "@/lib/api/client"
 import { listGroups } from "@/lib/api/groups"
 import { createNode, deleteNode, listNodeTraffic, listNodes, nodeHealth, nodeSync, updateNode } from "@/lib/api/nodes"
@@ -261,19 +262,21 @@ export function NodesPage() {
                 <CardContent className="space-y-2 text-sm">
                   <div className="flex items-center justify-between gap-3">
                     <span className="text-muted-foreground">{t("traffic.window1h")}</span>
-                    <span className="tabular-nums">
-                      ↑ {bytesToGBString(up1)} GB{"  "}↓ {bytesToGBString(down1)} GB
-                    </span>
+                    <FlashValue
+                      value={`↑ ${bytesToGBString(up1)} GB  ↓ ${bytesToGBString(down1)} GB`}
+                    />
                   </div>
                   <div className="flex items-center justify-between gap-3">
                     <span className="text-muted-foreground">{t("traffic.window24h")}</span>
-                    <span className="tabular-nums">
-                      ↑ {bytesToGBString(up24)} GB{"  "}↓ {bytesToGBString(down24)} GB
-                    </span>
+                    <FlashValue
+                      value={`↑ ${bytesToGBString(up24)} GB  ↓ ${bytesToGBString(down24)} GB`}
+                    />
                   </div>
                   <div className="flex items-center justify-between gap-3">
                     <span className="text-muted-foreground">{t("nodes.lastSampleAt")}</span>
-                    <span className="truncate tabular-nums">{last || "-"}</span>
+                    <span className="truncate">
+                      <FlashValue value={last || "-"} className="max-w-full" />
+                    </span>
                   </div>
                   <div className="flex justify-end gap-2 pt-2">
                     <Button
