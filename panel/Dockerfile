@@ -49,10 +49,17 @@ COPY --from=builder /out/sboard-panel /app/sboard-panel
 COPY --from=builder /src/internal/db/migrations /app/internal/db/migrations
 COPY --from=web /web/dist /app/web/dist
 
+ARG PANEL_VERSION=unknown
+ARG PANEL_COMMIT_ID=unknown
+ARG SING_BOX_VERSION=unknown
+
 ENV PANEL_HTTP_ADDR=:8080
 ENV PANEL_DB_PATH=/data/panel.db
 ENV PANEL_SERVE_WEB=true
 ENV PANEL_WEB_DIR=/app/web/dist
+ENV PANEL_VERSION=${PANEL_VERSION}
+ENV PANEL_COMMIT_ID=${PANEL_COMMIT_ID}
+ENV SING_BOX_VERSION=${SING_BOX_VERSION}
 
 EXPOSE 8080
 ENTRYPOINT ["/app/sboard-panel"]

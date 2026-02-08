@@ -3,6 +3,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        PANEL_VERSION: "${PANEL_VERSION:-latest}"
+        PANEL_COMMIT_ID: "${PANEL_COMMIT_ID:-unknown}"
+        SING_BOX_VERSION: "${SING_BOX_VERSION:-unknown}"
     # Tag the locally built image, so you can push it to Docker Hub after build.
     image: "${SBOARD_PANEL_IMAGE:-faintghost/sboard-panel:local}"
-
