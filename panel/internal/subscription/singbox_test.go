@@ -1,27 +1,72 @@
 package subscription_test
 
 import (
-  "encoding/json"
-  "testing"
+	"encoding/json"
+	"strings"
+	"testing"
 
-  "sboard/panel/internal/subscription"
-  "github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/require"
+	"sboard/panel/internal/subscription"
 )
 
 func TestSingboxGenerateOutbounds(t *testing.T) {
-  user := subscription.User{UUID: "u-1", Username: "alice"}
-  items := []subscription.Item{
-    {
-      InboundType:       "vless",
-      NodePublicAddress: "a.example.com",
-      InboundListenPort: 443,
-      InboundPublicPort: 0,
-      Settings:          json.RawMessage(`{"flow":"xtls-rprx-vision"}`),
-    },
-  }
+	user := subscription.User{UUID: "u-1", Username: "alice"}
+	items := []subscription.Item{
+		{
+			InboundType:       "vless",
+			NodePublicAddress: "a.example.com",
+			InboundListenPort: 443,
+			InboundPublicPort: 0,
+			Settings:          json.RawMessage(`{"flow":"xtls-rprx-vision"}`),
+		},
+	}
 
-  out, err := subscription.BuildSingbox(user, items)
-  require.NoError(t, err)
-  require.Contains(t, string(out), "a.example.com")
-  require.Contains(t, string(out), "vless")
+	out, err := subscription.BuildSingbox(user, items)
+	require.NoError(t, err)
+	require.Contains(t, string(out), "a.example.com")
+	require.Contains(t, string(out), "vless")
+}
+
+func TestSingboxShadowsocks2022UsesPerUserPassword(t *testing.T) {
+	inboundUUID := "11111111-1111-4111-8111-111111111111"
+	userA := subscription.User{UUID: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", Username: "alice"}
+	userB := subscription.User{UUID: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", Username: "bob"}
+	items := []subscription.Item{
+		{
+			InboundUUID:       inboundUUID,
+			InboundType:       "shadowsocks",
+			NodePublicAddress: "a.example.com",
+			InboundListenPort: 8388,
+			Settings:          json.RawMessage(`{"method":"2022-blake3-aes-128-gcm"}`),
+		},
+	}
+
+	outA, err := subscription.BuildSingbox(userA, items)
+	require.NoError(t, err)
+	outB, err := subscription.BuildSingbox(userB, items)
+	require.NoError(t, err)
+
+	readPassword := func(raw []byte) string {
+		var payload struct {
+			Outbounds []map[string]any `json:"outbounds"`
+		}
+		require.NoError(t, json.Unmarshal(raw, &payload))
+		require.Len(t, payload.Outbounds, 1)
+		password, _ := payload.Outbounds[0]["password"].(string)
+		return password
+	}
+
+	passwordA := readPassword(outA)
+	passwordB := readPassword(outB)
+	require.NotEmpty(t, passwordA)
+	require.NotEmpty(t, passwordB)
+	require.NotEqual(t, passwordA, passwordB)
+
+	partsA := strings.Split(passwordA, ":")
+	partsB := strings.Split(passwordB, ":")
+	require.Len(t, partsA, 2)
+	require.Len(t, partsB, 2)
+	// server psk should be stable per inbound; user key should differ by user.
+	require.Equal(t, partsA[0], partsB[0])
+	require.NotEqual(t, partsA[1], partsB[1])
 }
