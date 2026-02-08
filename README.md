@@ -42,7 +42,7 @@ curl -X POST http://127.0.0.1:3000/api/config/sync \
 
 **Docker 部署**
 仓库内置：
-- `panel/Dockerfile`、`panel/docker-compose.yml`
+- `panel/Dockerfile`、`panel/docker-compose.yml`、`panel/docker-compose.build.yml`
 - `node/Dockerfile`、`node/docker-compose.yml`、`node/docker-compose.build.yml`
 
 说明：
@@ -83,13 +83,24 @@ docker compose up -d
 ```bash
 # Node（从仓库构建并推送）
 cd sboard/node
-docker build -t faintghost/sboard-node:latest .
-docker push faintghost/sboard-node:latest
+export SBOARD_NODE_IMAGE="faintghost/sboard-node:latest"
+docker compose -f docker-compose.yml -f docker-compose.build.yml build
+docker push "$SBOARD_NODE_IMAGE"
 
 # Panel（会同时构建 web 前端 dist 并打包进镜像）
 cd ../panel
-docker build -t faintghost/sboard-panel:latest .
-docker push faintghost/sboard-panel:latest
+export SBOARD_PANEL_IMAGE="faintghost/sboard-panel:latest"
+docker compose -f docker-compose.yml -f docker-compose.build.yml build
+docker push "$SBOARD_PANEL_IMAGE"
+```
+
+构建加速建议：
+- 建议开启 BuildKit：`export DOCKER_BUILDKIT=1`
+- 日常增量构建尽量不要加 `--no-cache`，仅在需要强制全量重建时使用
+
+一键构建并推送（Node + Panel）：
+```bash
+./scripts/docker-build-push.sh --namespace faintghost --tag latest
 ```
 
 **配置说明**

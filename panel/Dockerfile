@@ -1,10 +1,14 @@
+# syntax=docker/dockerfile:1.7
+
 FROM node:22-alpine AS web
 
 WORKDIR /web
 COPY web/package.json web/package-lock.json ./
-RUN npm ci
+RUN --mount=type=cache,target=/root/.npm \
+  npm ci
 COPY web ./
-RUN npm run build
+RUN --mount=type=cache,target=/root/.npm \
+  npm run build
 
 FROM golang:1.25 AS builder
 
@@ -21,12 +25,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # The repo does not necessarily ship with go.sum (fresh clone / early stage),
 # so we must allow the image build to generate a complete go.sum on the fly.
 # Some environments also set GOFLAGS=-mod=readonly; use -mod=mod explicitly.
-RUN go mod download
+RUN --mount=type=cache,target=/go/pkg/mod \
+  go mod download
 COPY . .
 
 # `go mod tidy` does not accept `-mod=...`. Also avoid inheriting GOFLAGS=-mod=readonly.
-RUN GOFLAGS= go mod tidy
-RUN CGO_ENABLED=1 go build -mod=mod -trimpath -ldflags "-s -w" -o /out/sboard-panel ./cmd/panel
+RUN --mount=type=cache,target=/go/pkg/mod \
+  --mount=type=cache,target=/root/.cache/go-build \
+  GOFLAGS= go mod tidy
+RUN --mount=type=cache,target=/go/pkg/mod \
+  --mount=type=cache,target=/root/.cache/go-build \
+  CGO_ENABLED=1 go build -mod=mod -trimpath -ldflags "-s -w" -o /out/sboard-panel ./cmd/panel
 
 FROM debian:stable-slim
 

@@ -37,7 +37,7 @@ go run ./cmd/node
 ```bash
 cd sboard/node
 export SBOARD_NODE_IMAGE="faintghost/sboard-node:latest"
-docker compose -f docker-compose.yml -f docker-compose.build.yml build --no-cache
+docker compose -f docker-compose.yml -f docker-compose.build.yml build
 docker push "$SBOARD_NODE_IMAGE"
 ```
 
@@ -46,7 +46,7 @@ docker push "$SBOARD_NODE_IMAGE"
 ```bash
 export TAG="$(git rev-parse --short HEAD)"
 export SBOARD_NODE_IMAGE="faintghost/sboard-node:$TAG"
-docker compose -f docker-compose.yml -f docker-compose.build.yml build --no-cache
+docker compose -f docker-compose.yml -f docker-compose.build.yml build
 docker push "$SBOARD_NODE_IMAGE"
 ```
 
@@ -63,3 +63,14 @@ GOWORK=off go mod tidy
 ```
 
 然后再 `docker compose -f docker-compose.yml -f docker-compose.build.yml build`。
+
+## 构建加速建议
+
+- 本项目 Dockerfile 已启用 BuildKit 缓存挂载（Go module / go build cache）。
+- 建议显式开启 BuildKit：
+
+```bash
+export DOCKER_BUILDKIT=1
+```
+
+- 日常增量构建不要使用 `--no-cache`，只在你需要强制全量重建时再加。

@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1.7
+
 FROM golang:1.25 AS builder
 
 WORKDIR /src
@@ -6,13 +8,18 @@ COPY go.mod ./
 # The repo does not necessarily ship with go.sum (fresh clone / early stage),
 # so we must allow the image build to generate a complete go.sum on the fly.
 # Some environments also set GOFLAGS=-mod=readonly; use -mod=mod explicitly.
-RUN go mod download
+RUN --mount=type=cache,target=/go/pkg/mod \
+  go mod download
 
 COPY . .
 
 # `go mod tidy` does not accept `-mod=...`. Also avoid inheriting GOFLAGS=-mod=readonly.
-RUN GOFLAGS= go mod tidy
-RUN CGO_ENABLED=0 go build -mod=mod -trimpath -ldflags "-s -w" -o /out/sboard-node ./cmd/node
+RUN --mount=type=cache,target=/go/pkg/mod \
+  --mount=type=cache,target=/root/.cache/go-build \
+  GOFLAGS= go mod tidy
+RUN --mount=type=cache,target=/go/pkg/mod \
+  --mount=type=cache,target=/root/.cache/go-build \
+  CGO_ENABLED=0 go build -mod=mod -trimpath -ldflags "-s -w" -o /out/sboard-node ./cmd/node
 
 FROM debian:stable-slim
 WORKDIR /app
