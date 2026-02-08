@@ -41,6 +41,7 @@ func NewRouter(cfg config.Config, store *db.Store) *gin.Engine {
 	auth.GET("/traffic/nodes/summary", TrafficNodesSummary(store))
 	auth.GET("/traffic/total/summary", TrafficTotalSummary(store))
 	auth.GET("/traffic/timeseries", TrafficTimeseries(store))
+	auth.GET("/system/info", SystemInfoGet())
 	auth.GET("/inbounds", InboundsList(store))
 	auth.POST("/inbounds", InboundsCreate(store))
 	auth.GET("/inbounds/:id", InboundsGet(store))

@@ -244,6 +244,8 @@
     "systemInfo": "System Information",
     "apiEndpoint": "API Endpoint",
     "version": "Version",
+    "panelCommitId": "Panel Commit",
+    "singboxCoreVersion": "sing-box Core",
     "subscriptionFormats": "Subscription Format Guide",
     "language": "Language",
     "selectLanguage": "Select Language",

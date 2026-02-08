@@ -1,3 +1,4 @@
+import { useQuery } from "@tanstack/react-query"
 import { useTranslation } from "react-i18next"
 import {
   Card,
@@ -14,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { getSystemInfo } from "@/lib/api/system"
 
 const languages = [
   { code: "zh", nameKey: "settings.langZh" },
@@ -23,6 +25,10 @@ const languages = [
 export function SettingsPage() {
   const { t, i18n } = useTranslation()
   const apiBaseUrl = window.location.origin
+  const systemInfoQuery = useQuery({
+    queryKey: ["system-info"],
+    queryFn: getSystemInfo,
+  })
 
   const handleLanguageChange = (lang: string) => {
     i18n.changeLanguage(lang)
@@ -67,7 +73,15 @@ export function SettingsPage() {
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-sm text-slate-700">{t("settings.version")}</span>
-              <Badge variant="outline">v0.1.0</Badge>
+              <Badge variant="outline">{systemInfoQuery.data?.panel_version ?? "N/A"}</Badge>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-slate-700">{t("settings.panelCommitId")}</span>
+              <Badge variant="outline">{systemInfoQuery.data?.panel_commit_id ?? "N/A"}</Badge>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-slate-700">{t("settings.singboxCoreVersion")}</span>
+              <Badge variant="outline">{systemInfoQuery.data?.sing_box_version ?? "N/A"}</Badge>
             </div>
             <div className="space-y-2">
               <div className="text-sm font-medium text-slate-700">{t("settings.apiEndpoint")}</div>

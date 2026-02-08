@@ -23,6 +23,12 @@ export type BootstrapResponse = {
   ok: boolean
 }
 
+export type SystemInfo = {
+  panel_version: string
+  panel_commit_id: string
+  sing_box_version: string
+}
+
 export type UserStatus = "active" | "disabled" | "expired" | "traffic_exceeded"
 
 export type User = {
