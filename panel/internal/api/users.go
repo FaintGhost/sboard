@@ -165,6 +165,7 @@ func UsersUpdate(store *db.Store) gin.HandlerFunc {
       c.JSON(http.StatusInternalServerError, gin.H{"error": "update user failed"})
       return
     }
+    syncNodesForUser(c.Request.Context(), store, user.ID)
     c.JSON(http.StatusOK, gin.H{"data": toUserDTO(user)})
   }
 }
@@ -214,6 +215,7 @@ func UsersDelete(store *db.Store) gin.HandlerFunc {
       c.JSON(http.StatusInternalServerError, gin.H{"error": "get user failed"})
       return
     }
+    syncNodesForUser(c.Request.Context(), store, user.ID)
     c.JSON(http.StatusOK, gin.H{"data": toUserDTO(user)})
   }
 }

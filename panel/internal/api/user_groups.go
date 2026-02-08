@@ -58,6 +58,12 @@ func UserGroupsPut(store *db.Store) gin.HandlerFunc {
       c.JSON(http.StatusBadRequest, gin.H{"error": "invalid body"})
       return
     }
+    previousGroupIDs, err := store.ListUserGroupIDs(c.Request.Context(), id)
+    if err != nil {
+      c.JSON(http.StatusInternalServerError, gin.H{"error": "list user groups failed"})
+      return
+    }
+
     if err := store.ReplaceUserGroups(c.Request.Context(), id, req.GroupIDs); err != nil {
       if errors.Is(err, db.ErrNotFound) {
         c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
@@ -76,6 +82,11 @@ func UserGroupsPut(store *db.Store) gin.HandlerFunc {
       c.JSON(http.StatusInternalServerError, gin.H{"error": "list user groups failed"})
       return
     }
+
+    syncGroupIDs := append([]int64{}, previousGroupIDs...)
+    syncGroupIDs = append(syncGroupIDs, ids...)
+    syncNodesByGroupIDs(c.Request.Context(), store, syncGroupIDs)
+
     c.JSON(http.StatusOK, gin.H{"data": userGroupsDTO{GroupIDs: ids}})
   }
 }

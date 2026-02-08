@@ -1,22 +1,50 @@
 package api_test
 
 import (
+  "bytes"
   "encoding/json"
   "fmt"
+  "io"
   "net/http"
   "net/http/httptest"
   "path/filepath"
   "runtime"
   "strings"
+  "sync/atomic"
   "testing"
   "time"
 
   "sboard/panel/internal/api"
   "sboard/panel/internal/config"
   "sboard/panel/internal/db"
+  "sboard/panel/internal/node"
   "github.com/golang-jwt/jwt/v5"
   "github.com/stretchr/testify/require"
 )
+
+type usersAPIFakeDoer struct {
+  got int32
+}
+
+func (d *usersAPIFakeDoer) Do(req *http.Request) (*http.Response, error) {
+  if req.URL.Path == "/api/health" && req.Method == http.MethodGet {
+    return &http.Response{
+      StatusCode: http.StatusOK,
+      Header:     http.Header{"Content-Type": []string{"application/json"}},
+      Body:       io.NopCloser(strings.NewReader(`{"status":"ok"}`)),
+    }, nil
+  }
+
+  if req.URL.Path != "/api/config/sync" || req.Method != http.MethodPost {
+    return &http.Response{StatusCode: http.StatusNotFound, Body: io.NopCloser(strings.NewReader("not found"))}, nil
+  }
+  atomic.AddInt32(&d.got, 1)
+  return &http.Response{
+    StatusCode: http.StatusOK,
+    Header:     http.Header{"Content-Type": []string{"application/json"}},
+    Body:       io.NopCloser(strings.NewReader(`{"status":"ok"}`)),
+  }, nil
+}
 
 type userDTO struct {
   ID              int64      `json:"id"`
@@ -229,4 +257,78 @@ func TestUsersAPI_EffectiveStatusAndFilters(t *testing.T) {
   assertSingleStatusFilteredUser("expired", expiredUser.Username)
   assertSingleStatusFilteredUser("traffic_exceeded", exceededUser.Username)
   assertSingleStatusFilteredUser("disabled", disabledUser.Username)
+}
+
+func TestUsersAPI_UpdateAndDisable_AutoSyncsNodesByUserGroups(t *testing.T) {
+  doer := &usersAPIFakeDoer{}
+  restore := api.SetNodeClientFactoryForTest(func() *node.Client {
+    return node.NewClient(doer)
+  })
+  t.Cleanup(restore)
+
+  cfg := config.Config{JWTSecret: "secret"}
+  store := setupStore(t)
+  r := api.NewRouter(cfg, store)
+  token := mustToken(cfg.JWTSecret)
+
+  w := httptest.NewRecorder()
+  req := httptest.NewRequest(http.MethodPost, "/api/groups", strings.NewReader(`{"name":"g1","description":""}`))
+  req.Header.Set("Authorization", "Bearer "+token)
+  r.ServeHTTP(w, req)
+  require.Equal(t, http.StatusCreated, w.Code)
+  var g groupResp
+  require.NoError(t, json.Unmarshal(w.Body.Bytes(), &g))
+
+  w = httptest.NewRecorder()
+  req = httptest.NewRequest(
+    http.MethodPost,
+    "/api/nodes",
+    bytes.NewReader([]byte(fmt.Sprintf(`{"name":"n1","api_address":"127.0.0.1","api_port":3000,"secret_key":"secret","public_address":"a.example.com","group_id":%d}`, g.Data.ID))),
+  )
+  req.Header.Set("Authorization", "Bearer "+token)
+  r.ServeHTTP(w, req)
+  require.Equal(t, http.StatusCreated, w.Code)
+  var n nodeResp
+  require.NoError(t, json.Unmarshal(w.Body.Bytes(), &n))
+
+  w = httptest.NewRecorder()
+  req = httptest.NewRequest(
+    http.MethodPost,
+    "/api/inbounds",
+    strings.NewReader(fmt.Sprintf(`{"node_id":%d,"tag":"ss-in","protocol":"shadowsocks","listen_port":8388,"public_port":8388,"settings":{"method":"2022-blake3-aes-128-gcm"}}`, n.Data.ID)),
+  )
+  req.Header.Set("Authorization", "Bearer "+token)
+  r.ServeHTTP(w, req)
+  require.Equal(t, http.StatusCreated, w.Code)
+
+  w = httptest.NewRecorder()
+  req = httptest.NewRequest(http.MethodPost, "/api/users", strings.NewReader(`{"username":"alice"}`))
+  req.Header.Set("Authorization", "Bearer "+token)
+  r.ServeHTTP(w, req)
+  require.Equal(t, http.StatusCreated, w.Code)
+  var u userResp
+  require.NoError(t, json.Unmarshal(w.Body.Bytes(), &u))
+
+  w = httptest.NewRecorder()
+  req = httptest.NewRequest(http.MethodPut, fmt.Sprintf("/api/users/%d/groups", u.Data.ID), strings.NewReader(fmt.Sprintf(`{"group_ids":[%d]}`, g.Data.ID)))
+  req.Header.Set("Authorization", "Bearer "+token)
+  r.ServeHTTP(w, req)
+  require.Equal(t, http.StatusOK, w.Code)
+
+  syncCallsAfterGroupBind := atomic.LoadInt32(&doer.got)
+  require.GreaterOrEqual(t, syncCallsAfterGroupBind, int32(1))
+
+  w = httptest.NewRecorder()
+  req = httptest.NewRequest(http.MethodPut, fmt.Sprintf("/api/users/%d", u.Data.ID), strings.NewReader(`{"traffic_limit":1024}`))
+  req.Header.Set("Authorization", "Bearer "+token)
+  r.ServeHTTP(w, req)
+  require.Equal(t, http.StatusOK, w.Code)
+  require.Equal(t, syncCallsAfterGroupBind+1, atomic.LoadInt32(&doer.got))
+
+  w = httptest.NewRecorder()
+  req = httptest.NewRequest(http.MethodDelete, fmt.Sprintf("/api/users/%d", u.Data.ID), nil)
+  req.Header.Set("Authorization", "Bearer "+token)
+  r.ServeHTTP(w, req)
+  require.Equal(t, http.StatusOK, w.Code)
+  require.Equal(t, syncCallsAfterGroupBind+2, atomic.LoadInt32(&doer.got))
 }

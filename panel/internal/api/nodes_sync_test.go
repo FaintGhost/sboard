@@ -119,6 +119,6 @@ func TestNodeSync_PushesConfigToNode(t *testing.T) {
   req.Header.Set("Authorization", "Bearer "+token)
   r.ServeHTTP(w, req)
   require.Equal(t, http.StatusOK, w.Code)
-  // One sync is triggered automatically when creating inbounds, and another is triggered here.
-  require.Equal(t, int32(2), atomic.LoadInt32(&doer.got))
+  // One sync is triggered on inbound create, one on user-group bind, and one here.
+  require.Equal(t, int32(3), atomic.LoadInt32(&doer.got))
 }
