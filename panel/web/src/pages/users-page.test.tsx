@@ -179,4 +179,117 @@ describe("UsersPage", () => {
     await new Promise((r) => setTimeout(r, 0))
     expect(unexpectedRequests).toEqual([])
   })
+
+  it("creates user and binds selected groups", async () => {
+    let users = [] as Array<{
+      id: number
+      uuid: string
+      username: string
+      traffic_limit: number
+      traffic_used: number
+      traffic_reset_day: number
+      expire_at: string | null
+      status: "active"
+    }>
+    const unexpectedRequests: Array<{ method: string; pathname: string }> = []
+
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+      const req = input as Request
+      const url = new URL(req.url)
+      const pathname = url.pathname
+
+      if (req.method === "GET" && pathname === "/api/users") {
+        return new Response(JSON.stringify({ data: users }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        })
+      }
+
+      if (req.method === "GET" && pathname === "/api/groups") {
+        return new Response(
+          JSON.stringify({
+            data: [
+              {
+                id: 11,
+                name: "VIP",
+                description: "vip users",
+              },
+            ],
+          }),
+          {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          },
+        )
+      }
+
+      if (req.method === "POST" && pathname === "/api/users") {
+        const body = (await req.json()) as Record<string, unknown>
+        expect(body).toEqual({ username: "bob" })
+
+        users = [
+          {
+            id: 99,
+            uuid: "u-99",
+            username: "bob",
+            traffic_limit: 0,
+            traffic_used: 0,
+            traffic_reset_day: 0,
+            expire_at: null,
+            status: "active",
+          },
+        ]
+
+        return new Response(
+          JSON.stringify({
+            data: {
+              id: 99,
+              uuid: "u-99",
+              username: "bob",
+              traffic_limit: 0,
+              traffic_used: 0,
+              traffic_reset_day: 0,
+              expire_at: null,
+              status: "active",
+            },
+          }),
+          {
+            status: 201,
+            headers: { "Content-Type": "application/json" },
+          },
+        )
+      }
+
+      if (req.method === "PUT" && pathname === "/api/users/99/groups") {
+        const body = (await req.json()) as Record<string, unknown>
+        expect(body.group_ids).toEqual([11])
+        return new Response(JSON.stringify({ data: { group_ids: [11] } }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        })
+      }
+
+      unexpectedRequests.push({ method: req.method, pathname })
+      return new Response(JSON.stringify({ data: null }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      })
+    })
+
+    render(
+      <AppProviders>
+        <UsersPage />
+      </AppProviders>,
+    )
+
+    await userEvent.click(await screen.findByRole("button", { name: "创建用户" }))
+    await userEvent.type(screen.getByLabelText("用户名"), "bob")
+    await userEvent.click(screen.getByText("VIP"))
+    await userEvent.click(screen.getByRole("button", { name: "创建" }))
+
+    expect(await screen.findByText("bob")).toBeInTheDocument()
+
+    await new Promise((r) => setTimeout(r, 0))
+    expect(unexpectedRequests).toEqual([])
+  })
 })

@@ -168,7 +168,13 @@ export function UsersPage() {
   }, [upserting, userGroupsQuery.data])
 
   const createMutation = useMutation({
-    mutationFn: createUser,
+    mutationFn: async (input: { username: string; groupIDs: number[] }) => {
+      const created = await createUser({ username: input.username })
+      if (input.groupIDs.length > 0) {
+        await putUserGroups(created.id, { group_ids: input.groupIDs })
+      }
+      return created
+    },
     onSuccess: async () => {
       setUpserting(null)
       await qc.invalidateQueries({ queryKey: ["users"] })
@@ -231,6 +237,7 @@ export function UsersPage() {
             onClick={() => {
               createMutation.reset()
               updateMutation.reset()
+              saveGroupsMutation.reset()
               setUpserting({
                 mode: "create",
                 user: defaultNewUser,
@@ -342,6 +349,7 @@ export function UsersPage() {
                                   : null
                               createMutation.reset()
                               updateMutation.reset()
+                              saveGroupsMutation.reset()
                               setUpserting({
                                 mode: "edit",
                                 user: u,
@@ -649,7 +657,10 @@ export function UsersPage() {
                   if (!upserting) return
 
                   if (upserting.mode === "create") {
-                    createMutation.mutate({ username: upserting.username.trim() })
+                    createMutation.mutate({
+                      username: upserting.username.trim(),
+                      groupIDs: upserting.groupIDs,
+                    })
                     return
                   }
 
