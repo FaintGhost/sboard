@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { MoreHorizontal, Pencil, RefreshCw, Stethoscope, Trash2 } from "lucide-react"
+import { MoreHorizontal, Pencil } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -18,7 +18,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
@@ -43,7 +42,7 @@ import { StatusDot } from "@/components/status-dot"
 import { FlashValue } from "@/components/flash-value"
 import { ApiError } from "@/lib/api/client"
 import { listGroups } from "@/lib/api/groups"
-import { createNode, deleteNode, listNodeTraffic, listNodes, nodeHealth, nodeSync, updateNode } from "@/lib/api/nodes"
+import { createNode, listNodeTraffic, listNodes, updateNode } from "@/lib/api/nodes"
 import type { Group, Node, NodeTrafficSample } from "@/lib/api/types"
 import { listTrafficNodesSummary, type TrafficNodeSummary } from "@/lib/api/traffic"
 import { buildNodeDockerCompose, generateNodeSecretKey } from "@/lib/node-compose"
@@ -132,25 +131,6 @@ export function NodesPage() {
       setUpserting(null)
       await qc.invalidateQueries({ queryKey: ["nodes"] })
     },
-  })
-
-  const deleteMutation = useMutation({
-    mutationFn: (id: number) => deleteNode(id),
-    onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey: ["nodes"] })
-    },
-  })
-
-  const healthMutation = useMutation({
-    mutationFn: (id: number) => nodeHealth(id),
-    onSuccess: () => setActionMessage(t("nodes.healthOk")),
-    onError: (e) => setActionMessage(e instanceof ApiError ? e.message : t("nodes.healthFailed")),
-  })
-
-  const syncMutation = useMutation({
-    mutationFn: (id: number) => nodeSync(id),
-    onSuccess: () => setActionMessage(t("nodes.syncOk")),
-    onError: (e) => setActionMessage(e instanceof ApiError ? e.message : t("nodes.syncFailed")),
   })
 
   const trafficQuery = useQuery({
@@ -281,24 +261,6 @@ export function NodesPage() {
                   <div className="flex justify-end gap-2 pt-2">
                     <Button
                       type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={healthMutation.isPending}
-                      onClick={() => healthMutation.mutate(n.id)}
-                    >
-                      {t("nodes.health")}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={syncMutation.isPending}
-                      onClick={() => syncMutation.mutate(n.id)}
-                    >
-                      {t("nodes.sync")}
-                    </Button>
-                    <Button
-                      type="button"
                       size="sm"
                       onClick={() => {
                         setActionMessage(null)
@@ -418,37 +380,6 @@ export function NodesPage() {
                           >
                             <Pencil className="mr-2 size-4" />
                             {t("common.edit")}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            disabled={healthMutation.isPending}
-                            onClick={() => healthMutation.mutate(n.id)}
-                          >
-                            <Stethoscope className="mr-2 size-4" />
-                            {t("nodes.health")}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            disabled={syncMutation.isPending}
-                            onClick={() => syncMutation.mutate(n.id)}
-                          >
-                            <RefreshCw className="mr-2 size-4" />
-                            {t("nodes.sync")}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => {
-                              setActionMessage(null)
-                              setTrafficNode(n)
-                            }}
-                          >
-                            {t("nodes.traffic")}
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            variant="destructive"
-                            disabled={deleteMutation.isPending}
-                            onClick={() => deleteMutation.mutate(n.id)}
-                          >
-                            <Trash2 className="mr-2 size-4" />
-                            {t("common.delete")}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
