@@ -37,6 +37,7 @@ type TrafficSample struct {
 
 type InboundTraffic struct {
 	Tag      string    `json:"tag"`
+	User     string    `json:"user"`
 	Uplink   int64     `json:"uplink"`
 	Downlink int64     `json:"downlink"`
 	At       time.Time `json:"at"`

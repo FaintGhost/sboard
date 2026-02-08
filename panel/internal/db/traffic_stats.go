@@ -25,6 +25,7 @@ func (s *Store) InsertNodeTrafficSample(ctx context.Context, nodeID int64, uploa
 	if recordedAt.IsZero() {
 		recordedAt = s.nowUTC()
 	}
+
 	res, err := s.DB.ExecContext(
 		ctx,
 		`
@@ -39,6 +40,7 @@ func (s *Store) InsertNodeTrafficSample(ctx context.Context, nodeID int64, uploa
 	if err != nil {
 		return TrafficStat{}, err
 	}
+
 	id, err := res.LastInsertId()
 	if err != nil {
 		return TrafficStat{}, err
@@ -47,6 +49,46 @@ func (s *Store) InsertNodeTrafficSample(ctx context.Context, nodeID int64, uploa
 }
 
 func (s *Store) InsertInboundTrafficDelta(ctx context.Context, nodeID int64, inboundTag string, uplinkBytes, downlinkBytes int64, recordedAt time.Time) (TrafficStat, error) {
+	return s.insertTrafficDelta(ctx, nil, nodeID, inboundTag, uplinkBytes, downlinkBytes, recordedAt)
+}
+
+func (s *Store) InsertUserInboundTrafficDelta(ctx context.Context, userID int64, nodeID int64, inboundTag string, uplinkBytes, downlinkBytes int64, recordedAt time.Time) (TrafficStat, error) {
+	if userID <= 0 {
+		return TrafficStat{}, errors.New("invalid user_id")
+	}
+	return s.insertTrafficDelta(ctx, &userID, nodeID, inboundTag, uplinkBytes, downlinkBytes, recordedAt)
+}
+
+func (s *Store) AddUserTrafficUsed(ctx context.Context, userID int64, deltaBytes int64) error {
+	if userID <= 0 {
+		return errors.New("invalid user_id")
+	}
+	if deltaBytes <= 0 {
+		return nil
+	}
+
+	// Reuse existing reset policy before accumulating new usage.
+	if _, err := s.GetUserByID(ctx, userID); err != nil {
+		return err
+	}
+
+	res, err := s.DB.ExecContext(
+		ctx,
+		"UPDATE users SET traffic_used = traffic_used + ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+		deltaBytes,
+		userID,
+	)
+	if err != nil {
+		return err
+	}
+	rows, err := res.RowsAffected()
+	if err == nil && rows == 0 {
+		return ErrNotFound
+	}
+	return err
+}
+
+func (s *Store) insertTrafficDelta(ctx context.Context, userID *int64, nodeID int64, inboundTag string, uplinkBytes, downlinkBytes int64, recordedAt time.Time) (TrafficStat, error) {
 	if nodeID <= 0 {
 		return TrafficStat{}, errors.New("invalid node_id")
 	}
@@ -57,12 +99,21 @@ func (s *Store) InsertInboundTrafficDelta(ctx context.Context, nodeID int64, inb
 	if recordedAt.IsZero() {
 		recordedAt = s.nowUTC()
 	}
+
+	var userArg any
+	if userID == nil {
+		userArg = nil
+	} else {
+		userArg = *userID
+	}
+
 	res, err := s.DB.ExecContext(
 		ctx,
 		`
     INSERT INTO traffic_stats (user_id, node_id, inbound_tag, upload, download, recorded_at)
-    VALUES (NULL, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?)
   `,
+		userArg,
 		nodeID,
 		inboundTag,
 		uplinkBytes,
@@ -72,6 +123,7 @@ func (s *Store) InsertInboundTrafficDelta(ctx context.Context, nodeID int64, inb
 	if err != nil {
 		return TrafficStat{}, err
 	}
+
 	id, err := res.LastInsertId()
 	if err != nil {
 		return TrafficStat{}, err
@@ -102,6 +154,7 @@ func (s *Store) ListNodeTrafficSamples(ctx context.Context, nodeID int64, limit,
 		return nil, err
 	}
 	defer rows.Close()
+
 	out := []TrafficStat{}
 	for rows.Next() {
 		st, err := scanTrafficStat(rows)
@@ -123,12 +176,14 @@ func scanTrafficStat(row trafficStatRowScanner) (TrafficStat, error) {
 	var nodeID sql.NullInt64
 	var inboundTag sql.NullString
 	var recorded sql.NullString
+
 	if err := row.Scan(&st.ID, &userID, &nodeID, &inboundTag, &st.Upload, &st.Download, &recorded); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return TrafficStat{}, ErrNotFound
 		}
 		return TrafficStat{}, err
 	}
+
 	if userID.Valid {
 		v := userID.Int64
 		st.UserID = &v
@@ -146,5 +201,6 @@ func scanTrafficStat(row trafficStatRowScanner) (TrafficStat, error) {
 			st.RecordedAt = t
 		}
 	}
+
 	return st, nil
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"net"
 	"sort"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -15,6 +16,7 @@ import (
 
 type InboundTraffic struct {
 	Tag      string    `json:"tag"`
+	User     string    `json:"user,omitempty"`
 	Uplink   int64     `json:"uplink"`
 	Downlink int64     `json:"downlink"`
 	At       time.Time `json:"at"`
@@ -26,17 +28,22 @@ type InboundTrafficMeta struct {
 	UDPConns    int64 `json:"udp_conns"`
 }
 
+type inboundUserKey struct {
+	Tag  string
+	User string
+}
+
 // InboundTrafficTracker tracks inbound-level traffic by wrapping routed connections.
 //
 // Notes:
 //   - This only counts traffic that passes through the sing-box router.
-//   - It tracks by metadata.Inbound (inbound tag).
+//   - It tracks by metadata.Inbound + metadata.User.
 //   - Snapshot(reset=true) returns delta since last reset and resets internal counters.
 type InboundTrafficTracker struct {
 	createdAt time.Time
 	mu        sync.Mutex
-	uplink    map[string]*atomic.Int64
-	downlink  map[string]*atomic.Int64
+	uplink    map[inboundUserKey]*atomic.Int64
+	downlink  map[inboundUserKey]*atomic.Int64
 
 	tcpConns atomic.Int64
 	udpConns atomic.Int64
@@ -45,8 +52,8 @@ type InboundTrafficTracker struct {
 func NewInboundTrafficTracker() *InboundTrafficTracker {
 	return &InboundTrafficTracker{
 		createdAt: time.Now().UTC(),
-		uplink:    make(map[string]*atomic.Int64),
-		downlink:  make(map[string]*atomic.Int64),
+		uplink:    make(map[inboundUserKey]*atomic.Int64),
+		downlink:  make(map[inboundUserKey]*atomic.Int64),
 	}
 }
 
@@ -57,7 +64,8 @@ func (t *InboundTrafficTracker) RoutedConnection(ctx context.Context, conn net.C
 		// Keep an explicit bucket for debugging; metadata.Inbound should normally be set by inbound implementations.
 		tag = "_unknown"
 	}
-	up, down := t.counter(tag)
+	user := strings.TrimSpace(metadata.User)
+	up, down := t.counter(tag, user)
 	return sbufio.NewInt64CounterConn(conn, []*atomic.Int64{up}, []*atomic.Int64{down})
 }
 
@@ -67,23 +75,29 @@ func (t *InboundTrafficTracker) RoutedPacketConnection(ctx context.Context, conn
 	if tag == "" {
 		tag = "_unknown"
 	}
-	up, down := t.counter(tag)
+	user := strings.TrimSpace(metadata.User)
+	up, down := t.counter(tag, user)
 	return sbufio.NewInt64CounterPacketConn(conn, []*atomic.Int64{up}, nil, []*atomic.Int64{down}, nil)
 }
 
-func (t *InboundTrafficTracker) counter(tag string) (uplink *atomic.Int64, downlink *atomic.Int64) {
+func (t *InboundTrafficTracker) counter(tag, user string) (uplink *atomic.Int64, downlink *atomic.Int64) {
+	key := inboundUserKey{Tag: tag, User: user}
+
 	t.mu.Lock()
 	defer t.mu.Unlock()
-	up := t.uplink[tag]
+
+	up := t.uplink[key]
 	if up == nil {
 		up = &atomic.Int64{}
-		t.uplink[tag] = up
+		t.uplink[key] = up
 	}
-	down := t.downlink[tag]
+
+	down := t.downlink[key]
 	if down == nil {
 		down = &atomic.Int64{}
-		t.downlink[tag] = down
+		t.downlink[key] = down
 	}
+
 	return up, down
 }
 
@@ -91,20 +105,29 @@ func (t *InboundTrafficTracker) Snapshot(reset bool) []InboundTraffic {
 	if t == nil {
 		return nil
 	}
+
 	now := time.Now().UTC()
+
 	t.mu.Lock()
-	tags := make([]string, 0, len(t.uplink))
-	for tag := range t.uplink {
-		tags = append(tags, tag)
+	keys := make([]inboundUserKey, 0, len(t.uplink))
+	for key := range t.uplink {
+		keys = append(keys, key)
 	}
-	sort.Strings(tags)
-	out := make([]InboundTraffic, 0, len(tags))
-	for _, tag := range tags {
-		up := t.uplink[tag]
-		down := t.downlink[tag]
+	sort.Slice(keys, func(i, j int) bool {
+		if keys[i].Tag == keys[j].Tag {
+			return keys[i].User < keys[j].User
+		}
+		return keys[i].Tag < keys[j].Tag
+	})
+
+	out := make([]InboundTraffic, 0, len(keys))
+	for _, key := range keys {
+		up := t.uplink[key]
+		down := t.downlink[key]
 		if up == nil || down == nil {
 			continue
 		}
+
 		var u, d int64
 		if reset {
 			u = up.Swap(0)
@@ -113,14 +136,17 @@ func (t *InboundTrafficTracker) Snapshot(reset bool) []InboundTraffic {
 			u = up.Load()
 			d = down.Load()
 		}
+
 		out = append(out, InboundTraffic{
-			Tag:      tag,
+			Tag:      key.Tag,
+			User:     key.User,
 			Uplink:   u,
 			Downlink: d,
 			At:       now,
 		})
 	}
 	t.mu.Unlock()
+
 	return out
 }
 
@@ -128,9 +154,15 @@ func (t *InboundTrafficTracker) Meta() InboundTrafficMeta {
 	if t == nil {
 		return InboundTrafficMeta{}
 	}
+
 	t.mu.Lock()
-	tracked := len(t.uplink)
+	tags := make(map[string]struct{}, len(t.uplink))
+	for key := range t.uplink {
+		tags[key.Tag] = struct{}{}
+	}
+	tracked := len(tags)
 	t.mu.Unlock()
+
 	return InboundTrafficMeta{
 		TrackedTags: tracked,
 		TCPConns:    t.tcpConns.Load(),

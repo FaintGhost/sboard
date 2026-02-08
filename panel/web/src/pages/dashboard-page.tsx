@@ -41,6 +41,12 @@ export function DashboardPage() {
     refetchInterval: 30_000,
   })
 
+  const totalAllQuery = useQuery({
+    queryKey: ["traffic", "total", "summary", "all"],
+    queryFn: () => getTrafficTotalSummary({ window: "all" }),
+    refetchInterval: 60_000,
+  })
+
   const nodes24hQuery = useQuery({
     queryKey: ["traffic", "nodes", "summary", "24h", "dashboard"],
     queryFn: () => listTrafficNodesSummary({ window: "24h" }),
@@ -60,7 +66,8 @@ export function DashboardPage() {
       <SectionCards
         total1h={total1hQuery.data}
         total24h={total24hQuery.data}
-        isLoading={total1hQuery.isLoading || total24hQuery.isLoading}
+        totalAll={totalAllQuery.data}
+        isLoading={total1hQuery.isLoading || total24hQuery.isLoading || totalAllQuery.isLoading}
       />
 
       <div className="grid gap-4 px-4 lg:px-6">
@@ -95,21 +102,20 @@ export function DashboardPage() {
                 <TableRow>
                   <TableHead className="pl-6">{t("nodes.name")}</TableHead>
                   <TableHead>{t("dashboard.uplink")}</TableHead>
-                  <TableHead>{t("dashboard.downlink")}</TableHead>
-                  <TableHead className="pr-6">{t("nodes.lastSampleAt")}</TableHead>
+                  <TableHead className="pr-6">{t("dashboard.downlink")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {nodes24hQuery.isLoading ? (
                   <TableRow>
-                    <TableCell className="pl-6 py-8 text-center text-muted-foreground" colSpan={4}>
+                    <TableCell className="pl-6 py-8 text-center text-muted-foreground" colSpan={3}>
                       {t("common.loading")}
                     </TableCell>
                   </TableRow>
                 ) : null}
                 {!nodes24hQuery.isLoading && topNodes.length === 0 ? (
                   <TableRow>
-                    <TableCell className="pl-6 py-8 text-center text-muted-foreground" colSpan={4}>
+                    <TableCell className="pl-6 py-8 text-center text-muted-foreground" colSpan={3}>
                       {t("common.noData")}
                     </TableCell>
                   </TableRow>
@@ -122,11 +128,8 @@ export function DashboardPage() {
                     <TableCell className="text-muted-foreground tabular-nums">
                       {bytesToGBString(n.upload)} GB
                     </TableCell>
-                    <TableCell className="text-muted-foreground tabular-nums">
-                      {bytesToGBString(n.download)} GB
-                    </TableCell>
                     <TableCell className="pr-6 text-muted-foreground tabular-nums">
-                      {n.last_recorded_at || "-"}
+                      {bytesToGBString(n.download)} GB
                     </TableCell>
                   </TableRow>
                 ))}
