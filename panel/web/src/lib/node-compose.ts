@@ -4,7 +4,6 @@ export type BuildNodeComposeInput = {
   logLevel?: string
   image?: string
   containerName?: string
-  statePath?: string
 }
 
 export function buildNodeDockerCompose(input: BuildNodeComposeInput): string {
@@ -16,7 +15,6 @@ export function buildNodeDockerCompose(input: BuildNodeComposeInput): string {
   const logLevel = input.logLevel?.trim() || "info"
   const image = input.image?.trim() || "faintghost/sboard-node:latest"
   const containerName = input.containerName?.trim() || "sboard-node"
-  const statePath = input.statePath?.trim() || "/data/last_sync.json"
 
   return `services:
   ${containerName}:
@@ -30,7 +28,6 @@ export function buildNodeDockerCompose(input: BuildNodeComposeInput): string {
       NODE_HTTP_ADDR: ":${port}"
       NODE_SECRET_KEY: "${escapeDoubleQuoted(secretKey)}"
       NODE_LOG_LEVEL: "${escapeDoubleQuoted(logLevel)}"
-      NODE_STATE_PATH: "${escapeDoubleQuoted(statePath)}"
 `
 }
 
