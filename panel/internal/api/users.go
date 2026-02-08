@@ -86,10 +86,19 @@ func UsersList(store *db.Store) gin.HandlerFunc {
       c.JSON(http.StatusBadRequest, gin.H{"error": "invalid status"})
       return
     }
-    users, err := store.ListUsers(c.Request.Context(), limit, offset, status)
+    users, err := store.ListUsers(c.Request.Context(), limit, offset, "")
     if err != nil {
       c.JSON(http.StatusInternalServerError, gin.H{"error": "list users failed"})
       return
+    }
+    if status != "" {
+      filtered := make([]db.User, 0, len(users))
+      for _, u := range users {
+        if effectiveUserStatus(u) == status {
+          filtered = append(filtered, u)
+        }
+      }
+      users = filtered
     }
     out := make([]userDTO, 0, len(users))
     for _, u := range users {
@@ -290,6 +299,26 @@ func toUserDTO(u db.User) userDTO {
     TrafficUsed:     u.TrafficUsed,
     TrafficResetDay: u.TrafficResetDay,
     ExpireAt:        u.ExpireAt,
-    Status:          u.Status,
+    Status:          effectiveUserStatus(u),
   }
+}
+
+func effectiveUserStatus(u db.User) string {
+  if u.Status == "disabled" {
+    return "disabled"
+  }
+  if u.Status == "expired" {
+    return "expired"
+  }
+  if u.Status == "traffic_exceeded" {
+    return "traffic_exceeded"
+  }
+  now := time.Now().UTC()
+  if u.ExpireAt != nil && !u.ExpireAt.After(now) {
+    return "expired"
+  }
+  if u.TrafficLimit > 0 && u.TrafficUsed >= u.TrafficLimit {
+    return "traffic_exceeded"
+  }
+  return "active"
 }

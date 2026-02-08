@@ -160,3 +160,73 @@ func TestUsersAPI_GetAndUpdate(t *testing.T) {
   require.Equal(t, 1, updated.Data.TrafficResetDay)
   require.Equal(t, "expired", updated.Data.Status)
 }
+
+func TestUsersAPI_EffectiveStatusAndFilters(t *testing.T) {
+  cfg := config.Config{JWTSecret: "secret"}
+  store := setupStore(t)
+  r := api.NewRouter(cfg, store)
+  token := mustToken(cfg.JWTSecret)
+
+  activeUser, err := store.CreateUser(t.Context(), "active-user")
+  require.NoError(t, err)
+
+  expiredUser, err := store.CreateUser(t.Context(), "expired-user")
+  require.NoError(t, err)
+  expiredAt := time.Now().UTC().Add(-1 * time.Hour).Format(time.RFC3339)
+  _, err = store.DB.Exec("UPDATE users SET expire_at = ? WHERE id = ?", expiredAt, expiredUser.ID)
+  require.NoError(t, err)
+
+  exceededUser, err := store.CreateUser(t.Context(), "exceeded-user")
+  require.NoError(t, err)
+  _, err = store.DB.Exec(
+    "UPDATE users SET traffic_limit = ?, traffic_used = ? WHERE id = ?",
+    int64(1024),
+    int64(1024),
+    exceededUser.ID,
+  )
+  require.NoError(t, err)
+
+  disabledUser, err := store.CreateUser(t.Context(), "disabled-user")
+  require.NoError(t, err)
+  require.NoError(t, store.DisableUser(t.Context(), disabledUser.ID))
+
+  // Verify effective status rendering in list.
+  w := httptest.NewRecorder()
+  req := httptest.NewRequest(http.MethodGet, "/api/users?limit=20&offset=0", nil)
+  req.Header.Set("Authorization", "Bearer "+token)
+  r.ServeHTTP(w, req)
+  require.Equal(t, http.StatusOK, w.Code)
+
+  var listed listResp
+  require.NoError(t, json.Unmarshal(w.Body.Bytes(), &listed))
+
+  statusByName := map[string]string{}
+  for _, item := range listed.Data {
+    statusByName[item.Username] = item.Status
+  }
+
+  require.Equal(t, "active", statusByName[activeUser.Username])
+  require.Equal(t, "expired", statusByName[expiredUser.Username])
+  require.Equal(t, "traffic_exceeded", statusByName[exceededUser.Username])
+  require.Equal(t, "disabled", statusByName[disabledUser.Username])
+
+  // Verify status filters.
+  assertSingleStatusFilteredUser := func(status string, expectedUsername string) {
+    w := httptest.NewRecorder()
+    req := httptest.NewRequest(http.MethodGet, "/api/users?limit=20&offset=0&status="+status, nil)
+    req.Header.Set("Authorization", "Bearer "+token)
+    r.ServeHTTP(w, req)
+    require.Equal(t, http.StatusOK, w.Code)
+
+    var resp listResp
+    require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+    require.Len(t, resp.Data, 1)
+    require.Equal(t, expectedUsername, resp.Data[0].Username)
+    require.Equal(t, status, resp.Data[0].Status)
+  }
+
+  assertSingleStatusFilteredUser("active", activeUser.Username)
+  assertSingleStatusFilteredUser("expired", expiredUser.Username)
+  assertSingleStatusFilteredUser("traffic_exceeded", exceededUser.Username)
+  assertSingleStatusFilteredUser("disabled", disabledUser.Username)
+}
