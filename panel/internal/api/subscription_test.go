@@ -8,6 +8,7 @@ import (
   "runtime"
   "strings"
   "testing"
+  "time"
 
   "sboard/panel/internal/api"
   "sboard/panel/internal/config"
@@ -102,4 +103,42 @@ func TestSubscriptionUAAndFormat(t *testing.T) {
   decoded, err := base64.StdEncoding.DecodeString(strings.TrimSpace(w.Body.String()))
   require.NoError(t, err)
   require.Contains(t, string(decoded), "a.example.com")
+}
+
+func TestSubscriptionRejectsExpiredUser(t *testing.T) {
+  store := setupSubscriptionStore(t)
+  userUUID := seedSubscriptionData(t, store)
+
+  expiredAt := time.Now().UTC().Add(-1 * time.Hour).Format(time.RFC3339)
+  _, err := store.DB.Exec("UPDATE users SET expire_at = ? WHERE uuid = ?", expiredAt, userUUID)
+  require.NoError(t, err)
+
+  r := api.NewRouter(config.Config{}, store)
+  req := httptest.NewRequest(http.MethodGet, "/api/sub/"+userUUID, nil)
+  w := httptest.NewRecorder()
+  r.ServeHTTP(w, req)
+
+  require.Equal(t, http.StatusNotFound, w.Code)
+  require.Contains(t, w.Body.String(), "user not found")
+}
+
+func TestSubscriptionRejectsTrafficExceededUser(t *testing.T) {
+  store := setupSubscriptionStore(t)
+  userUUID := seedSubscriptionData(t, store)
+
+  _, err := store.DB.Exec(
+    "UPDATE users SET traffic_limit = ?, traffic_used = ? WHERE uuid = ?",
+    int64(1024),
+    int64(1024),
+    userUUID,
+  )
+  require.NoError(t, err)
+
+  r := api.NewRouter(config.Config{}, store)
+  req := httptest.NewRequest(http.MethodGet, "/api/sub/"+userUUID, nil)
+  w := httptest.NewRecorder()
+  r.ServeHTTP(w, req)
+
+  require.Equal(t, http.StatusNotFound, w.Code)
+  require.Contains(t, w.Body.String(), "user not found")
 }

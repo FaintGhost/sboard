@@ -16,6 +16,7 @@ func (s *Store) ListActiveUsersForGroup(ctx context.Context, groupID int64) ([]U
     WHERE ug.group_id = ?
       AND u.status = 'active'
       AND (u.expire_at IS NULL OR u.expire_at > ?)
+      AND (u.traffic_limit <= 0 OR u.traffic_used < u.traffic_limit)
     ORDER BY u.id ASC
   `, groupID, nowStr)
   if err != nil {
@@ -39,4 +40,3 @@ func (s *Store) ListActiveUsersForGroup(ctx context.Context, groupID int64) ([]U
   }
   return out, nil
 }
-

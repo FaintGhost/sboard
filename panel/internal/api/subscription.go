@@ -3,6 +3,7 @@ package api
 import (
   "net/http"
   "strings"
+  "time"
 
   "sboard/panel/internal/db"
   "sboard/panel/internal/subscription"
@@ -28,7 +29,7 @@ func SubscriptionGet(store *db.Store) gin.HandlerFunc {
       c.JSON(http.StatusInternalServerError, gin.H{"error": "get user failed"})
       return
     }
-    if user.Status != "active" {
+    if !isSubscriptionUserEligible(user) {
       c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
       return
     }
@@ -105,6 +106,22 @@ func SubscriptionGet(store *db.Store) gin.HandlerFunc {
     }
     c.Data(http.StatusOK, "text/plain; charset=utf-8", payload)
   }
+}
+
+func isSubscriptionUserEligible(user db.User) bool {
+  if user.Status != "active" {
+    return false
+  }
+
+  if user.ExpireAt != nil && !user.ExpireAt.After(time.Now().UTC()) {
+    return false
+  }
+
+  if user.TrafficLimit > 0 && user.TrafficUsed >= user.TrafficLimit {
+    return false
+  }
+
+  return true
 }
 
 func isSingboxUA(ua string) bool {
