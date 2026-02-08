@@ -16,6 +16,9 @@ type syncJobListItemDTO struct {
 	ParentJobID   *int64  `json:"parent_job_id,omitempty"`
 	TriggerSource string  `json:"trigger_source"`
 	Status        string  `json:"status"`
+	InboundCount  int     `json:"inbound_count"`
+	ActiveUsers   int     `json:"active_user_count"`
+	PayloadHash   string  `json:"payload_hash"`
 	AttemptCount  int     `json:"attempt_count"`
 	DurationMS    int64   `json:"duration_ms"`
 	ErrorSummary  string  `json:"error_summary"`
@@ -210,6 +213,9 @@ func toSyncJobListItemDTO(item db.SyncJob) syncJobListItemDTO {
 		ParentJobID:   item.ParentJobID,
 		TriggerSource: item.TriggerSource,
 		Status:        item.Status,
+		InboundCount:  item.InboundCount,
+		ActiveUsers:   item.ActiveUserCount,
+		PayloadHash:   item.PayloadHash,
 		AttemptCount:  item.AttemptCount,
 		DurationMS:    item.DurationMS,
 		ErrorSummary:  item.ErrorSummary,

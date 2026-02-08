@@ -14,6 +14,7 @@ function titleForPath(t: (key: string) => string, pathname: string): string {
   if (pathname.startsWith("/groups")) return t("nav.groups")
   if (pathname.startsWith("/nodes")) return t("nav.nodes")
   if (pathname.startsWith("/inbounds")) return t("nav.inbounds")
+  if (pathname.startsWith("/sync-jobs")) return t("nav.syncJobs")
   if (pathname.startsWith("/subscriptions")) return t("nav.subscriptions")
   if (pathname.startsWith("/settings")) return t("nav.settings")
   return t("app.title")

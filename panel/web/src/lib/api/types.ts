@@ -109,3 +109,49 @@ export type ListInboundsParams = {
   offset?: number
   node_id?: number
 }
+
+export type SyncJobStatus = "queued" | "running" | "success" | "failed"
+
+export type SyncJob = {
+  id: number
+  node_id: number
+  parent_job_id?: number | null
+  trigger_source: string
+  status: SyncJobStatus | string
+  inbound_count: number
+  active_user_count: number
+  payload_hash: string
+  attempt_count: number
+  duration_ms: number
+  error_summary: string
+  created_at: string
+  started_at?: string
+  finished_at?: string
+}
+
+export type SyncAttempt = {
+  id: number
+  attempt_no: number
+  status: SyncJobStatus | string
+  http_status: number
+  duration_ms: number
+  error_summary: string
+  backoff_ms: number
+  started_at: string
+  finished_at?: string
+}
+
+export type SyncJobDetail = {
+  job: SyncJob
+  attempts: SyncAttempt[]
+}
+
+export type ListSyncJobsParams = {
+  limit?: number
+  offset?: number
+  node_id?: number
+  status?: SyncJobStatus
+  trigger_source?: string
+  from?: string
+  to?: string
+}

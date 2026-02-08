@@ -13,6 +13,7 @@ import { InboundsPage } from "@/pages/inbounds-page"
 import { LoginPage } from "@/pages/login-page"
 import { NodesPage } from "@/pages/nodes-page"
 import { SettingsPage } from "@/pages/settings-page"
+import { SyncJobsPage } from "@/pages/sync-jobs-page"
 import { SubscriptionsPage } from "@/pages/subscriptions-page"
 import { UsersPage } from "@/pages/users-page"
 import { useAuthStore } from "@/store/auth"
@@ -44,6 +45,7 @@ const router = createBrowserRouter([
           { path: "/groups", element: <GroupsPage /> },
           { path: "/nodes", element: <NodesPage /> },
           { path: "/inbounds", element: <InboundsPage /> },
+          { path: "/sync-jobs", element: <SyncJobsPage /> },
           { path: "/subscriptions", element: <SubscriptionsPage /> },
           { path: "/settings", element: <SettingsPage /> },
         ],

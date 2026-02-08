@@ -8,6 +8,7 @@ import {
   IconArrowsExchange,
   IconListCheck,
   IconCloud,
+  IconRefresh,
 } from "@tabler/icons-react"
 import { Link, useLocation } from "react-router-dom"
 
@@ -63,6 +64,11 @@ export function AppSidebar({
         title: t("nav.inbounds"),
         url: "/inbounds",
         icon: IconArrowsExchange,
+      },
+      {
+        title: t("nav.syncJobs"),
+        url: "/sync-jobs",
+        icon: IconRefresh,
       },
     ],
     navSecondary: [
