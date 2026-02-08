@@ -48,6 +48,7 @@ import { createUser, deleteUser, disableUser, listUsers, updateUser } from "@/li
 import { listGroups } from "@/lib/api/groups"
 import { getUserGroups, putUserGroups } from "@/lib/api/user-groups"
 import type { User, UserStatus } from "@/lib/api/types"
+import { tableColumnSpacing } from "@/lib/table-spacing"
 import { bytesToGBString, gbStringToBytes, rfc3339FromDateOnlyUTC } from "@/lib/units"
 
 type StatusFilter = UserStatus | "all"
@@ -96,6 +97,7 @@ const defaultNewUser: User = {
   id: 0,
   uuid: "",
   username: "",
+  group_ids: [],
   traffic_limit: 0,
   traffic_used: 0,
   traffic_reset_day: 0,
@@ -111,6 +113,7 @@ export function UsersPage() {
   const [upserting, setUpserting] = useState<EditState | null>(null)
   const [disablingUser, setDisablingUser] = useState<User | null>(null)
   const [deletingUser, setDeletingUser] = useState<User | null>(null)
+  const spacing = tableColumnSpacing.five
 
   const statusOptions: Array<{ value: StatusFilter; label: string }> = [
     { value: "all", label: t("common.all") },
@@ -223,6 +226,14 @@ export function UsersPage() {
     return users.filter((u) => u.username.toLowerCase().includes(keyword))
   }, [usersQuery.data, search])
 
+  const groupNameByID = useMemo(() => {
+    const map = new Map<number, string>()
+    for (const group of groupsQuery.data ?? []) {
+      map.set(group.id, group.name)
+    }
+    return map
+  }, [groupsQuery.data])
+
   return (
     <div className="px-4 lg:px-6">
       <section className="space-y-6">
@@ -296,14 +307,15 @@ export function UsersPage() {
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            <Table className="table-fixed">
+            <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="pl-6 w-[30%]">{t("users.username")}</TableHead>
-                  <TableHead className="w-[18%]">{t("common.status")}</TableHead>
-                  <TableHead className="hidden md:table-cell w-[24%]">{t("users.traffic")}</TableHead>
-                  <TableHead className="hidden sm:table-cell w-[20%]">{t("users.expireDate")}</TableHead>
-                  <TableHead className="w-[8%] pr-6">
+                  <TableHead className={spacing.headFirst}>{t("users.username")}</TableHead>
+                  <TableHead className={spacing.headMiddle}>{t("users.groups")}</TableHead>
+                  <TableHead className={spacing.headMiddle}>{t("common.status")}</TableHead>
+                  <TableHead className={`${spacing.headMiddle} hidden md:table-cell`}>{t("users.traffic")}</TableHead>
+                  <TableHead className={`${spacing.headMiddle} hidden sm:table-cell`}>{t("users.expireDate")}</TableHead>
+                  <TableHead className={`${spacing.headLast} w-12`}>
                     <span className="sr-only">{t("common.actions")}</span>
                   </TableHead>
                 </TableRow>
@@ -313,26 +325,43 @@ export function UsersPage() {
                   <>
                     {Array.from({ length: 5 }).map((_, i) => (
                       <TableRow key={i}>
-                        <TableCell className="pl-6"><Skeleton className="h-4 w-24" /></TableCell>
-                        <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                        <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-20" /></TableCell>
-                        <TableCell className="hidden sm:table-cell"><Skeleton className="h-4 w-20" /></TableCell>
-                        <TableCell className="pr-6"><Skeleton className="h-8 w-8" /></TableCell>
+                        <TableCell className={spacing.cellFirst}><Skeleton className="h-4 w-24" /></TableCell>
+                        <TableCell className={spacing.cellMiddle}><Skeleton className="h-5 w-28" /></TableCell>
+                        <TableCell className={spacing.cellMiddle}><Skeleton className="h-5 w-16" /></TableCell>
+                        <TableCell className={`${spacing.cellMiddle} hidden md:table-cell`}><Skeleton className="h-4 w-20" /></TableCell>
+                        <TableCell className={`${spacing.cellMiddle} hidden sm:table-cell`}><Skeleton className="h-4 w-20" /></TableCell>
+                        <TableCell className={spacing.cellLast}><Skeleton className="h-8 w-8" /></TableCell>
                       </TableRow>
                     ))}
                   </>
                 ) : null}
                 {filteredUsers.map((u) => (
                   <TableRow key={u.id}>
-                    <TableCell className="pl-6 font-medium">{u.username}</TableCell>
-                    <TableCell><StatusBadge status={u.status} /></TableCell>
-                    <TableCell className="hidden md:table-cell text-muted-foreground">
+                    <TableCell className={`${spacing.cellFirst} font-medium`}>{u.username}</TableCell>
+                    <TableCell className={spacing.cellMiddle}>
+                      {u.group_ids.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {u.group_ids.map((groupID) => {
+                            const groupName = groupNameByID.get(groupID)
+                            return (
+                              <Badge key={`${u.id}-${groupID}`} variant="secondary">
+                                {groupName ?? `#${groupID}`}
+                              </Badge>
+                            )
+                          })}
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell className={spacing.cellMiddle}><StatusBadge status={u.status} /></TableCell>
+                    <TableCell className={`${spacing.cellMiddle} hidden md:table-cell text-muted-foreground`}>
                       {formatTraffic(u.traffic_used, u.traffic_limit, t)}
                     </TableCell>
-                    <TableCell className="hidden sm:table-cell text-muted-foreground">
+                    <TableCell className={`${spacing.cellMiddle} hidden sm:table-cell text-muted-foreground`}>
                       {formatExpireDate(u.expire_at, t)}
                     </TableCell>
-                    <TableCell className="pr-6">
+                    <TableCell className={spacing.cellLast}>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon" className="size-8">
@@ -396,7 +425,7 @@ export function UsersPage() {
                 ))}
                 {!usersQuery.isLoading && filteredUsers.length === 0 ? (
                   <TableRow>
-                    <TableCell className="pl-6 py-8 text-center text-muted-foreground" colSpan={5}>
+                    <TableCell className={`${spacing.cellFirst} py-8 text-center text-muted-foreground`} colSpan={6}>
                       {t("common.noData")}
                     </TableCell>
                   </TableRow>

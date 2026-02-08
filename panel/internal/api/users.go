@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"strconv"
@@ -26,6 +27,7 @@ type userDTO struct {
 	ID              int64      `json:"id"`
 	UUID            string     `json:"uuid"`
 	Username        string     `json:"username"`
+	GroupIDs        []int64    `json:"group_ids"`
 	TrafficLimit    int64      `json:"traffic_limit"`
 	TrafficUsed     int64      `json:"traffic_used"`
 	TrafficResetDay int        `json:"traffic_reset_day"`
@@ -75,7 +77,12 @@ func UsersCreate(store *db.Store) gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "create user failed"})
 			return
 		}
-		c.JSON(http.StatusCreated, gin.H{"data": toUserDTO(user)})
+		dto, err := buildUserDTO(c.Request.Context(), store, user)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "load user groups failed"})
+			return
+		}
+		c.JSON(http.StatusCreated, gin.H{"data": dto})
 	}
 }
 
@@ -110,7 +117,12 @@ func UsersList(store *db.Store) gin.HandlerFunc {
 		}
 		out := make([]userDTO, 0, len(users))
 		for _, u := range users {
-			out = append(out, toUserDTO(u))
+			dto, err := buildUserDTO(c.Request.Context(), store, u)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "load user groups failed"})
+				return
+			}
+			out = append(out, dto)
 		}
 		c.JSON(http.StatusOK, gin.H{"data": out})
 	}
@@ -135,7 +147,12 @@ func UsersGet(store *db.Store) gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "get user failed"})
 			return
 		}
-		c.JSON(http.StatusOK, gin.H{"data": toUserDTO(user)})
+		dto, err := buildUserDTO(c.Request.Context(), store, user)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "load user groups failed"})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"data": dto})
 	}
 }
 
@@ -173,7 +190,12 @@ func UsersUpdate(store *db.Store) gin.HandlerFunc {
 			return
 		}
 		syncNodesForUser(c.Request.Context(), store, user.ID)
-		c.JSON(http.StatusOK, gin.H{"data": toUserDTO(user)})
+		dto, err := buildUserDTO(c.Request.Context(), store, user)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "load user groups failed"})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"data": dto})
 	}
 }
 
@@ -223,7 +245,12 @@ func UsersDelete(store *db.Store) gin.HandlerFunc {
 			return
 		}
 		syncNodesForUser(c.Request.Context(), store, user.ID)
-		c.JSON(http.StatusOK, gin.H{"data": toUserDTO(user)})
+		dto, err := buildUserDTO(c.Request.Context(), store, user)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "load user groups failed"})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"data": dto})
 	}
 }
 
@@ -317,12 +344,23 @@ func toUserDTO(u db.User) userDTO {
 		ID:              u.ID,
 		UUID:            u.UUID,
 		Username:        u.Username,
+		GroupIDs:        []int64{},
 		TrafficLimit:    u.TrafficLimit,
 		TrafficUsed:     u.TrafficUsed,
 		TrafficResetDay: u.TrafficResetDay,
 		ExpireAt:        u.ExpireAt,
 		Status:          effectiveUserStatus(u),
 	}
+}
+
+func buildUserDTO(ctx context.Context, store *db.Store, u db.User) (userDTO, error) {
+	dto := toUserDTO(u)
+	groupIDs, err := store.ListUserGroupIDs(ctx, u.ID)
+	if err != nil {
+		return userDTO{}, err
+	}
+	dto.GroupIDs = groupIDs
+	return dto, nil
 }
 
 func effectiveUserStatus(u db.User) string {

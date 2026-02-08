@@ -35,6 +35,7 @@ export type User = {
   id: number
   uuid: string
   username: string
+  group_ids: number[]
   traffic_limit: number
   traffic_used: number
   traffic_reset_day: number
@@ -52,6 +53,7 @@ export type Group = {
   id: number
   name: string
   description: string
+  member_count: number
 }
 
 export type ListGroupsParams = {

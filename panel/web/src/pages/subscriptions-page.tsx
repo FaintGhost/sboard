@@ -36,6 +36,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { listUsers } from "@/lib/api/users"
 import type { User, UserStatus } from "@/lib/api/types"
+import { tableColumnSpacing } from "@/lib/table-spacing"
 
 type StatusFilter = UserStatus | "all"
 
@@ -93,6 +94,7 @@ function StatusBadge({ status }: { status: UserStatus }) {
 
 export function SubscriptionsPage() {
   const { t } = useTranslation()
+  const spacing = tableColumnSpacing.four
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("active")
   const [search, setSearch] = useState("")
 
@@ -223,22 +225,22 @@ export function SubscriptionsPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[180px]">{t("users.username")}</TableHead>
-              <TableHead className="w-[100px]">{t("common.status")}</TableHead>
-              <TableHead>{t("subscriptions.subscriptionUrl")}</TableHead>
-              <TableHead className="w-[140px] text-right">{t("common.actions")}</TableHead>
+              <TableHead className={spacing.headFirst}>{t("users.username")}</TableHead>
+              <TableHead className={spacing.headMiddle}>{t("common.status")}</TableHead>
+              <TableHead className={spacing.headMiddle}>{t("subscriptions.subscriptionUrl")}</TableHead>
+              <TableHead className={`${spacing.headLast} w-[140px] text-right`}>{t("common.actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {usersQuery.isLoading ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center text-slate-500">
+                <TableCell colSpan={4} className={`${spacing.cellFirst} text-center text-slate-500`}>
                   {t("common.loading")}
                 </TableCell>
               </TableRow>
             ) : filteredUsers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center text-slate-500">
+                <TableCell colSpan={4} className={`${spacing.cellFirst} text-center text-slate-500`}>
                   {t("common.noData")}
                 </TableCell>
               </TableRow>
@@ -256,16 +258,17 @@ export function SubscriptionsPage() {
 
 function UserSubscriptionRow({ user }: { user: User }) {
   const { t } = useTranslation()
+  const spacing = tableColumnSpacing.four
   const subUrl = getSubscriptionUrl(user.uuid)
   const singboxUrl = getSubscriptionUrl(user.uuid, "singbox")
 
   return (
     <TableRow>
-      <TableCell className="font-medium">{user.username}</TableCell>
-      <TableCell>
+      <TableCell className={`${spacing.cellFirst} font-medium`}>{user.username}</TableCell>
+      <TableCell className={spacing.cellMiddle}>
         <StatusBadge status={user.status} />
       </TableCell>
-      <TableCell>
+      <TableCell className={spacing.cellMiddle}>
         <div className="flex items-center gap-2 max-w-md">
           <code className="flex-1 truncate text-xs bg-slate-100 px-2 py-1 rounded font-mono">
             {subUrl}
@@ -273,7 +276,7 @@ function UserSubscriptionRow({ user }: { user: User }) {
           <CopyButton text={subUrl} label={t("subscriptions.subscriptionUrl")} />
         </div>
       </TableCell>
-      <TableCell className="text-right">
+      <TableCell className={`${spacing.cellLast} text-right`}>
         <div className="flex items-center justify-end gap-1">
           <Tooltip>
             <TooltipTrigger asChild>

@@ -43,6 +43,7 @@ import { ApiError } from "@/lib/api/client"
 import { createInbound, deleteInbound, listInbounds, updateInbound } from "@/lib/api/inbounds"
 import { listNodes } from "@/lib/api/nodes"
 import type { Inbound, Node } from "@/lib/api/types"
+import { tableColumnSpacing } from "@/lib/table-spacing"
 
 type EditState = {
   mode: "create" | "edit"
@@ -128,6 +129,7 @@ function setShadowsocksMethod(settingsText: string, method: string): string {
 export function InboundsPage() {
   const { t } = useTranslation()
   const qc = useQueryClient()
+  const spacing = tableColumnSpacing.five
   const [nodeFilter, setNodeFilter] = useState<number | "all">("all")
   const [upserting, setUpserting] = useState<EditState | null>(null)
 
@@ -240,11 +242,11 @@ export function InboundsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="pl-6">{t("inbounds.node")}</TableHead>
-                  <TableHead>{t("inbounds.tag")}</TableHead>
-                  <TableHead>{t("inbounds.protocol")}</TableHead>
-                  <TableHead>{t("inbounds.port")}</TableHead>
-                  <TableHead className="w-12 pr-6">
+                  <TableHead className={spacing.headFirst}>{t("inbounds.node")}</TableHead>
+                  <TableHead className={spacing.headMiddle}>{t("inbounds.tag")}</TableHead>
+                  <TableHead className={spacing.headMiddle}>{t("inbounds.protocol")}</TableHead>
+                  <TableHead className={spacing.headMiddle}>{t("inbounds.port")}</TableHead>
+                  <TableHead className={`w-12 ${spacing.headLast}`}>
                     <span className="sr-only">{t("common.actions")}</span>
                   </TableHead>
                 </TableRow>
@@ -254,19 +256,19 @@ export function InboundsPage() {
                   <>
                     {Array.from({ length: 5 }).map((_, i) => (
                       <TableRow key={i}>
-                        <TableCell className="pl-6">
+                        <TableCell className={spacing.cellFirst}>
                           <Skeleton className="h-4 w-28" />
                         </TableCell>
-                        <TableCell>
+                        <TableCell className={spacing.cellMiddle}>
                           <Skeleton className="h-4 w-28" />
                         </TableCell>
-                        <TableCell>
+                        <TableCell className={spacing.cellMiddle}>
                           <Skeleton className="h-4 w-24" />
                         </TableCell>
-                        <TableCell>
+                        <TableCell className={spacing.cellMiddle}>
                           <Skeleton className="h-4 w-20" />
                         </TableCell>
-                        <TableCell className="pr-6">
+                        <TableCell className={spacing.cellLast}>
                           <Skeleton className="h-8 w-8" />
                         </TableCell>
                       </TableRow>
@@ -275,17 +277,17 @@ export function InboundsPage() {
                 ) : null}
                 {inboundsQuery.data?.map((i) => (
                   <TableRow key={i.id}>
-                    <TableCell className="pl-6 font-medium">
+                    <TableCell className={`${spacing.cellFirst} font-medium`}>
                       {nodeName(nodesQuery.data, i.node_id)}
                     </TableCell>
-                    <TableCell className="font-medium">{i.tag}</TableCell>
-                    <TableCell className="text-muted-foreground">{i.protocol}</TableCell>
-                    <TableCell className="text-muted-foreground">
+                    <TableCell className={`${spacing.cellMiddle} font-medium`}>{i.tag}</TableCell>
+                    <TableCell className={`${spacing.cellMiddle} text-muted-foreground`}>{i.protocol}</TableCell>
+                    <TableCell className={`${spacing.cellMiddle} text-muted-foreground`}>
                       {i.public_port > 0
                         ? `${i.public_port} (${t("inbounds.publicPortShort")})`
                         : i.listen_port}
                     </TableCell>
-                    <TableCell className="pr-6">
+                    <TableCell className={spacing.cellLast}>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon" className="size-8">
@@ -333,7 +335,7 @@ export function InboundsPage() {
                 ))}
                 {!inboundsQuery.isLoading && inboundsQuery.data && inboundsQuery.data.length === 0 ? (
                   <TableRow>
-                    <TableCell className="pl-6 py-8 text-center text-muted-foreground" colSpan={5}>
+                    <TableCell className={`${spacing.cellFirst} py-8 text-center text-muted-foreground`} colSpan={5}>
                       {t("common.noData")}
                     </TableCell>
                   </TableRow>

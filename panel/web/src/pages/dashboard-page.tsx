@@ -14,10 +14,12 @@ import {
 } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { listTrafficNodesSummary, getTrafficTotalSummary } from "@/lib/api/traffic"
+import { tableColumnSpacing } from "@/lib/table-spacing"
 import { bytesToGBString } from "@/lib/units"
 
 export function DashboardPage() {
   const { t } = useTranslation()
+  const spacing = tableColumnSpacing.three
   const usersQuery = useQuery({
     queryKey: ["users", "dashboard-preview"],
     queryFn: () => listUsers({ limit: 10, offset: 0 }),
@@ -100,35 +102,35 @@ export function DashboardPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="pl-6">{t("nodes.name")}</TableHead>
-                  <TableHead>{t("dashboard.uplink")}</TableHead>
-                  <TableHead className="pr-6">{t("dashboard.downlink")}</TableHead>
+                  <TableHead className={spacing.headFirst}>{t("nodes.name")}</TableHead>
+                  <TableHead className={spacing.headMiddle}>{t("dashboard.uplink")}</TableHead>
+                  <TableHead className={spacing.headLast}>{t("dashboard.downlink")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {nodes24hQuery.isLoading ? (
                   <TableRow>
-                    <TableCell className="pl-6 py-8 text-center text-muted-foreground" colSpan={3}>
+                    <TableCell className={`${spacing.cellFirst} py-8 text-center text-muted-foreground`} colSpan={3}>
                       {t("common.loading")}
                     </TableCell>
                   </TableRow>
                 ) : null}
                 {!nodes24hQuery.isLoading && topNodes.length === 0 ? (
                   <TableRow>
-                    <TableCell className="pl-6 py-8 text-center text-muted-foreground" colSpan={3}>
+                    <TableCell className={`${spacing.cellFirst} py-8 text-center text-muted-foreground`} colSpan={3}>
                       {t("common.noData")}
                     </TableCell>
                   </TableRow>
                 ) : null}
                 {topNodes.map((n) => (
                   <TableRow key={n.node_id}>
-                    <TableCell className="pl-6 font-medium">
+                    <TableCell className={`${spacing.cellFirst} font-medium`}>
                       {nodeNameByID.get(n.node_id) ?? `#${n.node_id}`}
                     </TableCell>
-                    <TableCell className="text-muted-foreground tabular-nums">
+                    <TableCell className={`${spacing.cellMiddle} text-muted-foreground tabular-nums`}>
                       {bytesToGBString(n.upload)} GB
                     </TableCell>
-                    <TableCell className="pr-6 text-muted-foreground tabular-nums">
+                    <TableCell className={`${spacing.cellLast} text-muted-foreground tabular-nums`}>
                       {bytesToGBString(n.download)} GB
                     </TableCell>
                   </TableRow>

@@ -46,6 +46,7 @@ import { createNode, listNodeTraffic, listNodes, updateNode } from "@/lib/api/no
 import type { Group, Node, NodeTrafficSample } from "@/lib/api/types"
 import { listTrafficNodesSummary, type TrafficNodeSummary } from "@/lib/api/traffic"
 import { buildNodeDockerCompose, generateNodeSecretKey } from "@/lib/node-compose"
+import { tableColumnSpacing } from "@/lib/table-spacing"
 import { bytesToGBString } from "@/lib/units"
 
 type EditState = {
@@ -80,6 +81,7 @@ function groupName(groups: Group[] | undefined, id: number | null): string {
 export function NodesPage() {
   const { t } = useTranslation()
   const qc = useQueryClient()
+  const spacing = tableColumnSpacing.five
   const [upserting, setUpserting] = useState<EditState | null>(null)
   const [trafficNode, setTrafficNode] = useState<Node | null>(null)
   const [actionMessage, setActionMessage] = useState<string | null>(null)
@@ -300,12 +302,12 @@ export function NodesPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="pl-6">{t("nodes.name")}</TableHead>
-                  <TableHead>{t("nodes.group")}</TableHead>
-                  <TableHead>{t("nodes.apiAddress")}</TableHead>
-                  <TableHead>{t("nodes.publicAddress")}</TableHead>
-                  <TableHead>{t("nodes.status")}</TableHead>
-                  <TableHead className="w-12 pr-6">
+                  <TableHead className={spacing.headFirst}>{t("nodes.name")}</TableHead>
+                  <TableHead className={spacing.headMiddle}>{t("nodes.group")}</TableHead>
+                  <TableHead className={spacing.headMiddle}>{t("nodes.apiAddress")}</TableHead>
+                  <TableHead className={spacing.headMiddle}>{t("nodes.publicAddress")}</TableHead>
+                  <TableHead className={spacing.headMiddle}>{t("nodes.status")}</TableHead>
+                  <TableHead className={`w-12 ${spacing.headLast}`}>
                     <span className="sr-only">{t("common.actions")}</span>
                   </TableHead>
                 </TableRow>
@@ -315,19 +317,22 @@ export function NodesPage() {
                   <>
                     {Array.from({ length: 5 }).map((_, i) => (
                       <TableRow key={i}>
-                        <TableCell className="pl-6">
+                        <TableCell className={spacing.cellFirst}>
                           <Skeleton className="h-4 w-28" />
                         </TableCell>
-                        <TableCell>
+                        <TableCell className={spacing.cellMiddle}>
                           <Skeleton className="h-4 w-24" />
                         </TableCell>
-                        <TableCell>
+                        <TableCell className={spacing.cellMiddle}>
                           <Skeleton className="h-4 w-40" />
                         </TableCell>
-                        <TableCell>
+                        <TableCell className={spacing.cellMiddle}>
                           <Skeleton className="h-4 w-40" />
                         </TableCell>
-                        <TableCell className="pr-6">
+                        <TableCell className={spacing.cellMiddle}>
+                          <Skeleton className="h-4 w-16" />
+                        </TableCell>
+                        <TableCell className={spacing.cellLast}>
                           <Skeleton className="h-8 w-8" />
                         </TableCell>
                       </TableRow>
@@ -336,15 +341,15 @@ export function NodesPage() {
                 ) : null}
                 {nodesQuery.data?.map((n) => (
                   <TableRow key={n.id}>
-                    <TableCell className="pl-6 font-medium">{n.name}</TableCell>
-                    <TableCell className="text-muted-foreground">
+                    <TableCell className={`${spacing.cellFirst} font-medium`}>{n.name}</TableCell>
+                    <TableCell className={`${spacing.cellMiddle} text-muted-foreground`}>
                       {groupName(groupsQuery.data, n.group_id)}
                     </TableCell>
-                    <TableCell className="text-muted-foreground">
+                    <TableCell className={`${spacing.cellMiddle} text-muted-foreground`}>
                       {n.api_address}:{n.api_port}
                     </TableCell>
-                    <TableCell className="text-muted-foreground">{n.public_address}</TableCell>
-                    <TableCell>
+                    <TableCell className={`${spacing.cellMiddle} text-muted-foreground`}>{n.public_address}</TableCell>
+                    <TableCell className={spacing.cellMiddle}>
                       <StatusDot
                         status={n.status}
                         labelOnline={t("nodes.statusOnline")}
@@ -352,7 +357,7 @@ export function NodesPage() {
                         labelUnknown={t("nodes.statusUnknown")}
                       />
                     </TableCell>
-                    <TableCell className="pr-6">
+                    <TableCell className={spacing.cellLast}>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon" className="size-8">
@@ -388,7 +393,7 @@ export function NodesPage() {
                 ))}
                 {!nodesQuery.isLoading && nodesQuery.data && nodesQuery.data.length === 0 ? (
                   <TableRow>
-                    <TableCell className="pl-6 py-8 text-center text-muted-foreground" colSpan={6}>
+                    <TableCell className={`${spacing.cellFirst} py-8 text-center text-muted-foreground`} colSpan={6}>
                       {t("common.noData")}
                     </TableCell>
                   </TableRow>
