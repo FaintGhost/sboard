@@ -23,6 +23,7 @@ const (
 	syncRetryBaseDelay    = 200 * time.Millisecond
 	syncJobKeepPerNode    = 500
 	triggerSourceManual   = "manual_node_sync"
+	triggerSourceRetry    = "manual_retry"
 	triggerSourceInbound  = "auto_inbound_change"
 	triggerSourceUser     = "auto_user_change"
 	triggerSourceGroup    = "auto_group_change"
@@ -44,6 +45,10 @@ func trySyncNode(ctx context.Context, store *db.Store, n db.Node) syncResult {
 }
 
 func trySyncNodeWithSource(ctx context.Context, store *db.Store, n db.Node, triggerSource string) syncResult {
+	return trySyncNodeWithSourceAndParent(ctx, store, n, triggerSource, nil)
+}
+
+func trySyncNodeWithSourceAndParent(ctx context.Context, store *db.Store, n db.Node, triggerSource string, parentJobID *int64) syncResult {
 	lock := nodeLock(n.ID)
 	lock.Lock()
 	defer lock.Unlock()
@@ -54,6 +59,7 @@ func trySyncNodeWithSource(ctx context.Context, store *db.Store, n db.Node, trig
 
 	job, err := store.CreateSyncJob(ctx, db.SyncJobCreate{
 		NodeID:        n.ID,
+		ParentJobID:   parentJobID,
 		TriggerSource: triggerSource,
 	})
 	if err != nil {

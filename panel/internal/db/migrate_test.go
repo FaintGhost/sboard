@@ -78,6 +78,9 @@ func TestMigrateAddsGroups(t *testing.T) {
 	_, err = database.Exec("SELECT id, node_id, trigger_source, status FROM sync_jobs LIMIT 1")
 	require.NoError(t, err)
 
+	_, err = database.Exec("SELECT parent_job_id FROM sync_jobs LIMIT 1")
+	require.NoError(t, err)
+
 	_, err = database.Exec("SELECT id, job_id, attempt_no, status FROM sync_attempts LIMIT 1")
 	require.NoError(t, err)
 }

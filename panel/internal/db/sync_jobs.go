@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -21,6 +22,7 @@ const (
 type SyncJob struct {
 	ID              int64
 	NodeID          int64
+	ParentJobID     *int64
 	TriggerSource   string
 	Status          string
 	InboundCount    int
@@ -50,7 +52,18 @@ type SyncAttempt struct {
 
 type SyncJobCreate struct {
 	NodeID        int64
+	ParentJobID   *int64
 	TriggerSource string
+}
+
+type SyncJobsListFilter struct {
+	Limit         int
+	Offset        int
+	NodeID        int64
+	Status        string
+	TriggerSource string
+	From          *time.Time
+	To            *time.Time
 }
 
 type SyncJobStartUpdate struct {
@@ -95,9 +108,10 @@ func (s *Store) CreateSyncJob(ctx context.Context, input SyncJobCreate) (SyncJob
 	now := s.nowUTC()
 	res, err := s.DB.ExecContext(
 		ctx,
-		`INSERT INTO sync_jobs (node_id, trigger_source, status, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?)`,
+		`INSERT INTO sync_jobs (node_id, parent_job_id, trigger_source, status, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?)`,
 		input.NodeID,
+		nullInt64(input.ParentJobID),
 		input.TriggerSource,
 		SyncJobStatusQueued,
 		now.Format(time.RFC3339),
@@ -226,11 +240,71 @@ func (s *Store) UpdateSyncAttemptFinish(ctx context.Context, attemptID int64, in
 
 func (s *Store) GetSyncJobByID(ctx context.Context, id int64) (SyncJob, error) {
 	row := s.DB.QueryRowContext(ctx, `
-    SELECT id, node_id, trigger_source, status, inbound_count, active_user_count, payload_hash,
+    SELECT id, node_id, parent_job_id, trigger_source, status, inbound_count, active_user_count, payload_hash,
       attempt_count, started_at, finished_at, duration_ms, error_summary, created_at, updated_at
     FROM sync_jobs WHERE id = ?
   `, id)
 	return scanSyncJob(row)
+}
+
+func (s *Store) ListSyncJobs(ctx context.Context, filter SyncJobsListFilter) ([]SyncJob, error) {
+	limit := filter.Limit
+	if limit <= 0 {
+		limit = 20
+	}
+	offset := filter.Offset
+	if offset < 0 {
+		offset = 0
+	}
+
+	wheres := make([]string, 0, 4)
+	args := make([]any, 0, 8)
+	if filter.NodeID > 0 {
+		wheres = append(wheres, "node_id = ?")
+		args = append(args, filter.NodeID)
+	}
+	if strings.TrimSpace(filter.Status) != "" {
+		wheres = append(wheres, "status = ?")
+		args = append(args, strings.TrimSpace(filter.Status))
+	}
+	if strings.TrimSpace(filter.TriggerSource) != "" {
+		wheres = append(wheres, "trigger_source = ?")
+		args = append(args, strings.TrimSpace(filter.TriggerSource))
+	}
+	if filter.From != nil {
+		wheres = append(wheres, "created_at >= ?")
+		args = append(args, filter.From.UTC().Format(time.RFC3339))
+	}
+	if filter.To != nil {
+		wheres = append(wheres, "created_at < ?")
+		args = append(args, filter.To.UTC().Format(time.RFC3339))
+	}
+
+	query := `
+    SELECT id, node_id, parent_job_id, trigger_source, status, inbound_count, active_user_count, payload_hash,
+      attempt_count, started_at, finished_at, duration_ms, error_summary, created_at, updated_at
+    FROM sync_jobs`
+	if len(wheres) > 0 {
+		query += " WHERE " + strings.Join(wheres, " AND ")
+	}
+	query += " ORDER BY created_at DESC, id DESC LIMIT ? OFFSET ?"
+	args = append(args, limit, offset)
+
+	rows, err := s.DB.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := make([]SyncJob, 0)
+	for rows.Next() {
+		item, err := scanSyncJob(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, item)
+	}
+	return out, rows.Err()
 }
 
 func (s *Store) GetSyncAttemptByID(ctx context.Context, id int64) (SyncAttempt, error) {
@@ -280,6 +354,7 @@ func (s *Store) PruneSyncJobsByNode(ctx context.Context, nodeID int64, keep int)
 
 func scanSyncJob(row rowScanner) (SyncJob, error) {
 	var item SyncJob
+	var parentJobID sql.NullInt64
 	var startedAt sql.NullString
 	var finishedAt sql.NullString
 	var createdAt string
@@ -288,6 +363,7 @@ func scanSyncJob(row rowScanner) (SyncJob, error) {
 	if err := row.Scan(
 		&item.ID,
 		&item.NodeID,
+		&parentJobID,
 		&item.TriggerSource,
 		&item.Status,
 		&item.InboundCount,
@@ -305,6 +381,10 @@ func scanSyncJob(row rowScanner) (SyncJob, error) {
 			return SyncJob{}, ErrNotFound
 		}
 		return SyncJob{}, err
+	}
+
+	if parentJobID.Valid {
+		item.ParentJobID = &parentJobID.Int64
 	}
 
 	if startedAt.Valid {
