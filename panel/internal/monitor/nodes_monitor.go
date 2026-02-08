@@ -20,6 +20,8 @@ type NodesMonitor struct {
 
 	// consecutive failures per node id
 	fails map[int64]int
+	// whether this panel process has successfully synced the node at least once
+	synced map[int64]bool
 
 	offlineAfter int
 }
@@ -32,12 +34,13 @@ func NewNodesMonitor(store *db.Store, client NodeClient) *NodesMonitor {
 		store:        store,
 		client:       client,
 		fails:        map[int64]int{},
+		synced:       map[int64]bool{},
 		offlineAfter: 2,
 	}
 }
 
 // CheckOnce updates node online/offline status by probing each node's /api/health.
-// When a node transitions from offline -> online, it triggers a sync.
+// It syncs on offline -> online transition, and also ensures at least one sync per panel process start.
 func (m *NodesMonitor) CheckOnce(ctx context.Context) error {
 	if m == nil || m.store == nil || m.client == nil {
 		return nil
@@ -61,14 +64,20 @@ func (m *NodesMonitor) CheckOnce(ctx context.Context) error {
 			if err := m.store.MarkNodeOnline(ctx, n.ID, now); err != nil {
 				log.Printf("[monitor] mark online failed node=%d err=%v", n.ID, err)
 			}
-			if !wasOnline {
+
+			shouldSync := !wasOnline || !m.synced[n.ID]
+			if shouldSync {
 				if n.GroupID == nil {
+					m.synced[n.ID] = true
 					continue
 				}
 				if err := m.syncNode(ctx, n); err != nil {
 					log.Printf("[monitor] sync failed node=%d err=%v", n.ID, err)
+					continue
 				}
 			}
+
+			m.synced[n.ID] = true
 			continue
 		}
 
@@ -81,6 +90,7 @@ func (m *NodesMonitor) CheckOnce(ctx context.Context) error {
 				log.Printf("[monitor] mark offline failed node=%d err=%v", n.ID, err)
 			}
 		}
+		m.synced[n.ID] = false
 	}
 	return nil
 }

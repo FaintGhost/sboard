@@ -12,6 +12,10 @@ RUN --mount=type=cache,target=/root/.npm \
 
 FROM golang:1.25 AS builder
 
+ARG PANEL_VERSION=unknown
+ARG PANEL_COMMIT_ID=unknown
+ARG SING_BOX_VERSION=unknown
+
 WORKDIR /src
 COPY go.mod ./
 
@@ -51,10 +55,6 @@ COPY --from=builder /out/sboard-panel /app/sboard-panel
 # The binary expects migrations at `internal/db/migrations`.
 COPY --from=builder /src/internal/db/migrations /app/internal/db/migrations
 COPY --from=web /web/dist /app/web/dist
-
-ARG PANEL_VERSION=unknown
-ARG PANEL_COMMIT_ID=unknown
-ARG SING_BOX_VERSION=unknown
 
 ENV PANEL_HTTP_ADDR=:8080
 ENV PANEL_DB_PATH=/data/panel.db

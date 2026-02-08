@@ -109,3 +109,46 @@ func TestNodesMonitor_HealthTransitionTriggersSync(t *testing.T) {
 	require.Equal(t, "online", got.Status)
 	require.Equal(t, 2, client.syncCalls)
 }
+
+func TestNodesMonitor_FirstHealthyCheckSyncsWhenNodeAlreadyOnline(t *testing.T) {
+	ctx := context.Background()
+	store := setupStore(t)
+
+	g, err := store.CreateGroup(ctx, "g1", "")
+	require.NoError(t, err)
+
+	n, err := store.CreateNode(ctx, db.NodeCreate{
+		Name:          "n1",
+		APIAddress:    "127.0.0.1",
+		APIPort:       3003,
+		SecretKey:     "secret",
+		PublicAddress: "example.com",
+		GroupID:       &g.ID,
+	})
+	require.NoError(t, err)
+
+	_, err = store.CreateInbound(ctx, db.InboundCreate{
+		Tag:        "ss-in",
+		NodeID:     n.ID,
+		Protocol:   "shadowsocks",
+		ListenPort: 8388,
+		PublicPort: 8388,
+		Settings:   []byte(`{"method":"2022-blake3-aes-128-gcm"}`),
+	})
+	require.NoError(t, err)
+
+	u, err := store.CreateUser(ctx, "alice")
+	require.NoError(t, err)
+	require.NoError(t, store.ReplaceUserGroups(ctx, u.ID, []int64{g.ID}))
+
+	require.NoError(t, store.MarkNodeOnline(ctx, n.ID, store.Now().UTC()))
+
+	client := &fakeNodeClient{healthErrs: []error{nil, nil}}
+	m := NewNodesMonitor(store, client)
+
+	require.NoError(t, m.CheckOnce(ctx))
+	require.Equal(t, 1, client.syncCalls)
+
+	require.NoError(t, m.CheckOnce(ctx))
+	require.Equal(t, 1, client.syncCalls)
+}
