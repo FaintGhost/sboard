@@ -7,6 +7,7 @@ import (
 
   "sboard/panel/internal/db"
   "sboard/panel/internal/subscription"
+  "sboard/panel/internal/userstate"
   "github.com/gin-gonic/gin"
 )
 
@@ -109,19 +110,7 @@ func SubscriptionGet(store *db.Store) gin.HandlerFunc {
 }
 
 func isSubscriptionUserEligible(user db.User) bool {
-  if user.Status != "active" {
-    return false
-  }
-
-  if user.ExpireAt != nil && !user.ExpireAt.After(time.Now().UTC()) {
-    return false
-  }
-
-  if user.TrafficLimit > 0 && user.TrafficUsed >= user.TrafficLimit {
-    return false
-  }
-
-  return true
+  return userstate.IsSubscriptionEligible(user, time.Now().UTC())
 }
 
 func isSingboxUA(ua string) bool {

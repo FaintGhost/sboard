@@ -8,6 +8,7 @@ import (
   "time"
 
   "sboard/panel/internal/db"
+  "sboard/panel/internal/userstate"
   "github.com/gin-gonic/gin"
 )
 
@@ -304,21 +305,5 @@ func toUserDTO(u db.User) userDTO {
 }
 
 func effectiveUserStatus(u db.User) string {
-  if u.Status == "disabled" {
-    return "disabled"
-  }
-  if u.Status == "expired" {
-    return "expired"
-  }
-  if u.Status == "traffic_exceeded" {
-    return "traffic_exceeded"
-  }
-  now := time.Now().UTC()
-  if u.ExpireAt != nil && !u.ExpireAt.After(now) {
-    return "expired"
-  }
-  if u.TrafficLimit > 0 && u.TrafficUsed >= u.TrafficLimit {
-    return "traffic_exceeded"
-  }
-  return "active"
+  return userstate.EffectiveStatus(u, time.Now().UTC())
 }
