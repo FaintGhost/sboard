@@ -2,12 +2,16 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"log"
+	"os"
 	"strings"
 
 	"sboard/panel/internal/db"
 	"sboard/panel/internal/node"
 )
+
+const panelSyncDebugPayloadEnv = "PANEL_SYNC_DEBUG_PAYLOAD"
 
 type syncResult struct {
 	Status string `json:"status"`
@@ -38,6 +42,9 @@ func trySyncNode(ctx context.Context, store *db.Store, n db.Node) syncResult {
 		users, _ := inb["users"].([]map[string]any)
 		log.Printf("[sync] node=%d inbound tag=%v type=%v method=%s password_len=%d users=%d",
 			n.ID, inb["tag"], inb["type"], method, len(pw), len(users))
+	}
+	if shouldDebugSyncPayload() {
+		log.Printf("[sync] node=%d payload=%s", n.ID, syncPayloadDebugJSON(payload))
 	}
 	client := nodeClientFactory()
 	if err := client.SyncConfig(ctx, n, payload); err != nil {
@@ -125,4 +132,70 @@ func uniquePositiveInt64(items []int64) []int64 {
 
 func isNodeUnreachableSyncError(errMsg string) bool {
 	return strings.HasPrefix(strings.TrimSpace(errMsg), "node sync request failed:")
+}
+
+func shouldDebugSyncPayload() bool {
+	v := strings.ToLower(strings.TrimSpace(os.Getenv(panelSyncDebugPayloadEnv)))
+	switch v {
+	case "1", "true", "yes", "y", "on":
+		return true
+	default:
+		return false
+	}
+}
+
+func syncPayloadDebugJSON(payload node.SyncPayload) string {
+	raw, err := json.Marshal(payload)
+	if err != nil {
+		return `{"error":"marshal payload failed"}`
+	}
+	var data any
+	if err := json.Unmarshal(raw, &data); err != nil {
+		return `{"error":"decode payload failed"}`
+	}
+	sanitized := sanitizeSyncPayloadForLog(data, "")
+	out, err := json.Marshal(sanitized)
+	if err != nil {
+		return `{"error":"encode sanitized payload failed"}`
+	}
+	if len(out) > 65535 {
+		return string(out[:65535]) + "...(truncated)"
+	}
+	return string(out)
+}
+
+func sanitizeSyncPayloadForLog(value any, key string) any {
+	key = strings.ToLower(strings.TrimSpace(key))
+	switch v := value.(type) {
+	case map[string]any:
+		out := make(map[string]any, len(v))
+		for k, val := range v {
+			out[k] = sanitizeSyncPayloadForLog(val, k)
+		}
+		return out
+	case []any:
+		out := make([]any, 0, len(v))
+		for _, item := range v {
+			out = append(out, sanitizeSyncPayloadForLog(item, key))
+		}
+		return out
+	case string:
+		if key == "password" || key == "uuid" {
+			return maskSyncCredential(v)
+		}
+		return v
+	default:
+		return value
+	}
+}
+
+func maskSyncCredential(value string) string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return ""
+	}
+	if len(value) <= 8 {
+		return "***"
+	}
+	return value[:4] + "..." + value[len(value)-4:]
 }
