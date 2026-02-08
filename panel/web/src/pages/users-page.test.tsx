@@ -56,6 +56,13 @@ describe("UsersPage", () => {
     )
 
     expect(await screen.findByText("alice")).toBeInTheDocument()
+    expect(
+      screen.getByText("已过期/流量超限通常由系统自动判定，无需手动切换。"),
+    ).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole("combobox", { name: "状态筛选" }))
+    expect(await screen.findByText("已过期（自动）")).toBeInTheDocument()
+    expect(screen.getByText("流量超限（自动）")).toBeInTheDocument()
   })
 
   it("can edit user via PUT and shows updated status", async () => {

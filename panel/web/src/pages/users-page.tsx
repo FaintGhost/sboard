@@ -116,8 +116,14 @@ export function UsersPage() {
     { value: "all", label: t("common.all") },
     { value: "active", label: t("users.status.active") },
     { value: "disabled", label: t("users.status.disabled") },
-    { value: "expired", label: t("users.status.expired") },
-    { value: "traffic_exceeded", label: t("users.status.trafficExceeded") },
+    {
+      value: "expired",
+      label: `${t("users.status.expired")}${t("users.statusAutoSuffix")}`,
+    },
+    {
+      value: "traffic_exceeded",
+      label: `${t("users.status.trafficExceeded")}${t("users.statusAutoSuffix")}`,
+    },
   ]
 
   const editableStatusOptions: Array<{ value: UserStatus; label: string }> = [
@@ -286,6 +292,7 @@ export function UsersPage() {
                   </SelectContent>
                 </Select>
               </div>
+              <p className="text-xs text-muted-foreground">{t("users.statusFilterHint")}</p>
             </div>
           </CardHeader>
           <CardContent className="p-0">
@@ -499,6 +506,7 @@ export function UsersPage() {
                           ))}
                         </SelectContent>
                       </Select>
+                      <p className="text-xs text-slate-500">{t("users.statusEditHint")}</p>
                     </div>
 
                     <div className="space-y-1">
