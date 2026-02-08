@@ -116,14 +116,8 @@ export function UsersPage() {
     { value: "all", label: t("common.all") },
     { value: "active", label: t("users.status.active") },
     { value: "disabled", label: t("users.status.disabled") },
-    {
-      value: "expired",
-      label: `${t("users.status.expired")}${t("users.statusAutoSuffix")}`,
-    },
-    {
-      value: "traffic_exceeded",
-      label: `${t("users.status.trafficExceeded")}${t("users.statusAutoSuffix")}`,
-    },
+    { value: "expired", label: t("users.status.expired") },
+    { value: "traffic_exceeded", label: t("users.status.trafficExceeded") },
   ]
 
   const editableStatusOptions: Array<{ value: UserStatus; label: string }> = [
@@ -292,18 +286,17 @@ export function UsersPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <p className="text-xs text-muted-foreground">{t("users.statusFilterHint")}</p>
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            <Table>
+            <Table className="table-fixed">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="pl-6">{t("users.username")}</TableHead>
-                  <TableHead>{t("common.status")}</TableHead>
-                  <TableHead className="hidden md:table-cell">{t("users.traffic")}</TableHead>
-                  <TableHead className="hidden sm:table-cell">{t("users.expireDate")}</TableHead>
-                  <TableHead className="w-12 pr-6">
+                  <TableHead className="pl-6 w-[30%]">{t("users.username")}</TableHead>
+                  <TableHead className="w-[18%]">{t("common.status")}</TableHead>
+                  <TableHead className="hidden md:table-cell w-[24%]">{t("users.traffic")}</TableHead>
+                  <TableHead className="hidden sm:table-cell w-[20%]">{t("users.expireDate")}</TableHead>
+                  <TableHead className="w-[8%] pr-6">
                     <span className="sr-only">{t("common.actions")}</span>
                   </TableHead>
                 </TableRow>
@@ -506,7 +499,6 @@ export function UsersPage() {
                           ))}
                         </SelectContent>
                       </Select>
-                      <p className="text-xs text-slate-500">{t("users.statusEditHint")}</p>
                     </div>
 
                     <div className="space-y-1">
