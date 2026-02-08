@@ -35,7 +35,10 @@ RUN --mount=type=cache,target=/go/pkg/mod \
   GOFLAGS= go mod tidy
 RUN --mount=type=cache,target=/go/pkg/mod \
   --mount=type=cache,target=/root/.cache/go-build \
-  CGO_ENABLED=1 go build -mod=mod -trimpath -ldflags "-s -w" -o /out/sboard-panel ./cmd/panel
+  CGO_ENABLED=1 go build -mod=mod -trimpath -ldflags "-s -w \
+  -X sboard/panel/internal/buildinfo.PanelVersion=${PANEL_VERSION} \
+  -X sboard/panel/internal/buildinfo.PanelCommitID=${PANEL_COMMIT_ID} \
+  -X sboard/panel/internal/buildinfo.SingBoxVersion=${SING_BOX_VERSION}" -o /out/sboard-panel ./cmd/panel
 
 FROM debian:stable-slim
 
@@ -57,9 +60,5 @@ ENV PANEL_HTTP_ADDR=:8080
 ENV PANEL_DB_PATH=/data/panel.db
 ENV PANEL_SERVE_WEB=true
 ENV PANEL_WEB_DIR=/app/web/dist
-ENV PANEL_VERSION=${PANEL_VERSION}
-ENV PANEL_COMMIT_ID=${PANEL_COMMIT_ID}
-ENV SING_BOX_VERSION=${SING_BOX_VERSION}
-
 EXPOSE 8080
 ENTRYPOINT ["/app/sboard-panel"]

@@ -3,18 +3,23 @@ package api_test
 import (
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"sboard/panel/internal/api"
+	"sboard/panel/internal/buildinfo"
 	"sboard/panel/internal/config"
 )
 
 func TestSystemInfoGet(t *testing.T) {
-	t.Setenv("PANEL_VERSION", "v0.2.0")
-	t.Setenv("PANEL_COMMIT_ID", "abc1234")
-	t.Setenv("SING_BOX_VERSION", "1.12.19")
+	buildinfo.PanelVersion = "v0.2.0"
+	buildinfo.PanelCommitID = "abc1234"
+	buildinfo.SingBoxVersion = "1.12.19"
+	t.Cleanup(func() {
+		buildinfo.PanelVersion = "N/A"
+		buildinfo.PanelCommitID = "N/A"
+		buildinfo.SingBoxVersion = "N/A"
+	})
 
 	r := api.NewRouter(config.Config{JWTSecret: "secret"}, setupStore(t))
 	token := mustToken("secret")
@@ -31,9 +36,14 @@ func TestSystemInfoGet(t *testing.T) {
 }
 
 func TestSystemInfoGet_DefaultNA(t *testing.T) {
-	_ = os.Unsetenv("PANEL_VERSION")
-	_ = os.Unsetenv("PANEL_COMMIT_ID")
-	_ = os.Unsetenv("SING_BOX_VERSION")
+	buildinfo.PanelVersion = ""
+	buildinfo.PanelCommitID = ""
+	buildinfo.SingBoxVersion = ""
+	t.Cleanup(func() {
+		buildinfo.PanelVersion = "N/A"
+		buildinfo.PanelCommitID = "N/A"
+		buildinfo.SingBoxVersion = "N/A"
+	})
 
 	r := api.NewRouter(config.Config{JWTSecret: "secret"}, setupStore(t))
 	token := mustToken("secret")

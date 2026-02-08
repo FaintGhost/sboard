@@ -8,7 +8,7 @@ NAMESPACE=""
 TAG="latest"
 
 usage() {
-  cat <<'EOF'
+  cat <<'HELP'
 用法:
   ./scripts/docker-build-push.sh --namespace <dockerhub_namespace> [--tag <tag>]
 
@@ -21,7 +21,7 @@ usage() {
     - <namespace>/sboard-node:<tag>
     - <namespace>/sboard-panel:<tag>
   - 需要你已完成 docker login。
-EOF
+HELP
 }
 
 while [[ $# -gt 0 ]]; do
@@ -80,10 +80,10 @@ echo "[2/2] 构建并推送 Panel: ${PANEL_IMAGE}"
 (
   cd "${ROOT_DIR}/panel"
   export SBOARD_PANEL_IMAGE="${PANEL_IMAGE}"
-  export PANEL_VERSION="${TAG}"
-  export PANEL_COMMIT_ID="${PANEL_COMMIT_ID}"
-  export SING_BOX_VERSION="${SING_BOX_VERSION}"
-  docker compose -f docker-compose.yml -f docker-compose.build.yml build
+  docker compose -f docker-compose.yml -f docker-compose.build.yml build \
+    --build-arg PANEL_VERSION="${TAG}" \
+    --build-arg PANEL_COMMIT_ID="${PANEL_COMMIT_ID}" \
+    --build-arg SING_BOX_VERSION="${SING_BOX_VERSION}"
   docker push "${SBOARD_PANEL_IMAGE}"
 )
 

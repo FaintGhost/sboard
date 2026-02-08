@@ -3,12 +3,12 @@ package api
 import (
 	"errors"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"sboard/panel/internal/buildinfo"
 	"sboard/panel/internal/db"
 	"sboard/panel/internal/userstate"
 )
@@ -231,9 +231,9 @@ func SystemInfoGet() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"data": systemInfoDTO{
-				PanelVersion:   nonEmptyOrNA(os.Getenv("PANEL_VERSION")),
-				PanelCommitID:  nonEmptyOrNA(os.Getenv("PANEL_COMMIT_ID")),
-				SingBoxVersion: nonEmptyOrNA(os.Getenv("SING_BOX_VERSION")),
+				PanelVersion:   nonEmptyOrNA(buildinfo.PanelVersion),
+				PanelCommitID:  nonEmptyOrNA(buildinfo.PanelCommitID),
+				SingBoxVersion: nonEmptyOrNA(buildinfo.SingBoxVersion),
 			},
 		})
 	}
