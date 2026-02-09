@@ -27,8 +27,8 @@ Phase 4
 ### Phase 4: 验证与交付
 - [x] 运行测试与构建
 - [x] 更新 planning 文件（findings/progress）
-- [ ] 提交 commit
-- **Status:** in_progress
+- [x] 提交 commit
+- **Status:** complete
 
 ## Key Questions
 1. M4 最小闭环如何定义？（可用性增强优先）
@@ -51,3 +51,4 @@ Phase 4
 ## Notes
 - 保持与现有 `sync-jobs` API 契约兼容。
 - M4 仅前端改动，不涉及 node 服务。
+- M4 交付 commit：`2424c32`
