@@ -7,6 +7,8 @@ import { AsyncButton } from "@/components/ui/async-button"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { PageHeader } from "@/components/page-header"
+import { TableEmptyState } from "@/components/table-empty-state"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
@@ -40,6 +42,7 @@ import { createGroup, deleteGroup, listGroups, updateGroup } from "@/lib/api/gro
 import { tableColumnSpacing } from "@/lib/table-spacing"
 import { listUsers } from "@/lib/api/users"
 import type { Group, UserStatus } from "@/lib/api/types"
+import { tableToolbarClass } from "@/lib/table-toolbar"
 
 type EditState = {
   mode: "create" | "edit"
@@ -268,23 +271,23 @@ export function GroupsPage() {
   return (
     <div className="px-4 lg:px-6">
       <section className="space-y-6">
-        <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">{t("groups.title")}</h1>
-            <p className="text-sm text-muted-foreground">{t("groups.subtitle")}</p>
-          </div>
-          <Button onClick={openCreateDialog}>{t("groups.createGroup")}</Button>
-        </header>
+        <PageHeader
+          title={t("groups.title")}
+          description={t("groups.subtitle")}
+          action={<Button onClick={openCreateDialog}>{t("groups.createGroup")}</Button>}
+        />
 
         <Card>
           <CardHeader className="pb-3">
-            <div className="flex flex-col gap-1.5">
-              <CardTitle className="text-base">{t("groups.list")}</CardTitle>
-              <CardDescription>
-                {groupsQuery.isLoading ? t("common.loading") : null}
-                {groupsQuery.isError ? t("common.loadFailed") : null}
-                {groupsQuery.data ? t("groups.count", { count: groupsQuery.data.length }) : null}
-              </CardDescription>
+            <div className={tableToolbarClass.container}>
+              <div className="flex flex-col gap-1.5">
+                <CardTitle className="text-base">{t("groups.list")}</CardTitle>
+                <CardDescription>
+                  {groupsQuery.isLoading ? t("common.loading") : null}
+                  {groupsQuery.isError ? t("common.loadFailed") : null}
+                  {groupsQuery.data ? t("groups.count", { count: groupsQuery.data.length }) : null}
+                </CardDescription>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="p-0">
@@ -353,11 +356,13 @@ export function GroupsPage() {
                   </TableRow>
                 ))}
                 {!groupsQuery.isLoading && groupsQuery.data && groupsQuery.data.length === 0 ? (
-                  <TableRow>
-                    <TableCell className={`${spacing.cellFirst} py-8 text-center text-muted-foreground`} colSpan={4}>
-                      {t("common.noData")}
-                    </TableCell>
-                  </TableRow>
+                  <TableEmptyState
+                    colSpan={4}
+                    className={`${spacing.cellFirst} py-10 text-center`}
+                    message={t("common.noData")}
+                    actionLabel={t("groups.createGroup")}
+                    actionTo="/groups"
+                  />
                 ) : null}
               </TableBody>
             </Table>

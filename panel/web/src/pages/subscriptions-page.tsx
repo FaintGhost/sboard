@@ -6,6 +6,8 @@ import { toast } from "sonner"
 import { Copy, Check, ExternalLink, Info } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { PageHeader } from "@/components/page-header"
+import { TableEmptyState } from "@/components/table-empty-state"
 import {
   Card,
   CardContent,
@@ -43,6 +45,7 @@ import { tableColumnSpacing } from "@/lib/table-spacing"
 import { tableTransitionClass } from "@/lib/table-motion"
 import { useTableQueryTransition } from "@/lib/table-query-transition"
 import { buildUserListSearchParams, parseUserListSearchParams } from "@/lib/user-list-filters"
+import { tableToolbarClass } from "@/lib/table-toolbar"
 
 type StatusFilter = UserStatus | "all"
 
@@ -178,12 +181,10 @@ export function SubscriptionsPage() {
 
   return (
     <div className="px-4 lg:px-6 space-y-6">
-      <div className="space-y-2">
-        <h1 className="text-xl font-semibold text-slate-900">{t("subscriptions.title")}</h1>
-        <p className="text-sm text-slate-500">
-          {t("subscriptions.subtitle")}
-        </p>
-      </div>
+      <PageHeader
+        title={t("subscriptions.title")}
+        description={t("subscriptions.subtitle")}
+      />
 
       <Card>
         <CardHeader>
@@ -246,15 +247,15 @@ export function SubscriptionsPage() {
         </CardContent>
       </Card>
 
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-2">
+      <div className={tableToolbarClass.container}>
+        <div className={tableToolbarClass.filters}>
           <Label htmlFor="subscriptions-search" className="sr-only">
             {t("subscriptions.searchPlaceholder")}
           </Label>
           <Input
             id="subscriptions-search"
             placeholder={t("subscriptions.searchPlaceholder")}
-            className="w-64"
+            className="w-full sm:w-64"
             value={search}
             onChange={(e) => updateFilters({ search: e.target.value })}
           />
@@ -288,11 +289,13 @@ export function SubscriptionsPage() {
           </TableHeader>
           <TableBody className={tableTransitionClass(usersTable.isTransitioning)}>
             {usersTable.showNoData || filteredUsers.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={4} className={`${spacing.cellFirst} text-center text-slate-500`}>
-                  {t("common.noData")}
-                </TableCell>
-              </TableRow>
+              <TableEmptyState
+                colSpan={4}
+                className={`${spacing.cellFirst} py-10 text-center`}
+                message={t("common.noData")}
+                actionLabel={t("users.createUser")}
+                actionTo="/users"
+              />
             ) : (
               filteredUsers.map((user) => (
                 <UserSubscriptionRow key={user.id} user={user} subscriptionBaseURL={systemSettingsQuery.data?.subscription_base_url} />

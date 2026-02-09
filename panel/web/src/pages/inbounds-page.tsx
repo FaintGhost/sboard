@@ -6,6 +6,8 @@ import { useTranslation } from "react-i18next"
 import { AsyncButton } from "@/components/ui/async-button"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { PageHeader } from "@/components/page-header"
+import { TableEmptyState } from "@/components/table-empty-state"
 import {
   Dialog,
   DialogContent,
@@ -53,6 +55,7 @@ import {
 import { tableColumnSpacing } from "@/lib/table-spacing"
 import { tableTransitionClass } from "@/lib/table-motion"
 import { useTableQueryTransition } from "@/lib/table-query-transition"
+import { tableToolbarClass } from "@/lib/table-toolbar"
 
 const MonacoEditor = lazy(() => import("@monaco-editor/react"))
 
@@ -279,22 +282,22 @@ export function InboundsPage() {
   return (
     <div className="px-4 lg:px-6">
       <section className="space-y-6">
-        <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">{t("inbounds.title")}</h1>
-            <p className="text-sm text-muted-foreground">{t("inbounds.subtitle")}</p>
-          </div>
-          <Button
-            onClick={openCreateDialog}
-            disabled={!nodesQuery.data || nodesQuery.data.length === 0}
-          >
-            {t("inbounds.createInbound")}
-          </Button>
-        </header>
+        <PageHeader
+          title={t("inbounds.title")}
+          description={t("inbounds.subtitle")}
+          action={(
+            <Button
+              onClick={openCreateDialog}
+              disabled={!nodesQuery.data || nodesQuery.data.length === 0}
+            >
+              {t("inbounds.createInbound")}
+            </Button>
+          )}
+        />
 
         <Card>
           <CardHeader className="pb-3">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className={tableToolbarClass.container}>
               <div className="flex flex-col gap-1.5">
                 <CardTitle className="text-base">{t("inbounds.list")}</CardTitle>
                 <CardDescription>
@@ -305,7 +308,7 @@ export function InboundsPage() {
                     : null}
                 </CardDescription>
               </div>
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <div className={tableToolbarClass.filters}>
                 <Select
                   value={nodeFilter === "all" ? "all" : String(nodeFilter)}
                   onValueChange={(value) => setNodeFilter(value === "all" ? "all" : Number(value))}
@@ -382,11 +385,13 @@ export function InboundsPage() {
                 ))}
 
                 {inboundsTable.showNoData ? (
-                  <TableRow>
-                    <TableCell className={`${spacing.cellFirst} py-8 text-center text-muted-foreground`} colSpan={5}>
-                      {t("common.noData")}
-                    </TableCell>
-                  </TableRow>
+                  <TableEmptyState
+                    colSpan={5}
+                    className={`${spacing.cellFirst} py-10 text-center`}
+                    message={t("common.noData")}
+                    actionLabel={t("inbounds.createInbound")}
+                    actionTo="/inbounds"
+                  />
                 ) : null}
               </TableBody>
             </Table>

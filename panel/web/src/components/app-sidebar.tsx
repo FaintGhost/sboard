@@ -7,12 +7,11 @@ import {
   IconServer2,
   IconArrowsExchange,
   IconListCheck,
-  IconCloud,
   IconRefresh,
+  IconCloud,
 } from "@tabler/icons-react"
 import { Link, useLocation } from "react-router-dom"
 
-import { NavDocuments } from "@/components/nav-documents"
 import { NavMain } from "@/components/nav-main"
 import { NavSecondary } from "@/components/nav-secondary"
 import { NavUser } from "@/components/nav-user"
@@ -70,19 +69,17 @@ export function AppSidebar({
         url: "/sync-jobs",
         icon: IconRefresh,
       },
+      {
+        title: t("nav.subscriptions"),
+        url: "/subscriptions",
+        icon: IconCloud,
+      },
     ],
     navSecondary: [
       {
         title: t("nav.settings"),
         url: "/settings",
         icon: IconSettings,
-      },
-    ],
-    documents: [
-      {
-        name: t("nav.subscriptions"),
-        url: "/subscriptions",
-        icon: IconCloud,
       },
     ],
   }
@@ -114,7 +111,6 @@ export function AppSidebar({
                 : location.pathname.startsWith(item.url),
           }))}
         />
-        <NavDocuments items={data.documents} />
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>

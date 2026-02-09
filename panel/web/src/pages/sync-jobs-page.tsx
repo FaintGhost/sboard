@@ -6,6 +6,8 @@ import { useSearchParams } from "react-router-dom"
 import { AsyncButton } from "@/components/ui/async-button"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { PageHeader } from "@/components/page-header"
+import { TableEmptyState } from "@/components/table-empty-state"
 import {
   Dialog,
   DialogContent,
@@ -44,6 +46,7 @@ import {
 import { tableColumnSpacing } from "@/lib/table-spacing"
 import { tableTransitionClass } from "@/lib/table-motion"
 import { useTableQueryTransition } from "@/lib/table-query-transition"
+import { tableToolbarClass } from "@/lib/table-toolbar"
 
 const pageSize = 20
 
@@ -207,14 +210,14 @@ export function SyncJobsPage() {
   return (
     <div className="px-4 lg:px-6">
       <section className="space-y-6">
-        <header>
-          <h1 className="text-2xl font-semibold tracking-tight">{t("syncJobs.title")}</h1>
-          <p className="text-sm text-muted-foreground">{t("syncJobs.subtitle")}</p>
-        </header>
+        <PageHeader
+          title={t("syncJobs.title")}
+          description={t("syncJobs.subtitle")}
+        />
 
         <Card>
           <CardHeader className="pb-3">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className={tableToolbarClass.container}>
               <div className="flex flex-col gap-1.5">
                 <CardTitle className="text-base">{t("syncJobs.list")}</CardTitle>
                 <CardDescription>
@@ -223,7 +226,7 @@ export function SyncJobsPage() {
                   {!jobsTable.showLoadingHint && jobsQuery.data ? t("syncJobs.count", { count: visibleJobs.length }) : null}
                 </CardDescription>
               </div>
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <div className={tableToolbarClass.filters}>
                 <Select
                   value={filters.timeRange}
                   onValueChange={(v) => updateFilters({ timeRange: v as SyncJobsTimeRange }, true)}
@@ -335,11 +338,13 @@ export function SyncJobsPage() {
                 ))}
 
                 {jobsTable.showNoData ? (
-                  <TableRow>
-                    <TableCell className={`${spacing.cellFirst} py-8 text-center text-muted-foreground`} colSpan={7}>
-                      {t("common.noData")}
-                    </TableCell>
-                  </TableRow>
+                  <TableEmptyState
+                    colSpan={7}
+                    className={`${spacing.cellFirst} py-10 text-center`}
+                    message={t("common.noData")}
+                    actionLabel={t("nodes.viewSyncJobs")}
+                    actionTo="/nodes"
+                  />
                 ) : null}
               </TableBody>
             </Table>

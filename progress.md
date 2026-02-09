@@ -493,3 +493,38 @@
 - 严格验证：
   - `npm test -- --run` ✅（12 files, 29 tests）
   - `npm run build` ✅
+
+## 2026-02-09 Session: Frontend Design 收敛第一轮（已完成）
+- 计划执行：
+  - 已写入 `task_plan.md` 并按计划完成首批页面改造。
+- 实施内容：
+  - 导航重排：`subscriptions` 合并到主导航。
+    - `panel/web/src/components/app-sidebar.tsx`
+  - Dashboard 重构为“系统概览 + 快捷入口 + TOP 节点”。
+    - `panel/web/src/pages/dashboard-page.tsx`
+  - Settings 主卡视觉强化（不改业务逻辑）。
+    - `panel/web/src/pages/settings-page.tsx`
+  - 路由级 fallback 升级为结构化 skeleton。
+    - `panel/web/src/routes/index.tsx`
+  - 补充 i18n 文案。
+    - `panel/web/src/i18n/locales/zh.json`
+    - `panel/web/src/i18n/locales/en.json`
+- 验证结果（严格）：
+  - `npm test -- --run` ✅（12 files, 29 tests）
+  - `npm run build` ✅
+
+## 2026-02-09 Session: Frontend Design 第二轮（已完成）
+- 新增复用能力：
+  - `panel/web/src/components/page-header.tsx`
+  - `panel/web/src/components/table-empty-state.tsx`
+  - `panel/web/src/lib/table-toolbar.ts`
+- 批量改造页面：
+  - `panel/web/src/pages/users-page.tsx`
+  - `panel/web/src/pages/groups-page.tsx`
+  - `panel/web/src/pages/subscriptions-page.tsx`
+  - `panel/web/src/pages/inbounds-page.tsx`
+  - `panel/web/src/pages/sync-jobs-page.tsx`
+  - `panel/web/src/pages/nodes-page.tsx`
+- 验证结果：
+  - `npm test -- --run` ✅（12 files, 29 tests）
+  - `npm run build` ✅

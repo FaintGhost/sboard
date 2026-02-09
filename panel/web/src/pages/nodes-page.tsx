@@ -7,6 +7,8 @@ import { useNavigate } from "react-router-dom"
 import { AsyncButton } from "@/components/ui/async-button"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { PageHeader } from "@/components/page-header"
+import { TableEmptyState } from "@/components/table-empty-state"
 import { Separator } from "@/components/ui/separator"
 import {
   Dialog,
@@ -51,6 +53,7 @@ import { listTrafficNodesSummary, type TrafficNodeSummary } from "@/lib/api/traf
 import { buildNodeDockerCompose, generateNodeSecretKey } from "@/lib/node-compose"
 import { tableColumnSpacing } from "@/lib/table-spacing"
 import { bytesToGBString } from "@/lib/units"
+import { tableToolbarClass } from "@/lib/table-toolbar"
 
 type EditState = {
   mode: "create" | "edit"
@@ -177,32 +180,32 @@ export function NodesPage() {
   return (
     <div className="px-4 lg:px-6">
       <section className="space-y-6">
-        <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">{t("nodes.title")}</h1>
-            <p className="text-sm text-muted-foreground">{t("nodes.subtitle")}</p>
-          </div>
-          <Button
-            onClick={() => {
-              setActionMessage(null)
-              createMutation.reset()
-              updateMutation.reset()
-              setUpserting({
-                mode: "create",
-                node: defaultNewNode,
-                name: "",
-                apiAddress: "127.0.0.1",
-                apiPort: 3000,
-                secretKey: "",
-                publicAddress: "127.0.0.1",
-                groupID: null,
-                linkAddress: true,
-              })
-            }}
-          >
-            {t("nodes.createNode")}
-          </Button>
-        </header>
+        <PageHeader
+          title={t("nodes.title")}
+          description={t("nodes.subtitle")}
+          action={(
+            <Button
+              onClick={() => {
+                setActionMessage(null)
+                createMutation.reset()
+                updateMutation.reset()
+                setUpserting({
+                  mode: "create",
+                  node: defaultNewNode,
+                  name: "",
+                  apiAddress: "127.0.0.1",
+                  apiPort: 3000,
+                  secretKey: "",
+                  publicAddress: "127.0.0.1",
+                  groupID: null,
+                  linkAddress: true,
+                })
+              }}
+            >
+              {t("nodes.createNode")}
+            </Button>
+          )}
+        />
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
           {nodesQuery.isLoading ? (
@@ -301,14 +304,16 @@ export function NodesPage() {
 
         <Card>
           <CardHeader className="pb-3">
-            <div className="flex flex-col gap-1.5">
-              <CardTitle className="text-base">{t("nodes.list")}</CardTitle>
-              <CardDescription>
-                {nodesQuery.isLoading ? t("common.loading") : null}
-                {nodesQuery.isError ? t("common.loadFailed") : null}
-                {nodesQuery.data ? t("nodes.count", { count: nodesQuery.data.length }) : null}
-                {actionMessage ? <span className="ml-3">{actionMessage}</span> : null}
-              </CardDescription>
+            <div className={tableToolbarClass.container}>
+              <div className="flex flex-col gap-1.5">
+                <CardTitle className="text-base">{t("nodes.list")}</CardTitle>
+                <CardDescription>
+                  {nodesQuery.isLoading ? t("common.loading") : null}
+                  {nodesQuery.isError ? t("common.loadFailed") : null}
+                  {nodesQuery.data ? t("nodes.count", { count: nodesQuery.data.length }) : null}
+                  {actionMessage ? <span className="ml-3">{actionMessage}</span> : null}
+                </CardDescription>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="p-0">
@@ -420,11 +425,13 @@ export function NodesPage() {
                   </TableRow>
                 ))}
                 {!nodesQuery.isLoading && nodesQuery.data && nodesQuery.data.length === 0 ? (
-                  <TableRow>
-                    <TableCell className={`${spacing.cellFirst} py-8 text-center text-muted-foreground`} colSpan={7}>
-                      {t("common.noData")}
-                    </TableCell>
-                  </TableRow>
+                  <TableEmptyState
+                    colSpan={7}
+                    className={`${spacing.cellFirst} py-10 text-center`}
+                    message={t("common.noData")}
+                    actionLabel={t("nodes.createNode")}
+                    actionTo="/nodes"
+                  />
                 ) : null}
               </TableBody>
             </Table>

@@ -1,5 +1,8 @@
+import { useMemo } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { useTranslation } from "react-i18next"
+import { Link } from "react-router-dom"
+import { IconArrowRight, IconCloud, IconRefresh, IconServer2, IconUsers } from "@tabler/icons-react"
 
 import { listUsers } from "@/lib/api/users"
 import { listNodes } from "@/lib/api/nodes"
@@ -13,6 +16,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Button } from "@/components/ui/button"
 import { listTrafficNodesSummary, getTrafficTotalSummary } from "@/lib/api/traffic"
 import { tableColumnSpacing } from "@/lib/table-spacing"
 import { bytesToGBString } from "@/lib/units"
@@ -63,6 +67,47 @@ export function DashboardPage() {
   const nodeNameByID = new Map<number, string>()
   for (const n of nodesQuery.data ?? []) nodeNameByID.set(n.id, n.name)
 
+  const activeUsers = useMemo(
+    () => (usersQuery.data ?? []).filter((user) => user.status === "active").length,
+    [usersQuery.data],
+  )
+
+  const onlineNodes = useMemo(
+    () => (nodesQuery.data ?? []).filter((node) => node.status === "online").length,
+    [nodesQuery.data],
+  )
+
+  const quickLinks = [
+    {
+      label: t("nav.users"),
+      to: "/users",
+      icon: IconUsers,
+      value: usersQuery.data ? String(usersQuery.data.length) : "-",
+      sub: t("dashboard.quickUsersSub", { active: activeUsers }),
+    },
+    {
+      label: t("nav.nodes"),
+      to: "/nodes",
+      icon: IconServer2,
+      value: nodesQuery.data ? String(nodesQuery.data.length) : "-",
+      sub: t("dashboard.quickNodesSub", { online: onlineNodes }),
+    },
+    {
+      label: t("nav.syncJobs"),
+      to: "/sync-jobs",
+      icon: IconRefresh,
+      value: topNodes.length > 0 ? String(topNodes.length) : "-",
+      sub: t("dashboard.quickSyncSub"),
+    },
+    {
+      label: t("nav.subscriptions"),
+      to: "/subscriptions",
+      icon: IconCloud,
+      value: usersQuery.data ? String(usersQuery.data.length) : "-",
+      sub: t("dashboard.quickSubsSub"),
+    },
+  ]
+
   return (
     <div className="flex flex-1 flex-col gap-4">
       <SectionCards
@@ -73,20 +118,34 @@ export function DashboardPage() {
       />
 
       <div className="grid gap-4 px-4 lg:px-6">
-        <Card className="@container/card">
+        <Card className="@container/card border-primary/25 bg-gradient-to-br from-primary/[0.08] via-card to-card shadow-sm">
           <CardHeader>
-            <CardTitle>{t("dashboard.backendConnectivityTitle")}</CardTitle>
-            <CardDescription>{t("dashboard.usersPreviewSubtitle")}</CardDescription>
+            <CardTitle>{t("dashboard.systemOverviewTitle")}</CardTitle>
+            <CardDescription>{t("dashboard.systemOverviewSubtitle")}</CardDescription>
           </CardHeader>
-          <CardContent className="text-sm">
-            {usersQuery.isLoading ? <p>{t("common.loading")}</p> : null}
-            {usersQuery.isError ? (
-              <p className="text-destructive">
+          <CardContent className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {quickLinks.map((item) => (
+              <Link
+                key={item.to}
+                to={item.to}
+                className="group rounded-lg border border-border/70 bg-background/70 p-3 transition-colors hover:border-primary/40 hover:bg-primary/[0.04]"
+              >
+                <div className="mb-2 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                    <item.icon className="size-4 text-primary" />
+                    {item.label}
+                  </div>
+                  <IconArrowRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+                </div>
+                <div className="text-2xl font-semibold tabular-nums">{item.value}</div>
+                <div className="mt-1 text-xs text-muted-foreground">{item.sub}</div>
+              </Link>
+            ))}
+
+            {usersQuery.isError || nodesQuery.isError ? (
+              <div className="sm:col-span-2 xl:col-span-4 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
                 {t("dashboard.requestFailedHint")}
-              </p>
-            ) : null}
-            {usersQuery.data ? (
-              <p>{t("dashboard.usersReturned", { count: usersQuery.data.length })}</p>
+              </div>
             ) : null}
           </CardContent>
         </Card>
@@ -137,6 +196,14 @@ export function DashboardPage() {
                 ))}
               </TableBody>
             </Table>
+
+            {topNodes.length > 0 ? (
+              <div className="flex justify-end border-t px-4 py-3">
+                <Button asChild size="sm" variant="outline">
+                  <Link to="/nodes">{t("dashboard.viewAllNodes")}</Link>
+                </Button>
+              </div>
+            ) : null}
           </CardContent>
         </Card>
       </div>

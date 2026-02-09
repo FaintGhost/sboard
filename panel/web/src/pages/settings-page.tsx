@@ -269,7 +269,7 @@ export function SettingsPage() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <Card>
+        <Card className="border-primary/25 bg-gradient-to-br from-primary/[0.08] via-card to-card shadow-sm">
           <CardHeader>
             <CardTitle>{t("settings.subscriptionAccess")}</CardTitle>
             <CardDescription>{t("settings.subscriptionAccessHint")}</CardDescription>
@@ -340,7 +340,7 @@ export function SettingsPage() {
                   {copied ? t("common.copied") : t("common.copy")}
                 </Button>
               </div>
-              <code className="block break-all text-xs bg-slate-100 px-3 py-2 rounded font-mono">
+              <code className="block break-all rounded-md border border-primary/20 bg-primary/[0.06] px-3 py-2 text-xs font-mono">
                 {resolvedSubscriptionBaseURL}
               </code>
             </div>

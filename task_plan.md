@@ -272,3 +272,70 @@ Complete
 - [x] 运行前端构建（通过）
 - [x] 同步更新 `findings.md` 与 `progress.md`
 - **Status:** complete
+
+---
+
+# Session Plan: Frontend Design 收敛（2026-02-09）
+
+## Goal
+提升管理面板的视觉辨识度与信息架构清晰度，重点改造导航、Dashboard 首屏层级、Settings 主卡视觉与路由加载体验。
+
+## Current Phase
+Complete
+
+## Phases
+
+### Phase 1: 设计方向与信息架构
+- [x] 确认方向：Network Ops Console（克制工业感）
+- [x] 定义首批改造范围：Sidebar / Dashboard / Settings / Route Fallback
+- **Status:** complete
+
+### Phase 2: 导航与入口重排
+- [x] 将订阅入口合并到主导航
+- [x] 清理冗余导航分区，提升路径直觉性
+- **Status:** complete
+
+### Phase 3: Dashboard 层级重构
+- [x] 用“系统概览 + 快捷动作”替代低价值卡片
+- [x] 强化关键指标信息密度与可扫描性
+- **Status:** complete
+
+### Phase 4: Settings 视觉优先级优化
+- [x] 强化订阅访问配置卡片层级与识别度
+- [x] 保持交互逻辑不变，仅优化视觉组织
+- **Status:** complete
+
+### Phase 5: 验证与记录
+- [x] 运行前端全量测试（必须全绿）
+- [x] 运行前端构建
+- [x] 更新 `findings.md` / `progress.md`
+- **Status:** complete
+
+---
+
+# Session Plan: Frontend Design 收敛（二阶段骨架统一，2026-02-09）
+
+## Goal
+统一页面头、表格工具栏与空状态表现，建立跨页面一致的视觉骨架。
+
+## Current Phase
+Complete
+
+## Phases
+
+### Phase 1: 抽象复用组件
+- [x] 新增 `PageHeader`
+- [x] 新增 `TableEmptyState`
+- [x] 新增 `table-toolbar` 规范
+- **Status:** complete
+
+### Phase 2: 批量页面接入
+- [x] 接入 `users/groups/subscriptions/inbounds/sync-jobs/nodes`
+- [x] 统一 header、toolbar、no-data CTA
+- **Status:** complete
+
+### Phase 3: 验证与沉淀
+- [x] 前端测试全绿
+- [x] 前端构建通过
+- [x] 更新 `findings.md` / `progress.md`
+- **Status:** complete

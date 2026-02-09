@@ -372,3 +372,34 @@
 - 验证结果：
   - `npm test -- --run` 全绿（12 files, 29 tests）。
   - `npm run build` 通过。
+
+## Session Findings (2026-02-09, Frontend Design 收敛第一轮)
+- 方向：采用 `Network Ops Console` 风格，在不改业务逻辑前提下提升可扫描性和视觉识别。
+- 导航信息架构：
+  - 将 `subscriptions` 从 documents 分组并入主导航，减少路径分叉。
+  - 保留 settings 在 secondary 区，形成“主业务 / 系统配置”分层。
+- Dashboard 改造：
+  - 用“系统概览卡片 + 快捷入口”替代低价值“后端连通性”信息块。
+  - 快捷卡提供核心计数（用户、节点等）和上下文提示（活跃/在线）。
+  - 保留并强化 Top Nodes 列表，增加“查看全部节点”CTA。
+- Settings 视觉层级：
+  - 订阅访问地址卡增加主色弱渐变强调，突出核心配置属性。
+  - 预览地址改为高对比边框+底色，提升可读性。
+- 路由 fallback：
+  - 从简单省略号替换为结构化 skeleton，占位语义更清晰，体感更稳定。
+
+## Session Findings (2026-02-09, Frontend Design 第二轮：页面骨架统一)
+- 目标：统一页面头、空状态和表格工具栏密度，减少各页视觉割裂。
+- 新增复用模块：
+  - `panel/web/src/components/page-header.tsx`
+    - 统一页面标题区域视觉（标题/副标题/右侧主操作）。
+  - `panel/web/src/components/table-empty-state.tsx`
+    - 统一表格空状态文案与 CTA 行为。
+  - `panel/web/src/lib/table-toolbar.ts`
+    - 统一 table header 工具栏布局密度与断点行为。
+- 批量接入页面（同类一次性覆盖）：
+  - `users/groups/subscriptions/inbounds/sync-jobs/nodes`
+- 结果：
+  - 各管理页页面头风格统一，主操作按钮位置一致；
+  - 表格空态从“仅 no data 文本”升级为“文案 + 快捷 CTA”；
+  - 过滤器布局统一，减少不同页面切换的认知负担。

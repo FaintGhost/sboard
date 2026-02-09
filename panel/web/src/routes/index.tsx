@@ -22,7 +22,18 @@ const UsersPage = lazy(() => import("@/pages/users-page").then((mod) => ({ defau
 
 function withSuspense(element: ReactNode) {
   return (
-    <Suspense fallback={<div className="px-4 py-6 text-sm text-muted-foreground">…</div>}>
+    <Suspense
+      fallback={(
+        <div className="px-4 py-6">
+          <div className="h-9 w-40 animate-pulse rounded-md bg-muted/70" />
+          <div className="mt-3 h-4 w-64 animate-pulse rounded bg-muted/60" />
+          <div className="mt-6 grid gap-3 sm:grid-cols-2">
+            <div className="h-24 animate-pulse rounded-lg bg-muted/50" />
+            <div className="h-24 animate-pulse rounded-lg bg-muted/50" />
+          </div>
+        </div>
+      )}
+    >
       {element}
     </Suspense>
   )

@@ -17,6 +17,8 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { PageHeader } from "@/components/page-header"
+import { TableEmptyState } from "@/components/table-empty-state"
 import {
   Select,
   SelectContent,
@@ -40,6 +42,7 @@ import { tableTransitionClass } from "@/lib/table-motion"
 import { useTableQueryTransition } from "@/lib/table-query-transition"
 import { bytesToGBString } from "@/lib/units"
 import { buildUserListSearchParams, parseUserListSearchParams } from "@/lib/user-list-filters"
+import { tableToolbarClass } from "@/lib/table-toolbar"
 
 import {
   DisableUserDialog,
@@ -230,21 +233,15 @@ export function UsersPage() {
   return (
     <div className="px-4 lg:px-6">
       <section className="space-y-6">
-        <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">{t("users.title")}</h1>
-            <p className="text-sm text-muted-foreground">
-              {t("users.subtitle")}
-            </p>
-          </div>
-          <Button onClick={openCreateDialog}>
-            {t("users.createUser")}
-          </Button>
-        </header>
+        <PageHeader
+          title={t("users.title")}
+          description={t("users.subtitle")}
+          action={<Button onClick={openCreateDialog}>{t("users.createUser")}</Button>}
+        />
 
         <Card>
           <CardHeader className="pb-3">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className={tableToolbarClass.container}>
               <div className="flex flex-col gap-1.5">
                 <CardTitle className="text-base">{t("users.list")}</CardTitle>
                 <CardDescription>
@@ -253,8 +250,8 @@ export function UsersPage() {
                   {!usersTable.showLoadingHint && usersQuery.data ? t("users.count", { count: filteredUsers.length }) : null}
                 </CardDescription>
               </div>
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                <div className="relative">
+              <div className={tableToolbarClass.filters}>
+                <div className={tableToolbarClass.searchWrap}>
                   <Label htmlFor="users-search" className="sr-only">
                     {t("users.searchPlaceholder")}
                   </Label>
@@ -369,11 +366,12 @@ export function UsersPage() {
                   </TableRow>
                 )})}
                 {(usersTable.showNoData || filteredUsers.length === 0) ? (
-                  <TableRow>
-                    <TableCell className={`${spacing.cellFirst} py-8 text-center text-muted-foreground`} colSpan={6}>
-                      {t("common.noData")}
-                    </TableCell>
-                  </TableRow>
+                  <TableEmptyState
+                    colSpan={6}
+                    message={t("common.noData")}
+                    actionLabel={t("users.createUser")}
+                    actionTo="/users"
+                  />
                 ) : null}
               </TableBody>
             </Table>
