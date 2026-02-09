@@ -390,3 +390,26 @@
   - 定向：`npm test -- src/pages/settings-page.test.tsx src/pages/subscriptions-page.test.tsx` ✅
   - 全量：`npm test`（11 files, 27 tests）✅
   - 构建：`npm run build` ✅
+
+## 2026-02-09 Session: 设置页卡片顺序与排版微调（已完成）
+- 修改：`panel/web/src/pages/settings-page.tsx`
+  - 卡片顺序改为：订阅访问地址、系统信息、语言、订阅格式说明。
+  - API 端点保持单行展示并联动 `resolvedSubscriptionBaseURL`。
+- 验证：
+  - `npm test -- src/pages/settings-page.test.tsx` ✅
+
+## 2026-02-09 Session: Settings UX 交互打磨（已完成）
+- 修改文件：
+  - `panel/web/src/pages/settings-page.tsx`
+    - 订阅协议+地址输入布局改为稳定双列栅格，减少横向空洞。
+    - 保存流程增加最小加载时长（500ms）+ spinner，避免按钮文案闪变。
+    - 地址输入支持 `onBlur` 校验，提交失败自动聚焦到输入框。
+    - 预览地址新增复制按钮（复制成功图标态 + 状态文案反馈）。
+    - 提示区收敛为 `aria-live`，错误提示增加 `role=alert`。
+    - 系统信息字段命名改为“当前订阅基础地址”。
+  - `panel/web/src/i18n/locales/zh.json`
+  - `panel/web/src/i18n/locales/en.json`
+    - 新增 `settings.subscriptionBaseUrlLabel`。
+- 验证结果（严格）：
+  - `npm test -- --run` ✅（11 files, 27 tests 全绿）
+  - `npm run build` ✅

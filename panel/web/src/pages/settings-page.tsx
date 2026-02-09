@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useTranslation } from "react-i18next"
+import { Check, Copy, Loader2 } from "lucide-react"
 import {
   Card,
   CardContent,
@@ -23,6 +24,10 @@ import { ApiError } from "@/lib/api/client"
 import { getSystemInfo, getSystemSettings, updateSystemSettings } from "@/lib/api/system"
 
 type SubscriptionScheme = "http" | "https"
+type HostPortValidationCode = "format" | "ip" | "port" | null
+type UpdateSystemSettingsPayload = Parameters<typeof updateSystemSettings>[0]
+
+const MINIMUM_SAVE_PENDING_MS = 500
 
 const languages = [
   { code: "zh", nameKey: "settings.langZh" },
@@ -77,7 +82,7 @@ function normalizeHostPort(host: string, port: number): string {
   return `${host}:${port}`
 }
 
-function validateHostPort(value: string): "format" | "ip" | "port" | null {
+function validateHostPort(value: string): HostPortValidationCode {
   const raw = value.trim()
   if (!raw) return null
 
@@ -139,11 +144,13 @@ export function SettingsPage() {
   const { t, i18n } = useTranslation()
   const qc = useQueryClient()
   const apiBaseUrl = window.location.origin
+  const hostPortInputRef = useRef<HTMLInputElement>(null)
 
   const [subscriptionScheme, setSubscriptionScheme] = useState<SubscriptionScheme>("http")
   const [subscriptionHostPort, setSubscriptionHostPort] = useState("")
   const [settingsMessage, setSettingsMessage] = useState<string | null>(null)
   const [validationError, setValidationError] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
 
   const systemInfoQuery = useQuery({
     queryKey: ["system-info"],
@@ -166,7 +173,15 @@ export function SettingsPage() {
   }, [systemSettingsQuery.data, apiBaseUrl])
 
   const updateSettingsMutation = useMutation({
-    mutationFn: updateSystemSettings,
+    mutationFn: async (payload: UpdateSystemSettingsPayload) => {
+      const startedAt = Date.now()
+      const data = await updateSystemSettings(payload)
+      const elapsed = Date.now() - startedAt
+      if (elapsed < MINIMUM_SAVE_PENDING_MS) {
+        await new Promise((resolve) => setTimeout(resolve, MINIMUM_SAVE_PENDING_MS - elapsed))
+      }
+      return data
+    },
     onSuccess: async (data) => {
       const parsed = parseConfiguredSubscriptionBaseURL(
         data.subscription_base_url ?? "",
@@ -180,6 +195,16 @@ export function SettingsPage() {
     },
   })
 
+  useEffect(() => {
+    if (!copied) return
+    const timer = window.setTimeout(() => {
+      setCopied(false)
+    }, 1600)
+    return () => {
+      window.clearTimeout(timer)
+    }
+  }, [copied])
+
   const handleLanguageChange = (lang: string) => {
     i18n.changeLanguage(lang)
   }
@@ -190,9 +215,40 @@ export function SettingsPage() {
     return `${subscriptionScheme}://${hostPort}`
   }, [apiBaseUrl, subscriptionHostPort, subscriptionScheme])
 
+  const copySupported = typeof navigator !== "undefined" && !!navigator.clipboard?.writeText
+
+  const resolveValidationError = (hostPort: string): string | null => {
+    const validateCode = validateHostPort(hostPort)
+    if (validateCode === "format") return t("settings.subscriptionAddressInvalidFormat")
+    if (validateCode === "ip") return t("settings.subscriptionAddressInvalidIP")
+    if (validateCode === "port") return t("settings.subscriptionAddressInvalidPort")
+    return null
+  }
+
+  const handleHostPortBlur = () => {
+    const hostPort = subscriptionHostPort.trim()
+    if (!hostPort) {
+      setValidationError(null)
+      return
+    }
+    setValidationError(resolveValidationError(hostPort))
+  }
+
+  const handleCopyBaseURL = async () => {
+    if (!copySupported) return
+    try {
+      await navigator.clipboard.writeText(resolvedSubscriptionBaseURL)
+      setCopied(true)
+      setSettingsMessage(t("common.copiedToClipboard"))
+    } catch {
+      setSettingsMessage(t("common.copyFailed"))
+    }
+  }
+
   function handleSaveSubscriptionAccess() {
     setSettingsMessage(null)
     setValidationError(null)
+    setCopied(false)
 
     const hostPort = subscriptionHostPort.trim()
     if (!hostPort) {
@@ -200,17 +256,10 @@ export function SettingsPage() {
       return
     }
 
-    const validateCode = validateHostPort(hostPort)
-    if (validateCode === "format") {
-      setValidationError(t("settings.subscriptionAddressInvalidFormat"))
-      return
-    }
-    if (validateCode === "ip") {
-      setValidationError(t("settings.subscriptionAddressInvalidIP"))
-      return
-    }
-    if (validateCode === "port") {
-      setValidationError(t("settings.subscriptionAddressInvalidPort"))
+    const validationMessage = resolveValidationError(hostPort)
+    if (validationMessage) {
+      setValidationError(validationMessage)
+      hostPortInputRef.current?.focus()
       return
     }
 
@@ -231,22 +280,104 @@ export function SettingsPage() {
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>{t("settings.language")}</CardTitle>
-            <CardDescription>{t("settings.selectLanguage")}</CardDescription>
+            <CardTitle>{t("settings.subscriptionAccess")}</CardTitle>
+            <CardDescription>{t("settings.subscriptionAccessHint")}</CardDescription>
           </CardHeader>
-          <CardContent>
-            <Select value={i18n.language} onValueChange={handleLanguageChange}>
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {languages.map((lang) => (
-                  <SelectItem key={lang.code} value={lang.code}>
-                    {t(lang.nameKey)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <CardContent className="space-y-5">
+            <div className="space-y-2">
+              <div className="grid gap-3 md:grid-cols-[120px_minmax(0,1fr)] md:items-end">
+                <div className="space-y-2">
+                  <Label htmlFor="subscription-scheme">{t("settings.subscriptionProtocol")}</Label>
+                  <Select
+                    value={subscriptionScheme}
+                    onValueChange={(value) => {
+                      setSubscriptionScheme(value as SubscriptionScheme)
+                      setValidationError(null)
+                      setSettingsMessage(null)
+                    }}
+                  >
+                    <SelectTrigger
+                      id="subscription-scheme"
+                      className="w-full"
+                      aria-label={t("settings.subscriptionProtocol")}
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="http">{t("settings.subscriptionSchemeHttp")}</SelectItem>
+                      <SelectItem value="https">{t("settings.subscriptionSchemeHttps")}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="min-w-0 flex-1 space-y-2">
+                  <Label htmlFor="subscription-host-port">{t("settings.subscriptionAddress")}</Label>
+                  <Input
+                    id="subscription-host-port"
+                    ref={hostPortInputRef}
+                    value={subscriptionHostPort}
+                    onChange={(e) => {
+                      setSubscriptionHostPort(e.target.value)
+                      setValidationError(null)
+                      setSettingsMessage(null)
+                    }}
+                    onBlur={handleHostPortBlur}
+                    placeholder={t("settings.subscriptionAddressPlaceholder")}
+                    aria-invalid={!!validationError}
+                    aria-describedby="subscription-host-port-help"
+                    autoComplete="off"
+                  />
+                </div>
+              </div>
+              <p id="subscription-host-port-help" className="text-xs text-muted-foreground">
+                {t("settings.subscriptionAddressHelp")}
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-3">
+                <div className="text-sm font-medium text-slate-700">{t("settings.subscriptionBaseUrlPreview")}</div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-8 shrink-0"
+                  onClick={handleCopyBaseURL}
+                  disabled={!copySupported}
+                >
+                  {copied ? <Check className="mr-1 h-3.5 w-3.5" /> : <Copy className="mr-1 h-3.5 w-3.5" />}
+                  {copied ? t("common.copied") : t("common.copy")}
+                </Button>
+              </div>
+              <code className="block break-all text-xs bg-slate-100 px-3 py-2 rounded font-mono">
+                {resolvedSubscriptionBaseURL}
+              </code>
+            </div>
+
+            <div className="min-h-5 space-y-1" aria-live="polite">
+              {settingsMessage ? <p className="text-sm text-emerald-700">{settingsMessage}</p> : null}
+              {validationError ? <p role="alert" className="text-sm text-destructive">{validationError}</p> : null}
+              {updateSettingsMutation.error instanceof ApiError ? (
+                <p role="alert" className="text-sm text-destructive">{updateSettingsMutation.error.message}</p>
+              ) : null}
+            </div>
+
+            <div className="flex justify-end">
+              <Button
+                type="button"
+                onClick={handleSaveSubscriptionAccess}
+                disabled={updateSettingsMutation.isPending || systemSettingsQuery.isLoading}
+              >
+                {updateSettingsMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {t("common.saving")}
+                  </>
+                ) : (
+                  t("common.save")
+                )}
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
@@ -268,7 +399,7 @@ export function SettingsPage() {
               <Badge variant="outline">{systemInfoQuery.data?.sing_box_version ?? "N/A"}</Badge>
             </div>
             <div className="flex items-center justify-between gap-3">
-              <span className="text-sm text-slate-700">{t("settings.apiEndpoint")}</span>
+              <span className="text-sm text-slate-700">{t("settings.subscriptionBaseUrlLabel")}</span>
               <code className="rounded bg-slate-100 px-2 py-1 text-xs font-mono">
                 {resolvedSubscriptionBaseURL}
               </code>
@@ -278,68 +409,22 @@ export function SettingsPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>{t("settings.subscriptionAccess")}</CardTitle>
-            <CardDescription>{t("settings.subscriptionAccessHint")}</CardDescription>
+            <CardTitle>{t("settings.language")}</CardTitle>
+            <CardDescription>{t("settings.selectLanguage")}</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-[160px_minmax(0,1fr)]">
-              <div className="space-y-2">
-                <Label htmlFor="subscription-scheme">{t("settings.subscriptionProtocol")}</Label>
-                <Select
-                  value={subscriptionScheme}
-                  onValueChange={(value) => {
-                    setSubscriptionScheme(value as SubscriptionScheme)
-                    setValidationError(null)
-                    setSettingsMessage(null)
-                  }}
-                >
-                  <SelectTrigger id="subscription-scheme" aria-label={t("settings.subscriptionProtocol")}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="http">{t("settings.subscriptionSchemeHttp")}</SelectItem>
-                    <SelectItem value="https">{t("settings.subscriptionSchemeHttps")}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="subscription-host-port">{t("settings.subscriptionAddress")}</Label>
-                <Input
-                  id="subscription-host-port"
-                  value={subscriptionHostPort}
-                  onChange={(e) => {
-                    setSubscriptionHostPort(e.target.value)
-                    setValidationError(null)
-                    setSettingsMessage(null)
-                  }}
-                  placeholder={t("settings.subscriptionAddressPlaceholder")}
-                />
-                <p className="text-xs text-muted-foreground">{t("settings.subscriptionAddressHelp")}</p>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <div className="text-sm font-medium text-slate-700">{t("settings.subscriptionBaseUrlPreview")}</div>
-              <code className="block text-xs bg-slate-100 px-3 py-2 rounded font-mono">
-                {resolvedSubscriptionBaseURL}
-              </code>
-            </div>
-
-            {settingsMessage ? <p className="text-sm text-emerald-700">{settingsMessage}</p> : null}
-            {validationError ? <p className="text-sm text-destructive">{validationError}</p> : null}
-            {updateSettingsMutation.error instanceof ApiError ? (
-              <p className="text-sm text-destructive">{updateSettingsMutation.error.message}</p>
-            ) : null}
-
-            <div className="flex justify-end">
-              <Button
-                onClick={handleSaveSubscriptionAccess}
-                disabled={updateSettingsMutation.isPending || systemSettingsQuery.isLoading}
-              >
-                {updateSettingsMutation.isPending ? t("common.saving") : t("common.save")}
-              </Button>
-            </div>
+          <CardContent>
+            <Select value={i18n.language} onValueChange={handleLanguageChange}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {languages.map((lang) => (
+                  <SelectItem key={lang.code} value={lang.code}>
+                    {t(lang.nameKey)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </CardContent>
         </Card>
 

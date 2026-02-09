@@ -316,6 +316,7 @@
     "subscriptionAddressInvalidIP": "IP 地址无效，请输入合法 IPv4/IPv6。",
     "subscriptionAddressInvalidPort": "端口无效，请输入 1-65535。",
     "subscriptionBaseUrlPreview": "当前用于生成订阅链接的地址",
+    "subscriptionBaseUrlLabel": "当前订阅基础地址",
     "saveSuccess": "设置已保存"
   },
   "syncJobs": {

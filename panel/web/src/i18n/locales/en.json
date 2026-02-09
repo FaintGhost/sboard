@@ -316,6 +316,7 @@
     "subscriptionAddressInvalidIP": "Invalid IP address. Please input a valid IPv4/IPv6.",
     "subscriptionAddressInvalidPort": "Invalid port. Use 1-65535.",
     "subscriptionBaseUrlPreview": "Current base used for subscription URL generation",
+    "subscriptionBaseUrlLabel": "Current Subscription Base URL",
     "saveSuccess": "Settings saved"
   },
   "syncJobs": {
