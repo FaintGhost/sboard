@@ -126,6 +126,10 @@ describe("inbound template", () => {
 
   it("reads protocol from preset template", () => {
     const text = buildPresetInboundTemplateText("trojan")
+    const parsed = JSON.parse(text) as Record<string, unknown>
+
+    expect(Object.keys(parsed)).toEqual(["inbounds"])
+    expect(Array.isArray(parsed.inbounds)).toBe(true)
     expect(readTemplateProtocol(text)).toBe("trojan")
   })
 

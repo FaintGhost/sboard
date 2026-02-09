@@ -75,6 +75,12 @@ func (c *Core) ApplyOptions(options option.Options, raw []byte) error {
 	if err != nil {
 		return err
 	}
+
+	oldBox := c.box
+	if oldBox != nil {
+		_ = oldBox.Close()
+	}
+
 	if err := newBox.Start(); err != nil {
 		_ = newBox.Close()
 		return err
@@ -86,12 +92,7 @@ func (c *Core) ApplyOptions(options option.Options, raw []byte) error {
 	if router := newBox.Router(); router != nil {
 		router.AppendTracker(c.traffic)
 	}
-
-	oldBox := c.box
 	c.box = newBox
-	if oldBox != nil {
-		_ = oldBox.Close()
-	}
 
 	sum := sha256.Sum256(raw)
 	c.hash = hex.EncodeToString(sum[:])

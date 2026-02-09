@@ -89,6 +89,13 @@ function asArray(value: unknown): unknown[] | null {
   return value
 }
 
+function shouldKeepExtraConfigValue(value: unknown): boolean {
+  if (value == null) return false
+  if (Array.isArray(value)) return value.length > 0
+  if (typeof value === "object") return Object.keys(value as Record<string, unknown>).length > 0
+  return true
+}
+
 function readRequiredString(obj: Record<string, unknown>, key: string): string | null {
   const value = obj[key]
   if (typeof value !== "string") return null
@@ -141,21 +148,13 @@ function buildFullConfigTemplate(
   extraConfig?: Record<string, unknown>,
 ): Record<string, unknown> {
   const full: Record<string, unknown> = {
-    log: {},
-    dns: {},
-    ntp: {},
-    certificate: {},
-    endpoints: [],
     inbounds: [inbound],
-    outbounds: [],
-    route: {},
-    services: [],
-    experimental: {},
   }
 
   if (extraConfig) {
     for (const key of fullConfigKeys) {
-      if (extraConfig[key] !== undefined) {
+      const value = extraConfig[key]
+      if (shouldKeepExtraConfigValue(value)) {
         full[key] = extraConfig[key]
       }
     }
