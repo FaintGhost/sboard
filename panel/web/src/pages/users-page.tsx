@@ -49,6 +49,7 @@ import { listGroups } from "@/lib/api/groups"
 import { getUserGroups, putUserGroups } from "@/lib/api/user-groups"
 import type { User, UserStatus } from "@/lib/api/types"
 import { tableColumnSpacing } from "@/lib/table-spacing"
+import { useTableQueryTransition } from "@/lib/table-query-transition"
 import { bytesToGBString, gbStringToBytes, rfc3339FromDateOnlyUTC } from "@/lib/units"
 
 type StatusFilter = UserStatus | "all"
@@ -144,6 +145,14 @@ export function UsersPage() {
     queryFn: () => listUsers(queryParams),
   })
 
+  const usersTable = useTableQueryTransition({
+    filterKey: status,
+    rows: usersQuery.data,
+    isLoading: usersQuery.isLoading,
+    isFetching: usersQuery.isFetching,
+    isError: usersQuery.isError,
+  })
+
   const groupsQuery = useQuery({
     queryKey: ["groups", { limit: 200, offset: 0 }],
     queryFn: () => listGroups({ limit: 200, offset: 0 }),
@@ -220,11 +229,11 @@ export function UsersPage() {
 
   // Filter users by search keyword
   const filteredUsers = useMemo(() => {
-    const users = usersQuery.data ?? []
+    const users = usersTable.visibleRows
     if (!search.trim()) return users
     const keyword = search.trim().toLowerCase()
     return users.filter((u) => u.username.toLowerCase().includes(keyword))
-  }, [usersQuery.data, search])
+  }, [usersTable.visibleRows, search])
 
   const groupNameByID = useMemo(() => {
     const map = new Map<number, string>()
@@ -273,9 +282,9 @@ export function UsersPage() {
               <div className="flex flex-col gap-1.5">
                 <CardTitle className="text-base">{t("users.list")}</CardTitle>
                 <CardDescription>
-                  {usersQuery.isLoading ? t("common.loading") : null}
+                  {usersTable.showLoadingHint ? t("common.loading") : null}
                   {usersQuery.isError ? t("common.loadFailed") : null}
-                  {usersQuery.data ? t("users.count", { count: filteredUsers.length }) : null}
+                  {!usersTable.showLoadingHint && usersQuery.data ? t("users.count", { count: filteredUsers.length }) : null}
                 </CardDescription>
               </div>
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -307,7 +316,7 @@ export function UsersPage() {
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            <Table>
+            <Table className="table-fixed">
               <TableHeader>
                 <TableRow>
                   <TableHead className={spacing.headFirst}>{t("users.username")}</TableHead>
@@ -321,7 +330,7 @@ export function UsersPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {usersQuery.isLoading ? (
+                {usersTable.showSkeleton ? (
                   <>
                     {Array.from({ length: 5 }).map((_, i) => (
                       <TableRow key={i}>
@@ -336,7 +345,7 @@ export function UsersPage() {
                   </>
                 ) : null}
                 {filteredUsers.map((u) => {
-                  const visibleGroupIDs = u.group_ids.filter((groupID) => groupNameByID.has(groupID))
+                  const visibleGroupIDs = (u.group_ids ?? []).filter((groupID) => groupNameByID.has(groupID))
                   return (
                   <TableRow key={u.id}>
                     <TableCell className={`${spacing.cellFirst} font-medium`}>{u.username}</TableCell>
@@ -425,7 +434,7 @@ export function UsersPage() {
                     </TableCell>
                   </TableRow>
                 )})}
-                {!usersQuery.isLoading && filteredUsers.length === 0 ? (
+                {!usersTable.showSkeleton && filteredUsers.length === 0 ? (
                   <TableRow>
                     <TableCell className={`${spacing.cellFirst} py-8 text-center text-muted-foreground`} colSpan={6}>
                       {t("common.noData")}

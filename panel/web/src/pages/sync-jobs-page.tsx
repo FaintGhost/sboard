@@ -42,6 +42,7 @@ import {
   type SyncJobsTimeRange,
 } from "@/lib/sync-jobs-filters"
 import { tableColumnSpacing } from "@/lib/table-spacing"
+import { useTableQueryTransition } from "@/lib/table-query-transition"
 
 const pageSize = 20
 
@@ -120,6 +121,10 @@ export function SyncJobsPage() {
     [searchParams],
   )
   const currentOffset = (filters.page - 1) * pageSize
+  const filtersKey = useMemo(
+    () => JSON.stringify(filters),
+    [filters],
+  )
 
   const [selectedJobID, setSelectedJobID] = useState<number | null>(null)
 
@@ -152,6 +157,14 @@ export function SyncJobsPage() {
         to: new Date().toISOString(),
       }),
     refetchInterval: 15_000,
+  })
+
+  const jobsTable = useTableQueryTransition({
+    filterKey: filtersKey,
+    rows: jobsQuery.data,
+    isLoading: jobsQuery.isLoading,
+    isFetching: jobsQuery.isFetching,
+    isError: jobsQuery.isError,
   })
 
   const detailQuery = useQuery({
@@ -188,6 +201,7 @@ export function SyncJobsPage() {
 
   const detailJob = detailQuery.data?.job ?? selectedFromList
   const detailAttempts = detailQuery.data?.attempts ?? []
+  const visibleJobs = jobsTable.visibleRows
 
   return (
     <div className="px-4 lg:px-6">
@@ -203,9 +217,9 @@ export function SyncJobsPage() {
               <div className="flex flex-col gap-1.5">
                 <CardTitle className="text-base">{t("syncJobs.list")}</CardTitle>
                 <CardDescription>
-                  {jobsQuery.isLoading ? t("common.loading") : null}
+                  {jobsTable.showLoadingHint ? t("common.loading") : null}
                   {jobsQuery.isError ? t("common.loadFailed") : null}
-                  {jobsQuery.data ? t("syncJobs.count", { count: jobsQuery.data.length }) : null}
+                  {!jobsTable.showLoadingHint && jobsQuery.data ? t("syncJobs.count", { count: visibleJobs.length }) : null}
                 </CardDescription>
               </div>
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -290,7 +304,7 @@ export function SyncJobsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {jobsQuery.isLoading ? (
+                {jobsTable.showSkeleton ? (
                   <>
                     {Array.from({ length: 6 }).map((_, index) => (
                       <TableRow key={index}>
@@ -317,7 +331,7 @@ export function SyncJobsPage() {
                   </>
                 ) : null}
 
-                {jobsQuery.data?.map((job) => (
+                {visibleJobs.map((job) => (
                   <TableRow
                     key={job.id}
                     className="cursor-pointer"
@@ -338,7 +352,7 @@ export function SyncJobsPage() {
                   </TableRow>
                 ))}
 
-                {!jobsQuery.isLoading && jobsQuery.data && jobsQuery.data.length === 0 ? (
+                {jobsTable.showNoData ? (
                   <TableRow>
                     <TableCell className={`${spacing.cellFirst} py-8 text-center text-muted-foreground`} colSpan={6}>
                       {t("common.noData")}

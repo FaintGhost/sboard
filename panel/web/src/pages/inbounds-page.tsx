@@ -44,6 +44,7 @@ import { createInbound, deleteInbound, listInbounds, updateInbound } from "@/lib
 import { listNodes } from "@/lib/api/nodes"
 import type { Inbound, Node } from "@/lib/api/types"
 import { tableColumnSpacing } from "@/lib/table-spacing"
+import { useTableQueryTransition } from "@/lib/table-query-transition"
 
 type EditState = {
   mode: "create" | "edit"
@@ -150,6 +151,14 @@ export function InboundsPage() {
       }),
   })
 
+  const inboundsTable = useTableQueryTransition({
+    filterKey: String(nodeFilter),
+    rows: inboundsQuery.data,
+    isLoading: inboundsQuery.isLoading,
+    isFetching: inboundsQuery.isFetching,
+    isError: inboundsQuery.isError,
+  })
+
   const createMutation = useMutation({
     mutationFn: createInbound,
     onSuccess: async () => {
@@ -213,9 +222,9 @@ export function InboundsPage() {
               <div className="flex flex-col gap-1.5">
                 <CardTitle className="text-base">{t("inbounds.list")}</CardTitle>
                 <CardDescription>
-                  {inboundsQuery.isLoading ? t("common.loading") : null}
+                  {inboundsTable.showLoadingHint ? t("common.loading") : null}
                   {inboundsQuery.isError ? t("common.loadFailed") : null}
-                  {inboundsQuery.data ? t("inbounds.count", { count: inboundsQuery.data.length }) : null}
+                  {!inboundsTable.showLoadingHint && inboundsQuery.data ? t("inbounds.count", { count: inboundsTable.visibleRows.length }) : null}
                 </CardDescription>
               </div>
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -252,7 +261,7 @@ export function InboundsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {inboundsQuery.isLoading ? (
+                {inboundsTable.showSkeleton ? (
                   <>
                     {Array.from({ length: 5 }).map((_, i) => (
                       <TableRow key={i}>
@@ -275,7 +284,7 @@ export function InboundsPage() {
                     ))}
                   </>
                 ) : null}
-                {inboundsQuery.data?.map((i) => (
+                {inboundsTable.visibleRows.map((i) => (
                   <TableRow key={i.id}>
                     <TableCell className={`${spacing.cellFirst} font-medium`}>
                       {nodeName(nodesQuery.data, i.node_id)}
@@ -333,7 +342,7 @@ export function InboundsPage() {
                     </TableCell>
                   </TableRow>
                 ))}
-                {!inboundsQuery.isLoading && inboundsQuery.data && inboundsQuery.data.length === 0 ? (
+                {inboundsTable.showNoData ? (
                   <TableRow>
                     <TableCell className={`${spacing.cellFirst} py-8 text-center text-muted-foreground`} colSpan={5}>
                       {t("common.noData")}

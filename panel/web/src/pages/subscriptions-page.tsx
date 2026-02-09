@@ -37,6 +37,7 @@ import { Badge } from "@/components/ui/badge"
 import { listUsers } from "@/lib/api/users"
 import type { User, UserStatus } from "@/lib/api/types"
 import { tableColumnSpacing } from "@/lib/table-spacing"
+import { useTableQueryTransition } from "@/lib/table-query-transition"
 
 type StatusFilter = UserStatus | "all"
 
@@ -120,16 +121,24 @@ export function SubscriptionsPage() {
     queryFn: () => listUsers(queryParams),
   })
 
+  const usersTable = useTableQueryTransition({
+    filterKey: statusFilter,
+    rows: usersQuery.data,
+    isLoading: usersQuery.isLoading,
+    isFetching: usersQuery.isFetching,
+    isError: usersQuery.isError,
+  })
+
   const filteredUsers = useMemo(() => {
-    if (!usersQuery.data) return []
-    if (!search.trim()) return usersQuery.data
+    const users = usersTable.visibleRows
+    if (!search.trim()) return users
     const lowerSearch = search.toLowerCase()
-    return usersQuery.data.filter(
+    return users.filter(
       (u) =>
         u.username.toLowerCase().includes(lowerSearch) ||
         u.uuid.toLowerCase().includes(lowerSearch),
     )
-  }, [usersQuery.data, search])
+  }, [usersTable.visibleRows, search])
 
   return (
     <div className="px-4 lg:px-6 space-y-6">
@@ -232,13 +241,13 @@ export function SubscriptionsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {usersQuery.isLoading ? (
+            {usersTable.showSkeleton ? (
               <TableRow>
                 <TableCell colSpan={4} className={`${spacing.cellFirst} text-center text-slate-500`}>
                   {t("common.loading")}
                 </TableCell>
               </TableRow>
-            ) : filteredUsers.length === 0 ? (
+            ) : usersTable.showNoData || filteredUsers.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={4} className={`${spacing.cellFirst} text-center text-slate-500`}>
                   {t("common.noData")}
