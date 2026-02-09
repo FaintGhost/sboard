@@ -240,14 +240,8 @@ export function SubscriptionsPage() {
               <TableHead className={`${spacing.headLast} w-[140px] text-right`}>{t("common.actions")}</TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody>
-            {usersTable.showSkeleton ? (
-              <TableRow>
-                <TableCell colSpan={4} className={`${spacing.cellFirst} text-center text-slate-500`}>
-                  {t("common.loading")}
-                </TableCell>
-              </TableRow>
-            ) : usersTable.showNoData || filteredUsers.length === 0 ? (
+          <TableBody className={usersTable.isTransitioning ? "opacity-50 transition-opacity duration-150" : "transition-opacity duration-150"}>
+            {usersTable.showNoData || filteredUsers.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={4} className={`${spacing.cellFirst} text-center text-slate-500`}>
                   {t("common.noData")}

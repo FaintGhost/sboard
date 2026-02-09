@@ -21,7 +21,6 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { Skeleton } from "@/components/ui/skeleton"
 import {
   Table,
   TableBody,
@@ -303,34 +302,7 @@ export function SyncJobsPage() {
                   <TableHead className={spacing.headLast}>{t("syncJobs.colRetries")}</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
-                {jobsTable.showSkeleton ? (
-                  <>
-                    {Array.from({ length: 6 }).map((_, index) => (
-                      <TableRow key={index}>
-                        <TableCell className={spacing.cellFirst}>
-                          <Skeleton className="h-4 w-36" />
-                        </TableCell>
-                        <TableCell className={spacing.cellMiddle}>
-                          <Skeleton className="h-4 w-20" />
-                        </TableCell>
-                        <TableCell className={spacing.cellMiddle}>
-                          <Skeleton className="h-4 w-28" />
-                        </TableCell>
-                        <TableCell className={spacing.cellMiddle}>
-                          <Skeleton className="h-5 w-16" />
-                        </TableCell>
-                        <TableCell className={spacing.cellMiddle}>
-                          <Skeleton className="h-4 w-14" />
-                        </TableCell>
-                        <TableCell className={spacing.cellLast}>
-                          <Skeleton className="h-4 w-8" />
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </>
-                ) : null}
-
+              <TableBody className={jobsTable.isTransitioning ? "opacity-50 transition-opacity duration-150" : "transition-opacity duration-150"}>
                 {visibleJobs.map((job) => (
                   <TableRow
                     key={job.id}
@@ -403,10 +375,8 @@ export function SyncJobsPage() {
             </DialogHeader>
 
             {detailQuery.isLoading ? (
-              <div className="space-y-3">
-                <Skeleton className="h-20 w-full" />
-                <Skeleton className="h-20 w-full" />
-                <Skeleton className="h-28 w-full" />
+              <div className="py-8 text-center text-muted-foreground">
+                {t("common.loading")}
               </div>
             ) : null}
 
