@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import { AppProviders } from "@/providers/app-providers"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { resetAuthStore, useAuthStore } from "@/store/auth"
+import { MemoryRouter } from "react-router-dom"
 
 import { SubscriptionsPage } from "./subscriptions-page"
 
@@ -58,11 +59,13 @@ describe("SubscriptionsPage", () => {
     })
 
     render(
-      <AppProviders>
-        <TooltipProvider>
-          <SubscriptionsPage />
-        </TooltipProvider>
-      </AppProviders>,
+      <MemoryRouter>
+        <AppProviders>
+          <TooltipProvider>
+            <SubscriptionsPage />
+          </TooltipProvider>
+        </AppProviders>
+      </MemoryRouter>,
     )
 
     expect(await screen.findByText("alice")).toBeInTheDocument()

@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next"
 import { z } from "zod"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Button } from "@/components/ui/button"
+import { AsyncButton } from "@/components/ui/async-button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -108,12 +108,17 @@ export function BootstrapForm({
             ) : null}
           </div>
 
-          <Button type="submit" className="w-full" disabled={isPending}>
-            {isPending ? t("auth.creatingAdmin") : t("auth.createAdmin")}
-          </Button>
+          <AsyncButton
+            type="submit"
+            className="w-full"
+            disabled={isPending}
+            pending={isPending}
+            pendingText={t("auth.creatingAdmin")}
+          >
+            {t("auth.createAdmin")}
+          </AsyncButton>
         </form>
       </CardContent>
     </Card>
   )
 }
-

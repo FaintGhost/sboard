@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next"
 import { MoreHorizontal, Pencil } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 
+import { AsyncButton } from "@/components/ui/async-button"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
@@ -438,9 +439,9 @@ export function NodesPage() {
               <DialogTitle>
                 {upserting?.mode === "create" ? t("nodes.createNode") : t("nodes.editNode")}
               </DialogTitle>
-              {upserting?.mode === "edit" ? (
-                <DialogDescription>{upserting.node.name}</DialogDescription>
-              ) : null}
+              <DialogDescription>
+                {upserting?.mode === "edit" ? upserting.node.name : t("nodes.createNode")}
+              </DialogDescription>
             </DialogHeader>
 
             {upserting ? (
@@ -643,7 +644,7 @@ export function NodesPage() {
               >
                 {t("common.cancel")}
               </Button>
-              <Button
+              <AsyncButton
                 onClick={() => {
                   if (!upserting) return
                   const name = upserting.name.trim()
@@ -669,9 +670,15 @@ export function NodesPage() {
                   }
                 }}
                 disabled={createMutation.isPending || updateMutation.isPending}
+                pending={createMutation.isPending || updateMutation.isPending}
+                pendingText={
+                  upserting?.mode === "create"
+                    ? t("common.creating")
+                    : t("common.saving")
+                }
               >
                 {t("common.save")}
-              </Button>
+              </AsyncButton>
             </DialogFooter>
           </DialogContent>
         </Dialog>

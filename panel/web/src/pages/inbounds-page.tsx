@@ -1,9 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import Editor from "@monaco-editor/react"
 import { MoreHorizontal, Pencil, Trash2 } from "lucide-react"
-import { useMemo, useState } from "react"
+import { lazy, Suspense, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 
+import { AsyncButton } from "@/components/ui/async-button"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -51,7 +51,10 @@ import {
   type InboundTemplatePresetProtocol,
 } from "@/lib/inbound-template"
 import { tableColumnSpacing } from "@/lib/table-spacing"
+import { tableTransitionClass } from "@/lib/table-motion"
 import { useTableQueryTransition } from "@/lib/table-query-transition"
+
+const MonacoEditor = lazy(() => import("@monaco-editor/react"))
 
 type TemplatePreset = InboundTemplatePresetProtocol | "custom"
 
@@ -335,7 +338,7 @@ export function InboundsPage() {
                   </TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody className={inboundsTable.isTransitioning ? "opacity-50 transition-opacity duration-150" : "transition-opacity duration-150"}>
+              <TableBody className={tableTransitionClass(inboundsTable.isTransitioning)}>
                 {inboundsTable.visibleRows.map((inbound) => (
                   <TableRow key={inbound.id}>
                     <TableCell className={`${spacing.cellFirst} font-medium`}>
@@ -399,7 +402,9 @@ export function InboundsPage() {
               <DialogTitle>
                 {upserting?.mode === "create" ? t("inbounds.createInbound") : t("inbounds.editInbound")}
               </DialogTitle>
-              {upserting?.mode === "edit" ? <DialogDescription>{upserting.inbound.tag}</DialogDescription> : null}
+              <DialogDescription>
+                {upserting?.mode === "edit" ? upserting.inbound.tag : t("inbounds.createInbound")}
+              </DialogDescription>
             </DialogHeader>
 
             {upserting ? (
@@ -466,42 +471,46 @@ export function InboundsPage() {
                   </div>
 
                   <div className="overflow-hidden rounded-md border">
-                    <Editor
-                      height="360px"
-                      defaultLanguage="json"
-                      language="json"
-                      theme="vs-dark"
-                      value={upserting.templateText}
-                      onChange={(value) => {
-                        setUpserting((prev) =>
-                          prev
-                            ? {
-                                ...prev,
-                                templateText: value ?? "",
-                                preset: readTemplateProtocol(value ?? "") ?? "custom",
-                              }
-                            : prev,
-                        )
-                        setToolMessage(null)
-                      }}
-                      options={{
-                        minimap: { enabled: false },
-                        fontSize: 13,
-                        lineNumbersMinChars: 3,
-                        scrollBeyondLastLine: false,
-                        wordWrap: "on",
-                        tabSize: 2,
-                        automaticLayout: true,
-                      }}
-                    />
+                    <Suspense fallback={<div className="h-[360px] px-3 py-2 text-sm text-muted-foreground">加载中...</div>}>
+                      <MonacoEditor
+                        height="360px"
+                        defaultLanguage="json"
+                        language="json"
+                        theme="vs-dark"
+                        value={upserting.templateText}
+                        onChange={(value) => {
+                          setUpserting((prev) =>
+                            prev
+                              ? {
+                                  ...prev,
+                                  templateText: value ?? "",
+                                  preset: readTemplateProtocol(value ?? "") ?? "custom",
+                                }
+                              : prev,
+                          )
+                          setToolMessage(null)
+                        }}
+                        options={{
+                          minimap: { enabled: false },
+                          fontSize: 13,
+                          lineNumbersMinChars: 3,
+                          scrollBeyondLastLine: false,
+                          wordWrap: "on",
+                          tabSize: 2,
+                          automaticLayout: true,
+                        }}
+                      />
+                    </Suspense>
                   </div>
 
                   <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-                    <Button
+                    <AsyncButton
                       type="button"
                       variant="outline"
                       size="sm"
                       disabled={formatMutation.isPending || !upserting.templateText.trim()}
+                      pending={formatMutation.isPending}
+                      pendingText={t("common.loading")}
                       onClick={() => {
                         formatMutation.mutate(upserting.templateText, {
                           onSuccess: (result) => {
@@ -526,13 +535,15 @@ export function InboundsPage() {
                       }}
                     >
                       {t("inbounds.formatTemplate")}
-                    </Button>
+                    </AsyncButton>
 
-                    <Button
+                    <AsyncButton
                       type="button"
                       variant="outline"
                       size="sm"
                       disabled={checkMutation.isPending || !upserting.templateText.trim()}
+                      pending={checkMutation.isPending}
+                      pendingText={t("common.loading")}
                       onClick={() => {
                         checkMutation.mutate(upserting.templateText, {
                           onSuccess: (result) => {
@@ -555,7 +566,7 @@ export function InboundsPage() {
                       }}
                     >
                       {t("inbounds.checkTemplate")}
-                    </Button>
+                    </AsyncButton>
 
                     <Select
                       value={generateCommand}
@@ -573,11 +584,13 @@ export function InboundsPage() {
                       </SelectContent>
                     </Select>
 
-                    <Button
+                    <AsyncButton
                       type="button"
                       variant="outline"
                       size="sm"
                       disabled={generateMutation.isPending}
+                      pending={generateMutation.isPending}
+                      pendingText={t("common.loading")}
                       onClick={() => {
                         generateMutation.mutate(generateCommand, {
                           onSuccess: (result) => {
@@ -612,7 +625,7 @@ export function InboundsPage() {
                       }}
                     >
                       {t("inbounds.generateRun")}
-                    </Button>
+                    </AsyncButton>
                   </div>
 
                   <p className="text-xs text-slate-500">{t("inbounds.templateHelp")}</p>
@@ -650,7 +663,7 @@ export function InboundsPage() {
               >
                 {t("common.cancel")}
               </Button>
-              <Button
+              <AsyncButton
                 onClick={() => {
                   if (!upserting) return
                   if (upserting.nodeID <= 0) return
@@ -670,9 +683,15 @@ export function InboundsPage() {
                   }
                 }}
                 disabled={createMutation.isPending || updateMutation.isPending}
+                pending={createMutation.isPending || updateMutation.isPending}
+                pendingText={
+                  upserting?.mode === "create"
+                    ? t("common.creating")
+                    : t("common.saving")
+                }
               >
                 {t("common.save")}
-              </Button>
+              </AsyncButton>
             </DialogFooter>
           </DialogContent>
         </Dialog>

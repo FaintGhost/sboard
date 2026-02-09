@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 import { useState, useMemo } from "react"
 import { useTranslation } from "react-i18next"
+import { useSearchParams } from "react-router-dom"
 import { toast } from "sonner"
 import { Copy, Check, ExternalLink, Info } from "lucide-react"
 
@@ -13,6 +14,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import {
   Select,
   SelectContent,
@@ -38,7 +40,9 @@ import { listUsers } from "@/lib/api/users"
 import { getSystemSettings } from "@/lib/api/system"
 import type { User, UserStatus } from "@/lib/api/types"
 import { tableColumnSpacing } from "@/lib/table-spacing"
+import { tableTransitionClass } from "@/lib/table-motion"
 import { useTableQueryTransition } from "@/lib/table-query-transition"
+import { buildUserListSearchParams, parseUserListSearchParams } from "@/lib/user-list-filters"
 
 type StatusFilter = UserStatus | "all"
 
@@ -61,6 +65,7 @@ function getSubscriptionUrl(userUuid: string, format?: string, configuredBaseURL
 function CopyButton({ text, label }: { text: string; label?: string }) {
   const { t } = useTranslation()
   const [copied, setCopied] = useState(false)
+  const accessibleLabel = label ? `${label} ${t("common.copy")}` : t("common.copy")
 
   const handleCopy = async () => {
     try {
@@ -75,10 +80,13 @@ function CopyButton({ text, label }: { text: string; label?: string }) {
 
   return (
     <Button
+      type="button"
       variant="ghost"
       size="icon"
       className="h-7 w-7 shrink-0"
       onClick={handleCopy}
+      aria-label={accessibleLabel}
+      title={accessibleLabel}
     >
       {copied ? (
         <Check className="h-4 w-4 text-green-600" />
@@ -108,8 +116,18 @@ function StatusBadge({ status }: { status: UserStatus }) {
 export function SubscriptionsPage() {
   const { t } = useTranslation()
   const spacing = tableColumnSpacing.four
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("active")
-  const [search, setSearch] = useState("")
+  const [searchParams, setSearchParams] = useSearchParams()
+  const filters = useMemo(() => parseUserListSearchParams(searchParams, "active"), [searchParams])
+  const statusFilter = filters.statusFilter as StatusFilter
+  const search = filters.search
+
+  const updateFilters = (patch: Partial<{ statusFilter: StatusFilter; search: string }>) => {
+    const next = {
+      statusFilter: (patch.statusFilter ?? statusFilter) as StatusFilter,
+      search: patch.search ?? search,
+    }
+    setSearchParams(buildUserListSearchParams(next, "active"), { replace: true })
+  }
 
   const statusOptions: Array<{ value: StatusFilter; label: string }> = [
     { value: "all", label: t("common.all") },
@@ -172,8 +190,14 @@ export function SubscriptionsPage() {
           <CardTitle className="flex items-center gap-2">
             {t("subscriptions.behaviorTitle")}
             <Tooltip>
-              <TooltipTrigger>
-                <Info className="h-4 w-4 text-slate-400" />
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  className="inline-flex items-center"
+                  aria-label={t("subscriptions.behaviorTitle")}
+                >
+                  <Info className="h-4 w-4 text-slate-400" />
+                </button>
               </TooltipTrigger>
               <TooltipContent className="max-w-xs">
                 <p>{t("subscriptions.behaviorTooltip")}</p>
@@ -224,17 +248,21 @@ export function SubscriptionsPage() {
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
+          <Label htmlFor="subscriptions-search" className="sr-only">
+            {t("subscriptions.searchPlaceholder")}
+          </Label>
           <Input
+            id="subscriptions-search"
             placeholder={t("subscriptions.searchPlaceholder")}
             className="w-64"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => updateFilters({ search: e.target.value })}
           />
           <Select
             value={statusFilter}
-            onValueChange={(v) => setStatusFilter(v as StatusFilter)}
+            onValueChange={(v) => updateFilters({ statusFilter: v as StatusFilter })}
           >
-            <SelectTrigger className="w-40">
+            <SelectTrigger className="w-40" aria-label={t("common.status")}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -258,7 +286,7 @@ export function SubscriptionsPage() {
               <TableHead className={`${spacing.headLast} w-[140px] text-right`}>{t("common.actions")}</TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody className={usersTable.isTransitioning ? "opacity-50 transition-opacity duration-150" : "transition-opacity duration-150"}>
+          <TableBody className={tableTransitionClass(usersTable.isTransitioning)}>
             {usersTable.showNoData || filteredUsers.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={4} className={`${spacing.cellFirst} text-center text-slate-500`}>
@@ -302,10 +330,13 @@ function UserSubscriptionRow({ user, subscriptionBaseURL }: { user: User; subscr
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
+                type="button"
                 variant="ghost"
                 size="icon"
                 className="h-7 w-7"
                 onClick={() => window.open(singboxUrl, "_blank")}
+                aria-label={t("subscriptions.previewSingbox")}
+                title={t("subscriptions.previewSingbox")}
               >
                 <ExternalLink className="h-4 w-4" />
               </Button>

@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next"
 
+import { AsyncButton } from "@/components/ui/async-button"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -56,16 +57,18 @@ export function DeleteUserDialog({
           <Button variant="outline" onClick={onClose}>
             {t("common.cancel")}
           </Button>
-          <Button
+          <AsyncButton
             variant="destructive"
             onClick={() => {
               if (!user) return
               onConfirm(user.id)
             }}
             disabled={isPending}
+            pending={isPending}
+            pendingText={t("common.deleting")}
           >
-            {isPending ? t("common.deleting") : t("common.confirm")}
-          </Button>
+            {t("common.confirm")}
+          </AsyncButton>
         </DialogFooter>
       </DialogContent>
     </Dialog>

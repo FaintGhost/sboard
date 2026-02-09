@@ -1,3 +1,4 @@
+import { lazy, Suspense, type ReactNode } from "react"
 import {
   createBrowserRouter,
   Navigate,
@@ -7,16 +8,25 @@ import {
 } from "react-router-dom"
 
 import { AppLayout } from "@/layouts/app-layout"
-import { DashboardPage } from "@/pages/dashboard-page"
-import { GroupsPage } from "@/pages/groups-page"
-import { InboundsPage } from "@/pages/inbounds-page"
-import { LoginPage } from "@/pages/login-page"
-import { NodesPage } from "@/pages/nodes-page"
-import { SettingsPage } from "@/pages/settings-page"
-import { SyncJobsPage } from "@/pages/sync-jobs-page"
-import { SubscriptionsPage } from "@/pages/subscriptions-page"
-import { UsersPage } from "@/pages/users-page"
 import { useAuthStore } from "@/store/auth"
+
+const DashboardPage = lazy(() => import("@/pages/dashboard-page").then((mod) => ({ default: mod.DashboardPage })))
+const GroupsPage = lazy(() => import("@/pages/groups-page").then((mod) => ({ default: mod.GroupsPage })))
+const InboundsPage = lazy(() => import("@/pages/inbounds-page").then((mod) => ({ default: mod.InboundsPage })))
+const LoginPage = lazy(() => import("@/pages/login-page").then((mod) => ({ default: mod.LoginPage })))
+const NodesPage = lazy(() => import("@/pages/nodes-page").then((mod) => ({ default: mod.NodesPage })))
+const SettingsPage = lazy(() => import("@/pages/settings-page").then((mod) => ({ default: mod.SettingsPage })))
+const SyncJobsPage = lazy(() => import("@/pages/sync-jobs-page").then((mod) => ({ default: mod.SyncJobsPage })))
+const SubscriptionsPage = lazy(() => import("@/pages/subscriptions-page").then((mod) => ({ default: mod.SubscriptionsPage })))
+const UsersPage = lazy(() => import("@/pages/users-page").then((mod) => ({ default: mod.UsersPage })))
+
+function withSuspense(element: ReactNode) {
+  return (
+    <Suspense fallback={<div className="px-4 py-6 text-sm text-muted-foreground">…</div>}>
+      {element}
+    </Suspense>
+  )
+}
 
 function RequireAuth() {
   const token = useAuthStore((state) => state.token)
@@ -32,7 +42,7 @@ function RequireAuth() {
 const router = createBrowserRouter([
   {
     path: "/login",
-    element: <LoginPage />,
+    element: withSuspense(<LoginPage />),
   },
   {
     element: <RequireAuth />,
@@ -40,14 +50,14 @@ const router = createBrowserRouter([
       {
         element: <AppLayout />,
         children: [
-          { path: "/", element: <DashboardPage /> },
-          { path: "/users", element: <UsersPage /> },
-          { path: "/groups", element: <GroupsPage /> },
-          { path: "/nodes", element: <NodesPage /> },
-          { path: "/inbounds", element: <InboundsPage /> },
-          { path: "/sync-jobs", element: <SyncJobsPage /> },
-          { path: "/subscriptions", element: <SubscriptionsPage /> },
-          { path: "/settings", element: <SettingsPage /> },
+          { path: "/", element: withSuspense(<DashboardPage />) },
+          { path: "/users", element: withSuspense(<UsersPage />) },
+          { path: "/groups", element: withSuspense(<GroupsPage />) },
+          { path: "/nodes", element: withSuspense(<NodesPage />) },
+          { path: "/inbounds", element: withSuspense(<InboundsPage />) },
+          { path: "/sync-jobs", element: withSuspense(<SyncJobsPage />) },
+          { path: "/subscriptions", element: withSuspense(<SubscriptionsPage />) },
+          { path: "/settings", element: withSuspense(<SettingsPage />) },
         ],
       },
     ],

@@ -413,3 +413,83 @@
 - 验证结果（严格）：
   - `npm test -- --run` ✅（11 files, 27 tests 全绿）
   - `npm run build` ✅
+
+## 2026-02-09 Session: Web Design Guidelines 严格审查（待修复记录）
+- 状态：已完成审查，未开始修复。
+- 动作：
+  - 基于 `web-design-guidelines` 对前端页面进行高标准审视。
+  - 输出按 `file:line` 定位的问题清单，并按优先级分组。
+- 输出：
+  - 可访问性高优先级问题（图标按钮命名、输入 label、表格行点击可达性）。
+  - UX/信息架构中优先级问题（筛选 URL 同步、Dialog 描述完整性）。
+  - 性能与一致性问题（路由懒加载、Monaco 延迟加载、省略号文案规范）。
+- 备注：
+  - 本阶段只记录，不改动功能行为。
+  - 已在 `findings.md` 增补完整待修复清单，等待你确认进入修复。
+
+## 2026-02-09 Session: 严格审查清单第一轮修复（进行中）
+- 状态：进行中（已完成第一批高优先级和共性问题）。
+- 已完成：
+  - `subscriptions/users/groups` 页输入与图标按钮可访问性补齐（`aria-label`/显式 label）。
+  - `users/nodes/inbounds/groups` 编辑弹窗 create 模式统一补 `DialogDescription`。
+  - `users/subscriptions` 筛选状态与搜索关键字写入 URL；新增公共工具 `lib/user-list-filters.ts`。
+  - 对应测试适配（`MemoryRouter` 包装）并通过。
+- 验证结果：
+  - 定向：`npm test -- src/pages/subscriptions-page.test.tsx src/pages/users-page.test.tsx src/pages/sync-jobs-page.test.tsx src/pages/settings-page.test.tsx` ✅
+  - 全量：`npm test -- --run` ✅（11 files, 27 tests）
+- 未完成：
+  - 无。
+
+## 2026-02-09 Session: 严格审查清单第二轮修复（已完成）
+- 完成项：
+  - `sync-jobs`：详情入口改为独立操作列按钮（去除整行伪按钮语义）。
+  - `routes`：页面路由切换为 `lazy + Suspense`，降低首屏初始加载压力。
+  - `inbounds`：Monaco 编辑器切换为按需加载。
+  - i18n：中英文省略号统一为 `…`。
+- 文件：
+  - `panel/web/src/pages/sync-jobs-page.tsx`
+  - `panel/web/src/routes/index.tsx`
+  - `panel/web/src/pages/inbounds-page.tsx`
+  - `panel/web/src/i18n/locales/zh.json`
+  - `panel/web/src/i18n/locales/en.json`
+- 验证：
+  - `npm test -- --run` ✅（11 files, 27 tests）
+  - `npm run build` ✅
+
+## 2026-02-09 Session: Interaction Design 第一阶段实现（已完成）
+- 完成项：
+  - 全局交互动效变量落地（时长/缓动统一）。
+  - 全局 `prefers-reduced-motion` 降级规则接入。
+  - 表格筛选切换过渡抽象为通用工具并统一接入 4 个页面。
+- 变更文件：
+  - `panel/web/src/index.css`
+  - `panel/web/src/lib/table-motion.ts`
+  - `panel/web/src/pages/users-page.tsx`
+  - `panel/web/src/pages/inbounds-page.tsx`
+  - `panel/web/src/pages/subscriptions-page.tsx`
+  - `panel/web/src/pages/sync-jobs-page.tsx`
+- 验证：
+  - `npm test -- --run` ✅（11 files, 27 tests）
+  - `npm run build` ✅
+
+## 2026-02-09 Session: Interaction Design 第二阶段（异步按钮统一，已完成）
+- 完成项：
+  - 新增通用组件：`panel/web/src/components/ui/async-button.tsx`
+    - 统一异步按钮反馈策略：`pendingDelayMs` + `pendingMinMs`。
+    - 保留禁用态一致性，并通过 `aria-busy` 提升可访问性。
+  - 新增单测：`panel/web/src/components/ui/async-button.test.tsx`
+    - 覆盖短请求不闪文案、长请求平滑显示两类场景。
+  - 同类页面批量接入：
+    - `panel/web/src/pages/settings-page.tsx`
+    - `panel/web/src/pages/sync-jobs-page.tsx`
+    - `panel/web/src/pages/users/edit-user-dialog.tsx`
+    - `panel/web/src/pages/users/disable-user-dialog.tsx`
+    - `panel/web/src/pages/users/delete-user-dialog.tsx`
+    - `panel/web/src/pages/groups-page.tsx`
+    - `panel/web/src/pages/nodes-page.tsx`
+    - `panel/web/src/pages/inbounds-page.tsx`
+    - `panel/web/src/components/login-form.tsx`
+    - `panel/web/src/components/bootstrap-form.tsx`
+- 严格验证：
+  - `npm test -- --run` ✅（12 files, 29 tests）
+  - `npm run build` ✅

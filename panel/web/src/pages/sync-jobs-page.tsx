@@ -3,6 +3,7 @@ import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useSearchParams } from "react-router-dom"
 
+import { AsyncButton } from "@/components/ui/async-button"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -41,6 +42,7 @@ import {
   type SyncJobsTimeRange,
 } from "@/lib/sync-jobs-filters"
 import { tableColumnSpacing } from "@/lib/table-spacing"
+import { tableTransitionClass } from "@/lib/table-motion"
 import { useTableQueryTransition } from "@/lib/table-query-transition"
 
 const pageSize = 20
@@ -112,7 +114,7 @@ function statusLabel(t: (key: string) => string, value: string): string {
 export function SyncJobsPage() {
   const { t } = useTranslation()
   const qc = useQueryClient()
-  const spacing = tableColumnSpacing.six
+  const spacing = tableColumnSpacing.seven
   const [searchParams, setSearchParams] = useSearchParams()
 
   const filters = useMemo(
@@ -299,16 +301,13 @@ export function SyncJobsPage() {
                   <TableHead className={spacing.headMiddle}>{t("syncJobs.colSource")}</TableHead>
                   <TableHead className={spacing.headMiddle}>{t("syncJobs.colStatus")}</TableHead>
                   <TableHead className={spacing.headMiddle}>{t("syncJobs.colDuration")}</TableHead>
-                  <TableHead className={spacing.headLast}>{t("syncJobs.colRetries")}</TableHead>
+                  <TableHead className={spacing.headMiddle}>{t("syncJobs.colRetries")}</TableHead>
+                  <TableHead className={spacing.headLast}>{t("common.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody className={jobsTable.isTransitioning ? "opacity-50 transition-opacity duration-150" : "transition-opacity duration-150"}>
+              <TableBody className={tableTransitionClass(jobsTable.isTransitioning)}>
                 {visibleJobs.map((job) => (
-                  <TableRow
-                    key={job.id}
-                    className="cursor-pointer"
-                    onClick={() => setSelectedJobID(job.id)}
-                  >
+                  <TableRow key={job.id}>
                     <TableCell className={spacing.cellFirst}>{formatDateTime(job.created_at)}</TableCell>
                     <TableCell className={`${spacing.cellMiddle} font-medium`}>{nodeName(job.node_id)}</TableCell>
                     <TableCell className={`${spacing.cellMiddle} text-muted-foreground`}>
@@ -320,13 +319,24 @@ export function SyncJobsPage() {
                     <TableCell className={`${spacing.cellMiddle} tabular-nums`}>
                       {formatDuration(job.duration_ms)}
                     </TableCell>
-                    <TableCell className={`${spacing.cellLast} tabular-nums`}>{job.attempt_count}</TableCell>
+                    <TableCell className={`${spacing.cellMiddle} tabular-nums`}>{job.attempt_count}</TableCell>
+                    <TableCell className={spacing.cellLast}>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setSelectedJobID(job.id)}
+                        aria-label={t("syncJobs.detailTitle", { id: job.id })}
+                      >
+                        {t("syncJobs.viewDetail")}
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))}
 
                 {jobsTable.showNoData ? (
                   <TableRow>
-                    <TableCell className={`${spacing.cellFirst} py-8 text-center text-muted-foreground`} colSpan={6}>
+                    <TableCell className={`${spacing.cellFirst} py-8 text-center text-muted-foreground`} colSpan={7}>
                       {t("common.noData")}
                     </TableCell>
                   </TableRow>
@@ -476,13 +486,15 @@ export function SyncJobsPage() {
               )}
               <div className="flex gap-2">
                 {detailJob?.status === "failed" ? (
-                  <Button
+                  <AsyncButton
                     variant="outline"
                     disabled={retryMutation.isPending}
                     onClick={() => retryMutation.mutate(detailJob.id)}
+                    pending={retryMutation.isPending}
+                    pendingText={t("syncJobs.retrying")}
                   >
-                    {retryMutation.isPending ? t("syncJobs.retrying") : t("syncJobs.retry")}
-                  </Button>
+                    {t("syncJobs.retry")}
+                  </AsyncButton>
                 ) : null}
                 <Button variant="ghost" onClick={() => setSelectedJobID(null)}>{t("common.cancel")}</Button>
               </div>

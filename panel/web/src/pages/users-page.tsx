@@ -3,6 +3,7 @@ import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { format } from "date-fns"
 import { MoreHorizontal, Pencil, Ban, Search, Trash2 } from "lucide-react"
+import { useSearchParams } from "react-router-dom"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -15,6 +16,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import {
   Select,
   SelectContent,
@@ -34,8 +36,10 @@ import { listUsers } from "@/lib/api/users"
 import { listGroups } from "@/lib/api/groups"
 import type { User, UserStatus } from "@/lib/api/types"
 import { tableColumnSpacing } from "@/lib/table-spacing"
+import { tableTransitionClass } from "@/lib/table-motion"
 import { useTableQueryTransition } from "@/lib/table-query-transition"
 import { bytesToGBString } from "@/lib/units"
+import { buildUserListSearchParams, parseUserListSearchParams } from "@/lib/user-list-filters"
 
 import {
   DisableUserDialog,
@@ -77,12 +81,22 @@ function formatExpireDate(expireAt: string | null, t: (key: string) => string): 
 
 export function UsersPage() {
   const { t } = useTranslation()
-  const [status, setStatus] = useState<StatusFilter>("all")
-  const [search, setSearch] = useState("")
+  const [searchParams, setSearchParams] = useSearchParams()
+  const filters = useMemo(() => parseUserListSearchParams(searchParams, "all"), [searchParams])
+  const status = filters.statusFilter
+  const search = filters.search
   const [upserting, setUpserting] = useState<EditState | null>(null)
   const [disablingUser, setDisablingUser] = useState<User | null>(null)
   const [deletingUser, setDeletingUser] = useState<User | null>(null)
   const spacing = tableColumnSpacing.five
+
+  const updateFilters = (patch: Partial<{ statusFilter: StatusFilter; search: string }>) => {
+    const next = {
+      statusFilter: (patch.statusFilter ?? status) as StatusFilter,
+      search: patch.search ?? search,
+    }
+    setSearchParams(buildUserListSearchParams(next, "all"), { replace: true })
+  }
 
   const {
     createMutation,
@@ -241,17 +255,21 @@ export function UsersPage() {
               </div>
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                 <div className="relative">
+                  <Label htmlFor="users-search" className="sr-only">
+                    {t("users.searchPlaceholder")}
+                  </Label>
                   <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
+                    id="users-search"
                     placeholder={t("users.searchPlaceholder")}
                     value={search}
-                    onChange={(e) => setSearch(e.target.value)}
+                    onChange={(e) => updateFilters({ search: e.target.value })}
                     className="pl-8 w-full sm:w-48"
                   />
                 </div>
                 <Select
                   value={status}
-                  onValueChange={(value) => setStatus(value as StatusFilter)}
+                  onValueChange={(value) => updateFilters({ statusFilter: value as StatusFilter })}
                 >
                   <SelectTrigger className="w-full sm:w-36" aria-label={t("users.statusFilter")}>
                     <SelectValue placeholder={t("users.statusFilter")} />
@@ -281,7 +299,7 @@ export function UsersPage() {
                   </TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody className={usersTable.isTransitioning ? "opacity-50 transition-opacity duration-150" : "transition-opacity duration-150"}>
+              <TableBody className={tableTransitionClass(usersTable.isTransitioning)}>
                 {filteredUsers.map((u) => {
                   const visibleGroupIDs = (u.group_ids ?? []).filter((groupID) => groupNameByID.has(groupID))
                   return (

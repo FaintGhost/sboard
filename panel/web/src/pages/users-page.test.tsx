@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import { AppProviders } from "@/providers/app-providers"
 import { resetAuthStore, useAuthStore } from "@/store/auth"
+import { MemoryRouter } from "react-router-dom"
 
 import { UsersPage } from "./users-page"
 
@@ -50,9 +51,11 @@ describe("UsersPage", () => {
     })
 
     render(
-      <AppProviders>
-        <UsersPage />
-      </AppProviders>,
+      <MemoryRouter>
+        <AppProviders>
+          <UsersPage />
+        </AppProviders>
+      </MemoryRouter>,
     )
 
     expect(await screen.findByText("alice")).toBeInTheDocument()
@@ -153,9 +156,11 @@ describe("UsersPage", () => {
       })
 
     render(
-      <AppProviders>
-        <UsersPage />
-      </AppProviders>,
+      <MemoryRouter>
+        <AppProviders>
+          <UsersPage />
+        </AppProviders>
+      </MemoryRouter>,
     )
 
     expect(await screen.findByText("alice")).toBeInTheDocument()
@@ -277,9 +282,11 @@ describe("UsersPage", () => {
     })
 
     render(
-      <AppProviders>
-        <UsersPage />
-      </AppProviders>,
+      <MemoryRouter>
+        <AppProviders>
+          <UsersPage />
+        </AppProviders>
+      </MemoryRouter>,
     )
 
     await userEvent.click(await screen.findByRole("button", { name: "创建用户" }))

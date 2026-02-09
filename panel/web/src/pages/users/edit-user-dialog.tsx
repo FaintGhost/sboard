@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next"
 import { useQuery } from "@tanstack/react-query"
 import { format } from "date-fns"
 
+import { AsyncButton } from "@/components/ui/async-button"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -118,11 +119,9 @@ export function EditUserDialog({
           <DialogTitle>
             {editState?.mode === "create" ? t("users.createUser") : t("users.editUser")}
           </DialogTitle>
-          {editState?.mode === "edit" ? (
-            <DialogDescription>
-              {editState.user.username}
-            </DialogDescription>
-          ) : null}
+          <DialogDescription>
+            {editState?.mode === "edit" ? editState.user.username : t("users.createUser")}
+          </DialogDescription>
         </DialogHeader>
 
         {editState ? (
@@ -355,22 +354,22 @@ export function EditUserDialog({
           <Button variant="outline" onClick={() => setEditState(null)}>
             {t("common.cancel")}
           </Button>
-          <Button
+          <AsyncButton
             onClick={handleSave}
             disabled={
               !editState ||
               isPending ||
               !editState.username.trim()
             }
-          >
-            {editState?.mode === "create"
-              ? createMutation.isPending
+            pending={isPending}
+            pendingText={
+              editState?.mode === "create"
                 ? t("common.creating")
-                : t("common.create")
-              : updateMutation.isPending
-                ? t("common.saving")
-                : t("common.save")}
-          </Button>
+                : t("common.saving")
+            }
+          >
+            {editState?.mode === "create" ? t("common.create") : t("common.save")}
+          </AsyncButton>
         </DialogFooter>
       </DialogContent>
     </Dialog>

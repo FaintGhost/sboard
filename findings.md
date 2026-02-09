@@ -231,3 +231,144 @@
   - 预览地址区增加一键复制按钮（含复制成功状态反馈）。
   - 反馈区改为 `aria-live`，提升可访问性与状态感知一致性。
 - 命名收敛：系统信息中的“API 端点”字段改为“当前订阅基础地址”，与实际用途保持一致。
+
+## Session Findings (2026-02-09, Web Design Guidelines 严格审查待修复清单)
+
+### 高优先级（可访问性/关键交互）
+- `panel/web/src/pages/subscriptions-page.tsx:77`
+  - 复制图标按钮缺少可访问名称（无 `aria-label`）。
+- `panel/web/src/pages/subscriptions-page.tsx:304`
+  - 外链图标按钮缺少可访问名称（无 `aria-label`）。
+- `panel/web/src/pages/subscriptions-page.tsx:227`
+  - 搜索输入仅依赖 placeholder，缺少显式 label。
+- `panel/web/src/pages/users-page.tsx:245`
+  - 搜索输入仅依赖 placeholder，缺少显式 label。
+- `panel/web/src/pages/groups-page.tsx:466`
+  - 成员移动图标按钮（左箭头）仅有 `title`，缺少可访问名称。
+- `panel/web/src/pages/groups-page.tsx:476`
+  - 成员移动图标按钮（右箭头）仅有 `title`，缺少可访问名称。
+- `panel/web/src/pages/sync-jobs-page.tsx:307`
+  - 表格行直接 `onClick` 作为主交互入口，键盘可达性不足。
+
+### 中优先级（UX 一致性/信息架构/性能）
+- `panel/web/src/pages/subscriptions-page.tsx:175`
+  - 信息 tooltip 触发器缺少明确可访问名称。
+- `panel/web/src/pages/subscriptions-page.tsx:237`
+  - 状态筛选 SelectTrigger 缺少 `aria-label`。
+- `panel/web/src/pages/subscriptions-page.tsx:111`
+  - 筛选状态未同步 URL，刷新/分享无法保留筛选上下文。
+- `panel/web/src/pages/users-page.tsx:80`
+  - 筛选与搜索未同步 URL，状态不可恢复。
+- `panel/web/src/pages/groups-page.tsx:429`
+  - “当前成员”搜索框缺少显式 label。
+- `panel/web/src/pages/groups-page.tsx:493`
+  - “可加入用户”搜索框缺少显式 label。
+- `panel/web/src/pages/groups-page.tsx:384`
+  - create 模式下 Dialog 缺少描述文本。
+- `panel/web/src/pages/users/edit-user-dialog.tsx:121`
+  - create 模式下 Dialog 缺少描述文本。
+- `panel/web/src/pages/nodes-page.tsx:441`
+  - create 模式下 Dialog 缺少描述文本。
+- `panel/web/src/pages/inbounds-page.tsx:402`
+  - create 模式下 Dialog 缺少描述文本。
+- `panel/web/src/routes/index.tsx:10`
+  - 页面路由未使用懒加载，首包压力偏大。
+- `panel/web/src/pages/inbounds-page.tsx:2`
+  - Monaco 作为重依赖未延迟加载，影响初始加载体积。
+- `panel/web/src/i18n/locales/zh.json:9`
+  - 文案省略号风格不统一（`...` 与 `…` 混用）。
+- `panel/web/src/i18n/locales/en.json:9`
+  - 文案省略号风格不统一（`...` 与 `…` 混用）。
+
+### 备注
+- 当前仅记录问题，不做代码修复。
+- 后续修复建议顺序：高优先级可访问性 -> URL 状态一致性 -> 性能优化 -> 文案规范统一。
+
+## Session Findings (2026-02-09, 严格审查清单第一轮修复进展)
+
+### 已覆盖范围
+- 可访问性修复（图标按钮可访问名称）
+  - `panel/web/src/pages/subscriptions-page.tsx`
+  - `panel/web/src/pages/groups-page.tsx`
+- 可访问性修复（搜索输入可访问标签）
+  - `panel/web/src/pages/subscriptions-page.tsx`
+  - `panel/web/src/pages/users-page.tsx`
+  - `panel/web/src/pages/groups-page.tsx`
+- 同类弹窗语义修复（create 模式统一补 `DialogDescription`）
+  - `panel/web/src/pages/users/edit-user-dialog.tsx`
+  - `panel/web/src/pages/nodes-page.tsx`
+  - `panel/web/src/pages/inbounds-page.tsx`
+  - `panel/web/src/pages/groups-page.tsx`
+- 列表筛选 URL 状态持久化（可刷新恢复）
+  - `panel/web/src/pages/users-page.tsx`
+  - `panel/web/src/pages/subscriptions-page.tsx`
+  - 公共解析/构建：`panel/web/src/lib/user-list-filters.ts`
+
+### 暂未覆盖范围
+- 暂无
+
+### 后续补齐计划
+- 本轮清单已全部完成，后续如继续优化可聚焦：
+  - `vite` manualChunks 细分（进一步降低大 chunk 警告）；
+  - 在关键输入/筛选页面补充 URL 状态恢复的 E2E 用例。
+
+## Session Findings (2026-02-09, 严格审查清单第二轮修复进展)
+
+### 已覆盖范围
+- `sync-jobs` 语义化交互收敛
+  - `panel/web/src/pages/sync-jobs-page.tsx`
+  - 由“整行可点击”改为“独立详情按钮列”，并保留清晰操作入口。
+  - 同步文案：`panel/web/src/i18n/locales/zh.json`、`panel/web/src/i18n/locales/en.json`（`viewDetail`）。
+- 性能优化
+  - 路由级懒加载：`panel/web/src/routes/index.tsx`（React.lazy + Suspense）。
+  - Monaco 按需加载：`panel/web/src/pages/inbounds-page.tsx`（lazy + Suspense fallback）。
+- 文案规范统一
+  - `panel/web/src/i18n/locales/zh.json`
+  - `panel/web/src/i18n/locales/en.json`
+  - 省略号统一为 `…`。
+
+### 验证结果
+- `npm test -- --run` 通过（11 files, 27 tests）。
+- `npm run build` 通过。
+
+## Session Findings (2026-02-09, Interaction Design 第一阶段落地)
+
+### 已覆盖范围
+- 全局动效 token 与缓动规范
+  - `panel/web/src/index.css`
+  - 新增统一变量：`--motion-fast/base/slow`、`--ease-out/in/in-out/spring`。
+- 动画降级策略
+  - `panel/web/src/index.css`
+  - 新增 `prefers-reduced-motion` 全局降级规则。
+- 表格切换过渡统一抽象
+  - 新增 `panel/web/src/lib/table-motion.ts`
+  - 四个页面统一接入：
+    - `panel/web/src/pages/users-page.tsx`
+    - `panel/web/src/pages/inbounds-page.tsx`
+    - `panel/web/src/pages/subscriptions-page.tsx`
+    - `panel/web/src/pages/sync-jobs-page.tsx`
+
+### 交互收益
+- 筛选切换时过渡速度与曲线统一，页面间手感一致。
+- 减少“页面 A 快、页面 B 慢”的体验割裂。
+- 对系统开启“减少动态效果”的用户自动降级，避免眩晕与干扰。
+
+### 验证结果
+- `npm test -- --run` 通过（11 files, 27 tests）。
+- `npm run build` 通过。
+
+## Session Findings (2026-02-09, Interaction Design 第二阶段：异步按钮统一)
+- 用户反馈点：多个页面异步按钮在短请求时会出现“检查中/保存中/重试中”瞬时闪变，体感突兀。
+- 统一策略：新增通用 `AsyncButton`，内置“延迟显示 pending + 最小可见时长”机制，避免 0.x 秒抖动。
+- 关键设计：
+  - `pending=true` 时先禁用按钮，文案与 spinner 延迟显示；
+  - 若请求极短完成，不切换到 pending 文案（避免闪）；
+  - 若已显示 pending，保持最小可见时长后再回到 idle（避免抖）。
+- 覆盖范围（同类一起修）：
+  - 页面：`settings`、`sync-jobs`、`users`、`groups`、`nodes`、`inbounds`
+  - 认证：`login-form`、`bootstrap-form`
+- 测试：新增 `panel/web/src/components/ui/async-button.test.tsx`
+  - 覆盖“短 pending 不闪文案”与“长 pending 平滑收敛”两条核心行为。
+- 验证结果：
+  - `npm test -- --run` 全绿（12 files, 29 tests）。
+  - `npm run build` 通过。

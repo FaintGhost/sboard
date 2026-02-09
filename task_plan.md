@@ -201,3 +201,74 @@ Complete
 - [x] 更新设置页测试与订阅页相关测试
 - [x] 运行后端测试、前端全量测试与构建
 - **Status:** complete
+
+---
+
+# Session Plan: 交互设计优化（2026-02-09）
+
+## Goal
+围绕交互一致性与体感稳定性做一轮前端打磨：
+- 建立统一动效 token 与降级策略（`prefers-reduced-motion`）
+- 统一表格筛选切换过渡表现，减少突兀感
+- 为后续按钮/异步反馈统一协议打基础
+
+## Current Phase
+Complete
+
+## Phases
+
+### Phase 1: 规划与基线落盘
+- [x] 将交互优化目标写入计划文件
+- [x] 明确首批落地范围与验证口径
+- **Status:** complete
+
+### Phase 2: 全局动效能力
+- [x] 在全局样式中新增 motion token（fast/base/slow + easing）
+- [x] 增加 `prefers-reduced-motion` 降级策略
+- **Status:** complete
+
+### Phase 3: 列表切换过渡统一
+- [x] 抽离可复用表格过渡 class 生成逻辑
+- [x] 在 users/inbounds/subscriptions/sync-jobs 页面统一接入
+- **Status:** complete
+
+### Phase 4: 验证与记录
+- [x] 运行前端全量测试
+- [x] 运行前端构建
+- [x] 更新 `findings.md` 与 `progress.md`
+- **Status:** complete
+
+---
+
+# Session Plan: 交互设计优化（二阶段：异步按钮统一，2026-02-09）
+
+## Goal
+统一高频异步操作按钮反馈，消除“0.x 秒文字闪变”的生硬感，并确保同类场景一次性覆盖。
+
+## Current Phase
+Complete
+
+## Phases
+
+### Phase 1: 规范与范围确认
+- [x] 盘点页面异步按钮位点
+- [x] 定义统一交互规范（延迟显示 + 最小可见时长）
+- **Status:** complete
+
+### Phase 2: 抽象复用组件
+- [x] 新增 `AsyncButton` 组件
+- [x] 内置 spinner 延迟显示与最小展示时长
+- [x] 补充组件单测覆盖“短请求不闪/长请求平滑显示”
+- **Status:** complete
+
+### Phase 3: 同类页面批量接入
+- [x] 接入 `settings/sync-jobs/users/groups/nodes/inbounds`
+- [x] 接入 `login/bootstrap` 表单主提交按钮
+- [x] 保持文案与禁用态一致
+- **Status:** complete
+
+### Phase 4: 严格验证与记录
+- [x] 运行前端全量测试（全绿）
+- [x] 运行前端构建（通过）
+- [x] 同步更新 `findings.md` 与 `progress.md`
+- **Status:** complete

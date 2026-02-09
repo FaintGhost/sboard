@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
+import { AsyncButton } from "@/components/ui/async-button"
 import {
   Card,
   CardContent,
@@ -81,9 +81,14 @@ export function LoginForm({
               </Field>
               <Field>
                 {errorMessage ? <FieldError>{errorMessage}</FieldError> : null}
-                <Button type="submit" disabled={isPending}>
-                  {isPending ? t("auth.loggingIn") : t("auth.login")}
-                </Button>
+                <AsyncButton
+                  type="submit"
+                  disabled={isPending}
+                  pending={Boolean(isPending)}
+                  pendingText={t("auth.loggingIn")}
+                >
+                  {t("auth.login")}
+                </AsyncButton>
               </Field>
             </FieldGroup>
           </form>

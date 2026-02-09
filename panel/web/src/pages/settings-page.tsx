@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useTranslation } from "react-i18next"
-import { Check, Copy, Loader2 } from "lucide-react"
+import { Check, Copy } from "lucide-react"
 import {
   Card,
   CardContent,
@@ -20,14 +20,13 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
+import { AsyncButton } from "@/components/ui/async-button"
 import { ApiError } from "@/lib/api/client"
 import { getSystemInfo, getSystemSettings, updateSystemSettings } from "@/lib/api/system"
 
 type SubscriptionScheme = "http" | "https"
 type HostPortValidationCode = "format" | "ip" | "port" | null
 type UpdateSystemSettingsPayload = Parameters<typeof updateSystemSettings>[0]
-
-const MINIMUM_SAVE_PENDING_MS = 500
 
 const languages = [
   { code: "zh", nameKey: "settings.langZh" },
@@ -173,15 +172,7 @@ export function SettingsPage() {
   }, [systemSettingsQuery.data, apiBaseUrl])
 
   const updateSettingsMutation = useMutation({
-    mutationFn: async (payload: UpdateSystemSettingsPayload) => {
-      const startedAt = Date.now()
-      const data = await updateSystemSettings(payload)
-      const elapsed = Date.now() - startedAt
-      if (elapsed < MINIMUM_SAVE_PENDING_MS) {
-        await new Promise((resolve) => setTimeout(resolve, MINIMUM_SAVE_PENDING_MS - elapsed))
-      }
-      return data
-    },
+    mutationFn: (payload: UpdateSystemSettingsPayload) => updateSystemSettings(payload),
     onSuccess: async (data) => {
       const parsed = parseConfiguredSubscriptionBaseURL(
         data.subscription_base_url ?? "",
@@ -363,20 +354,15 @@ export function SettingsPage() {
             </div>
 
             <div className="flex justify-end">
-              <Button
+              <AsyncButton
                 type="button"
                 onClick={handleSaveSubscriptionAccess}
                 disabled={updateSettingsMutation.isPending || systemSettingsQuery.isLoading}
+                pending={updateSettingsMutation.isPending}
+                pendingText={t("common.saving")}
               >
-                {updateSettingsMutation.isPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {t("common.saving")}
-                  </>
-                ) : (
-                  t("common.save")
-                )}
-              </Button>
+                {t("common.save")}
+              </AsyncButton>
             </div>
           </CardContent>
         </Card>

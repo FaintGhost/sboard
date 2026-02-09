@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { ArrowLeft, ArrowRight, MoreHorizontal, Pencil, Search, Trash2 } from "lucide-react"
 
+import { AsyncButton } from "@/components/ui/async-button"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -381,9 +382,9 @@ export function GroupsPage() {
               <DialogTitle>
                 {upserting?.mode === "create" ? t("groups.createGroup") : t("groups.editGroup")}
               </DialogTitle>
-              {upserting?.mode === "edit" ? (
-                <DialogDescription>{upserting.group.name}</DialogDescription>
-              ) : null}
+              <DialogDescription>
+                {upserting?.mode === "edit" ? upserting.group.name : t("groups.createGroup")}
+              </DialogDescription>
             </DialogHeader>
 
             {upserting ? (
@@ -427,10 +428,12 @@ export function GroupsPage() {
                         <div className="mt-2 relative">
                           <Search className="pointer-events-none absolute left-2 top-2.5 size-4 text-muted-foreground" />
                           <Input
+                            id="groups-members-search"
                             value={memberSearch}
                             onChange={(e) => setMemberSearch(e.target.value)}
                             className="pl-8"
                             placeholder={t("users.searchPlaceholder")}
+                            aria-label={t("groups.currentMembers")}
                           />
                         </div>
                       </div>
@@ -470,6 +473,7 @@ export function GroupsPage() {
                         onClick={moveCandidatesToMembers}
                         disabled={selectedCandidateIDs.length === 0}
                         title={t("groups.addSelected")}
+                        aria-label={t("groups.addSelected")}
                       >
                         <ArrowLeft className="size-4" />
                       </Button>
@@ -480,6 +484,7 @@ export function GroupsPage() {
                         onClick={moveMembersToCandidates}
                         disabled={selectedMemberIDs.length === 0}
                         title={t("groups.removeSelected")}
+                        aria-label={t("groups.removeSelected")}
                       >
                         <ArrowRight className="size-4" />
                       </Button>
@@ -491,10 +496,12 @@ export function GroupsPage() {
                         <div className="mt-2 relative">
                           <Search className="pointer-events-none absolute left-2 top-2.5 size-4 text-muted-foreground" />
                           <Input
+                            id="groups-candidates-search"
                             value={candidateSearch}
                             onChange={(e) => setCandidateSearch(e.target.value)}
                             className="pl-8"
                             placeholder={t("users.searchPlaceholder")}
+                            aria-label={t("groups.availableUsers")}
                           />
                         </div>
                       </div>
@@ -546,7 +553,7 @@ export function GroupsPage() {
               >
                 {t("common.cancel")}
               </Button>
-              <Button
+              <AsyncButton
                 onClick={() => {
                   if (!upserting) return
                   const name = upserting.name.trim()
@@ -567,9 +574,11 @@ export function GroupsPage() {
                   || !upserting?.name.trim()
                   || (upserting?.mode === "edit" && !hasMemberChanges && upserting.name.trim() === upserting.group.name && upserting.description.trim() === upserting.group.description)
                 }
+                pending={saveMutation.isPending}
+                pendingText={t("common.saving")}
               >
                 {t("common.save")}
-              </Button>
+              </AsyncButton>
             </DialogFooter>
           </DialogContent>
         </Dialog>
