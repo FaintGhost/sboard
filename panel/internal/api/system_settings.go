@@ -2,8 +2,10 @@ package api
 
 import (
 	"errors"
+	"net"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -90,11 +92,24 @@ func normalizeSubscriptionBaseURL(raw string) (string, error) {
 		return "", errors.New("subscription_base_url must use http or https")
 	}
 
-	parsed.Scheme = scheme
-	parsed.RawQuery = ""
-	parsed.Fragment = ""
+	if parsed.User != nil || (parsed.Path != "" && parsed.Path != "/") || parsed.RawQuery != "" || parsed.Fragment != "" {
+		return "", errors.New("subscription_base_url must be protocol + ip:port")
+	}
 
-	normalized := strings.TrimSpace(parsed.String())
-	normalized = strings.TrimRight(normalized, "/")
-	return normalized, nil
+	host := strings.TrimSpace(parsed.Hostname())
+	if net.ParseIP(host) == nil {
+		return "", errors.New("subscription_base_url must use a valid IP")
+	}
+
+	portStr := strings.TrimSpace(parsed.Port())
+	if portStr == "" {
+		return "", errors.New("subscription_base_url must include port")
+	}
+
+	port, err := strconv.Atoi(portStr)
+	if err != nil || port < 1 || port > 65535 {
+		return "", errors.New("subscription_base_url has invalid port")
+	}
+
+	return scheme + "://" + net.JoinHostPort(host, strconv.Itoa(port)), nil
 }

@@ -167,3 +167,37 @@ Complete
 - [x] 前端构建通过
 - [x] 更新 planning 文件
 - **Status:** complete
+
+---
+
+# Session Plan: 订阅访问地址改为协议下拉 + IP端口校验（2026-02-09）
+
+## Goal
+将设置页“订阅访问地址”改为：
+- 协议通过下拉选择（HTTP/HTTPS）
+- 地址单独输入 `IP:端口`
+- 前后端统一做合法性校验
+
+## Current Phase
+Complete
+
+## Phases
+
+### Phase 1: 后端约束收敛
+- [x] `subscription_base_url` 校验改为 `http|https + IP:端口`
+- [x] 限制非法项：无端口、非法端口、域名、路径/query/fragment
+- [x] 补充 API 测试覆盖异常分支
+- **Status:** complete
+
+### Phase 2: 设置页交互重构
+- [x] 新增协议下拉 `HTTP/HTTPS`
+- [x] 新增 `IP + 端口` 输入
+- [x] 新增前端实时校验（格式/IP/端口范围）
+- [x] 预览地址按协议+输入拼接
+- **Status:** complete
+
+### Phase 3: 文案与验证
+- [x] 更新中英文文案
+- [x] 更新设置页测试与订阅页相关测试
+- [x] 运行后端测试、前端全量测试与构建
+- **Status:** complete

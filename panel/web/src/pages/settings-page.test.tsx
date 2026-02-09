@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react"
+import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
@@ -14,7 +14,7 @@ describe("SettingsPage", () => {
     useAuthStore.getState().setToken("token-123")
   })
 
-  it("renders system info and subscription base URL from API", async () => {
+  it("renders system info and parses subscription access parts", async () => {
     vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
       const req = input as Request
       const url = new URL(req.url)
@@ -39,7 +39,7 @@ describe("SettingsPage", () => {
         return new Response(
           JSON.stringify({
             data: {
-              subscription_base_url: "https://sub.example.com",
+              subscription_base_url: "https://203.0.113.10:8443",
             },
           }),
           {
@@ -64,10 +64,10 @@ describe("SettingsPage", () => {
     expect(await screen.findByText("v0.2.0")).toBeInTheDocument()
     expect(screen.getByText("abc1234")).toBeInTheDocument()
     expect(screen.getByText("1.12.19")).toBeInTheDocument()
-    expect(await screen.findByDisplayValue("https://sub.example.com")).toBeInTheDocument()
+    expect(await screen.findByDisplayValue("203.0.113.10:8443")).toBeInTheDocument()
   })
 
-  it("saves subscription base URL", async () => {
+  it("saves subscription protocol and ip:port", async () => {
     let savedValue = ""
 
     vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
@@ -132,11 +132,94 @@ describe("SettingsPage", () => {
       </AppProviders>,
     )
 
-    const input = await screen.findByLabelText("订阅基础地址（域名或公网 IP）")
-    await userEvent.type(input, "https://sub.example.com")
+    const protocolSelect = await screen.findByRole("combobox", { name: "协议" })
+    await userEvent.click(protocolSelect)
+    await userEvent.click(await screen.findByRole("option", { name: "HTTPS" }))
+
+    const input = screen.getByLabelText("IP + 端口")
+    await userEvent.clear(input)
+    await userEvent.type(input, "203.0.113.10:8443")
     await userEvent.click(screen.getByRole("button", { name: "保存" }))
 
-    expect(savedValue).toBe("https://sub.example.com")
+    expect(savedValue).toBe("https://203.0.113.10:8443")
     expect(await screen.findByText("设置已保存")).toBeInTheDocument()
+  })
+
+  it("shows validation error for invalid ip:port", async () => {
+    let putCalled = false
+
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+      const req = input as Request
+      const url = new URL(req.url)
+
+      if (req.method === "GET" && url.pathname === "/api/system/info") {
+        return new Response(
+          JSON.stringify({
+            data: {
+              panel_version: "v0.2.0",
+              panel_commit_id: "abc1234",
+              sing_box_version: "1.12.19",
+            },
+          }),
+          {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          },
+        )
+      }
+
+      if (req.method === "GET" && url.pathname === "/api/system/settings") {
+        return new Response(
+          JSON.stringify({
+            data: {
+              subscription_base_url: "",
+            },
+          }),
+          {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          },
+        )
+      }
+
+      if (req.method === "PUT" && url.pathname === "/api/system/settings") {
+        putCalled = true
+        return new Response(
+          JSON.stringify({
+            data: {
+              subscription_base_url: "",
+            },
+          }),
+          {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          },
+        )
+      }
+
+      return new Response(JSON.stringify({ error: "not found" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json" },
+      })
+    })
+
+    render(
+      <AppProviders>
+        <SettingsPage />
+      </AppProviders>,
+    )
+
+    const input = await screen.findByLabelText("IP + 端口")
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "保存" })).not.toBeDisabled()
+    })
+
+    await userEvent.clear(input)
+    await userEvent.type(input, "not-valid")
+    await userEvent.click(screen.getByRole("button", { name: "保存" }))
+
+    await waitFor(() => {
+      expect(putCalled).toBe(false)
+    })
   })
 })

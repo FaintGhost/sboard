@@ -363,3 +363,30 @@
   - `go test ./panel/internal/db ./panel/internal/api -count=1` ✅
   - `npm test`（11 files, 26 tests）✅
   - `npm run build` ✅
+
+## 2026-02-09 Session: 订阅访问地址输入模型重构（已完成）
+- 后端：
+  - `panel/internal/api/system_settings.go`
+    - URL 校验改为协议 + IP:端口严格校验。
+  - `panel/internal/api/system_settings_test.go`
+    - 新增并扩展非法输入测试（scheme/domain/port/path）。
+- 前端：
+  - `panel/web/src/pages/settings-page.tsx`
+    - 协议下拉 + IP:端口输入 + 本地校验 + 预览。
+  - `panel/web/src/pages/settings-page.test.tsx`
+    - 覆盖解析展示、保存值、非法输入不提交。
+  - i18n 文案：`panel/web/src/i18n/locales/zh.json`、`panel/web/src/i18n/locales/en.json`
+- 严格验证：
+  - `go test ./panel/internal/db ./panel/internal/api -count=1` ✅
+  - `npm test`（11 files, 27 tests）✅
+  - `npm run build` ✅
+
+## 2026-02-09 Session: 设置页布局与联动展示优化（已完成）
+- 改动文件：`panel/web/src/pages/settings-page.tsx`
+  - “订阅访问地址”卡片取消 `md:col-span-2`，与“订阅格式说明”同排显示。
+  - “系统信息”卡移除 API 端点注释式描述。
+  - API 端点展示从独立块改为单行字段，且值改为 `resolvedSubscriptionBaseURL` 实时联动。
+- 验证结果：
+  - 定向：`npm test -- src/pages/settings-page.test.tsx src/pages/subscriptions-page.test.tsx` ✅
+  - 全量：`npm test`（11 files, 27 tests）✅
+  - 构建：`npm run build` ✅

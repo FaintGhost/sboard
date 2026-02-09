@@ -43,7 +43,7 @@ func TestSystemSettingsAPI_PutAndClear(t *testing.T) {
 	r := api.NewRouter(cfg, store)
 	token := mustToken(cfg.JWTSecret)
 
-	payload := []byte(`{"subscription_base_url":"https://sub.example.com/panel/"}`)
+	payload := []byte(`{"subscription_base_url":"https://203.0.113.10:8443/"}`)
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodPut, "/api/system/settings", bytes.NewReader(payload))
 	req.Header.Set("Authorization", "Bearer "+token)
@@ -54,7 +54,7 @@ func TestSystemSettingsAPI_PutAndClear(t *testing.T) {
 
 	var updated systemSettingsResp
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &updated))
-	require.Equal(t, "https://sub.example.com/panel", updated.Data.SubscriptionBaseURL)
+	require.Equal(t, "https://203.0.113.10:8443", updated.Data.SubscriptionBaseURL)
 
 	w = httptest.NewRecorder()
 	req = httptest.NewRequest(http.MethodGet, "/api/system/settings", nil)
@@ -63,7 +63,7 @@ func TestSystemSettingsAPI_PutAndClear(t *testing.T) {
 
 	require.Equal(t, http.StatusOK, w.Code)
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &updated))
-	require.Equal(t, "https://sub.example.com/panel", updated.Data.SubscriptionBaseURL)
+	require.Equal(t, "https://203.0.113.10:8443", updated.Data.SubscriptionBaseURL)
 
 	payload = []byte(`{"subscription_base_url":"   "}`)
 	w = httptest.NewRecorder()
@@ -83,23 +83,54 @@ func TestSystemSettingsAPI_ValidateURL(t *testing.T) {
 	r := api.NewRouter(cfg, store)
 	token := mustToken(cfg.JWTSecret)
 
-	payload := []byte(`{"subscription_base_url":"sub.example.com"}`)
-	w := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodPut, "/api/system/settings", bytes.NewReader(payload))
-	req.Header.Set("Authorization", "Bearer "+token)
-	req.Header.Set("Content-Type", "application/json")
-	r.ServeHTTP(w, req)
+	tests := []struct {
+		name     string
+		value    string
+		contains string
+	}{
+		{
+			name:     "missing scheme",
+			value:    "203.0.113.10:8443",
+			contains: "invalid subscription_base_url",
+		},
+		{
+			name:     "invalid scheme",
+			value:    "ftp://203.0.113.10:8443",
+			contains: "must use http or https",
+		},
+		{
+			name:     "domain not allowed",
+			value:    "https://sub.example.com:443",
+			contains: "must use a valid IP",
+		},
+		{
+			name:     "missing port",
+			value:    "https://203.0.113.10",
+			contains: "must include port",
+		},
+		{
+			name:     "invalid port",
+			value:    "https://203.0.113.10:70000",
+			contains: "invalid port",
+		},
+		{
+			name:     "path not allowed",
+			value:    "https://203.0.113.10:8443/panel",
+			contains: "protocol + ip:port",
+		},
+	}
 
-	require.Equal(t, http.StatusBadRequest, w.Code)
-	require.Contains(t, w.Body.String(), "invalid subscription_base_url")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			payload := []byte(`{"subscription_base_url":"` + tt.value + `"}`)
+			w := httptest.NewRecorder()
+			req := httptest.NewRequest(http.MethodPut, "/api/system/settings", bytes.NewReader(payload))
+			req.Header.Set("Authorization", "Bearer "+token)
+			req.Header.Set("Content-Type", "application/json")
+			r.ServeHTTP(w, req)
 
-	payload = []byte(`{"subscription_base_url":"ftp://sub.example.com"}`)
-	w = httptest.NewRecorder()
-	req = httptest.NewRequest(http.MethodPut, "/api/system/settings", bytes.NewReader(payload))
-	req.Header.Set("Authorization", "Bearer "+token)
-	req.Header.Set("Content-Type", "application/json")
-	r.ServeHTTP(w, req)
-
-	require.Equal(t, http.StatusBadRequest, w.Code)
-	require.Contains(t, w.Body.String(), "must use http or https")
+			require.Equal(t, http.StatusBadRequest, w.Code)
+			require.Contains(t, w.Body.String(), tt.contains)
+		})
+	}
 }
