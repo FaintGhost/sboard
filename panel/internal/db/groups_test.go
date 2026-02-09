@@ -47,3 +47,25 @@ func TestReplaceUserGroups(t *testing.T) {
   require.True(t, errors.Is(err, db.ErrNotFound))
 }
 
+func TestDeleteGroup_CleansUserGroupMembership(t *testing.T) {
+  store := setupStore(t)
+  ctx := context.Background()
+
+  user, err := store.CreateUser(ctx, "alice-delete-group")
+  require.NoError(t, err)
+
+  group, err := store.CreateGroup(ctx, "g-delete", "")
+  require.NoError(t, err)
+
+  require.NoError(t, store.ReplaceUserGroups(ctx, user.ID, []int64{group.ID}))
+
+  ids, err := store.ListUserGroupIDs(ctx, user.ID)
+  require.NoError(t, err)
+  require.Equal(t, []int64{group.ID}, ids)
+
+  require.NoError(t, store.DeleteGroup(ctx, group.ID))
+
+  ids, err = store.ListUserGroupIDs(ctx, user.ID)
+  require.NoError(t, err)
+  require.Empty(t, ids)
+}

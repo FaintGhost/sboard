@@ -183,3 +183,55 @@ func TestGroupUsersAPI_ListAndReplace(t *testing.T) {
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &userGroups))
 	require.Len(t, userGroups.Data.GroupIDs, 0)
 }
+
+func TestGroupsAPI_DeleteGroupCleansUserMembership(t *testing.T) {
+	cfg := config.Config{JWTSecret: "secret"}
+	store := setupStore(t)
+	r := api.NewRouter(cfg, store)
+	token := mustToken(cfg.JWTSecret)
+
+	// create group
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/api/groups", strings.NewReader(`{"name":"g-clean","description":""}`))
+	req.Header.Set("Authorization", "Bearer "+token)
+	r.ServeHTTP(w, req)
+	require.Equal(t, http.StatusCreated, w.Code)
+
+	var group groupResp
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &group))
+
+	// create user
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest(http.MethodPost, "/api/users", strings.NewReader(`{"username":"alice-clean"}`))
+	req.Header.Set("Authorization", "Bearer "+token)
+	r.ServeHTTP(w, req)
+	require.Equal(t, http.StatusCreated, w.Code)
+
+	var user userResp
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &user))
+
+	// bind user to group
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest(http.MethodPut, fmt.Sprintf("/api/users/%d/groups", user.Data.ID), strings.NewReader(fmt.Sprintf(`{"group_ids":[%d]}`, group.Data.ID)))
+	req.Header.Set("Authorization", "Bearer "+token)
+	r.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	// delete group
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest(http.MethodDelete, fmt.Sprintf("/api/groups/%d", group.Data.ID), nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	r.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	// user groups should be empty
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest(http.MethodGet, fmt.Sprintf("/api/users/%d/groups", user.Data.ID), nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	r.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var groupsResp userGroupsResp
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &groupsResp))
+	require.Empty(t, groupsResp.Data.GroupIDs)
+}

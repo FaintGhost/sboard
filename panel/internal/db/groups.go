@@ -116,15 +116,30 @@ func (s *Store) DeleteGroup(ctx context.Context, id int64) error {
 	if cnt > 0 {
 		return ErrConflict
 	}
-	res, err := s.DB.ExecContext(ctx, "DELETE FROM groups WHERE id = ?", id)
+
+	tx, err := s.DB.BeginTx(ctx, &sql.TxOptions{})
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	if _, err := tx.ExecContext(ctx, "DELETE FROM user_groups WHERE group_id = ?", id); err != nil {
+		return err
+	}
+
+	res, err := tx.ExecContext(ctx, "DELETE FROM groups WHERE id = ?", id)
 	if err != nil {
 		return err
 	}
 	n, err := res.RowsAffected()
-	if err == nil && n == 0 {
+	if err != nil {
+		return err
+	}
+	if n == 0 {
 		return ErrNotFound
 	}
-	return err
+
+	return tx.Commit()
 }
 
 type groupRowScanner interface {

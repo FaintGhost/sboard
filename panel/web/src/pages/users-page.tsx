@@ -335,17 +335,19 @@ export function UsersPage() {
                     ))}
                   </>
                 ) : null}
-                {filteredUsers.map((u) => (
+                {filteredUsers.map((u) => {
+                  const visibleGroupIDs = u.group_ids.filter((groupID) => groupNameByID.has(groupID))
+                  return (
                   <TableRow key={u.id}>
                     <TableCell className={`${spacing.cellFirst} font-medium`}>{u.username}</TableCell>
                     <TableCell className={spacing.cellMiddle}>
-                      {u.group_ids.length > 0 ? (
+                      {visibleGroupIDs.length > 0 ? (
                         <div className="flex flex-wrap gap-1">
-                          {u.group_ids.map((groupID) => {
+                          {visibleGroupIDs.map((groupID) => {
                             const groupName = groupNameByID.get(groupID)
                             return (
                               <Badge key={`${u.id}-${groupID}`} variant="secondary">
-                                {groupName ?? `#${groupID}`}
+                                {groupName}
                               </Badge>
                             )
                           })}
@@ -422,7 +424,7 @@ export function UsersPage() {
                       </DropdownMenu>
                     </TableCell>
                   </TableRow>
-                ))}
+                )})}
                 {!usersQuery.isLoading && filteredUsers.length === 0 ? (
                   <TableRow>
                     <TableCell className={`${spacing.cellFirst} py-8 text-center text-muted-foreground`} colSpan={6}>
