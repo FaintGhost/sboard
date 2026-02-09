@@ -2,19 +2,19 @@
 
 ## Session: 2026-02-09
 
-### Phase 1: 问题确认与约束收集
+### Phase 1: M4 范围确认与设计落盘
 - **Status:** in_progress
 - **Started:** 2026-02-09
 - Actions taken:
-  - 读取 `using-superpowers` 与 `planning-with-files` 技能内容。
-  - 执行 session catchup，确认上次中断上下文并给出建议。
-  - 初始化三份持久化文件（task_plan/findings/progress）。
+  - 切换到 M4 任务并重建文件化计划。
+  - 基于现有提交识别 M1/M2/M3 基线能力。
+  - 定义 M4 为“同步任务可用性增强”。
 - Files created/modified:
-  - `task_plan.md` (created)
-  - `findings.md` (created)
-  - `progress.md` (created)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
 
-### Phase 2: 根因定位与修复方案
+### Phase 2: TDD 先行（核心逻辑）
 - **Status:** pending
 - Actions taken:
   -
@@ -24,7 +24,7 @@
 ## Test Results
 | Test | Input | Expected | Actual | Status |
 |------|-------|----------|--------|--------|
-| 会话接续检查 | session-catchup.py | 输出上次会话摘要 | 检测到 unsynced context | ✓ |
+| 暂无 | - | - | - | - |
 
 ## Error Log
 | Timestamp | Error | Attempt | Resolution |
@@ -34,53 +34,48 @@
 ## 5-Question Reboot Check
 | Question | Answer |
 |----------|--------|
-| Where am I? | Phase 1（问题确认与约束收集） |
-| Where am I going? | 根因定位 -> 修复实现 -> 验证交付 |
-| What's the goal? | 修复分组删除后的失效分组 ID 残留问题 |
-| What have I learned? | 现象高度指向删除关联清理缺失 |
-| What have I done? | 已完成技能加载、会话衔接、计划文件初始化 |
+| Where am I? | Phase 1（M4 范围确认） |
+| Where am I going? | TDD -> 实现 M4 -> 验证交付 |
+| What's the goal? | 完成同步任务页可用性增强与节点联动 |
+| What have I learned? | M4 未显式定义，需按已完成链路自然推进 |
+| What have I done? | 已完成 M4 计划落盘与范围界定 |
 
 ---
 *Update after completing each phase or encountering errors*
 
-### Phase 2: 根因定位与修复方案
+### Phase 2: TDD 先行（核心逻辑）
 - **Status:** complete
 - Actions taken:
-  - 检查 `groups.go` 删除逻辑，确认未清理 `user_groups`。
-  - 检查迁移 `0004_groups.up.sql`，确认外键未配置 `ON DELETE CASCADE`。
-  - 确认前端 `users-page.tsx` 使用 `#${groupID}` 作为兜底显示，会把脏数据直接暴露。
+  - 新增 `sync-jobs-filters.test.ts` 测试，先执行失败（缺文件）。
+  - 实现 `sync-jobs-filters.ts` 后再执行测试变绿。
 - Files created/modified:
-  - `panel/internal/db/groups.go` (modified)
-  - `panel/internal/db/migrations/0004_groups.up.sql` (read)
-  - `panel/web/src/pages/users-page.tsx` (modified)
+  - `panel/web/src/lib/sync-jobs-filters.test.ts` (created)
+  - `panel/web/src/lib/sync-jobs-filters.ts` (created)
 
-### Phase 3: 实施与测试
+### Phase 3: 实现 M4 功能
 - **Status:** complete
 - Actions taken:
-  - 后端修复：删除分组时事务内先删 `user_groups` 再删 `groups`。
-  - 新增 DB 测试：`TestDeleteGroup_CleansUserGroupMembership`。
-  - 新增 API 测试：`TestGroupsAPI_DeleteGroupCleansUserMembership`。
-  - 前端兜底：用户页只展示存在于 group map 的分组，避免 `#ID`。
-  - 执行验证：
-    - `cd panel && GOCACHE=/tmp/go-build GOMODCACHE=/tmp/go/pkg/mod go test ./internal/api ./internal/db -count=1`
-    - `cd panel/web && npm run build`
+  - `sync-jobs-page` 接入 query filter + source 筛选 + 分页控件。
+  - `nodes-page` 增加“查看同步任务”入口并带 `node_id` query。
+  - 增补中英文文案。
 - Files created/modified:
-  - `panel/internal/db/groups_test.go` (modified)
-  - `panel/internal/api/groups_test.go` (modified)
-  - `panel/web/src/pages/users-page.tsx` (modified)
+  - `panel/web/src/pages/sync-jobs-page.tsx` (modified)
+  - `panel/web/src/pages/nodes-page.tsx` (modified)
+  - `panel/web/src/i18n/locales/zh.json` (modified)
+  - `panel/web/src/i18n/locales/en.json` (modified)
 
 ## Test Results
 | Test | Input | Expected | Actual | Status |
 |------|-------|----------|--------|--------|
-| 分组删除清理 DB | `go test ./internal/db` | 删除分组后用户组为空 | 通过 | ✓ |
-| 分组删除清理 API | `go test ./internal/api` | `/api/users/:id/groups` 返回空数组 | 通过 | ✓ |
-| 前端编译 | `npm run build` | 构建成功 | 通过（仅 chunk size 警告） | ✓ |
+| Filters TDD 红灯 | `npm test -- src/lib/sync-jobs-filters.test.ts`（首次） | 失败（缺实现） | 失败（符合预期） | ✓ |
+| Filters TDD 绿灯 | `npm test -- src/lib/sync-jobs-filters.test.ts` | 通过 | 通过 | ✓ |
+| 前端构建 | `npm run build` | 构建成功 | 通过（仅 chunk size 警告） | ✓ |
 
 ## 5-Question Reboot Check
 | Question | Answer |
 |----------|--------|
-| Where am I? | Phase 4（交付与 M4 衔接） |
-| Where am I going? | 提交修复并继续 M4 规划 |
-| What's the goal? | 修复删除分组后用户残留失效分组 ID |
-| What have I learned? | 根因是后端删除未清理关联，前端兜底放大问题 |
-| What have I done? | 已完成后端+前端修复与验证 |
+| Where am I? | Phase 4（验证与交付） |
+| Where am I going? | 提交 M4 增强并继续后续路线 |
+| What's the goal? | 完成同步任务页可用性增强与节点联动 |
+| What have I learned? | query 同步 + 后端分页参数组合可最小改动实现高收益 |
+| What have I done? | 已完成 TDD、实现、构建验证 |

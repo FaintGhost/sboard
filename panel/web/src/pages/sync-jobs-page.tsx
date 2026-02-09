@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
+import { useSearchParams } from "react-router-dom"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -32,13 +33,17 @@ import {
 import { ApiError } from "@/lib/api/client"
 import { listNodes } from "@/lib/api/nodes"
 import { getSyncJob, listSyncJobs, retrySyncJob } from "@/lib/api/sync-jobs"
-import type { SyncJobStatus } from "@/lib/api/types"
+import {
+  buildSyncJobsSearchParams,
+  parseSyncJobsSearchParams,
+  syncJobSourceValues,
+  syncJobStatusValues,
+  type SyncJobsPageFilters,
+  type SyncJobsTimeRange,
+} from "@/lib/sync-jobs-filters"
 import { tableColumnSpacing } from "@/lib/table-spacing"
 
-const statusOptions = ["queued", "running", "success", "failed"] as const
-const rangeOptions = ["24h", "7d", "30d"] as const
-
-type TimeRange = (typeof rangeOptions)[number]
+const pageSize = 20
 
 function formatDateTime(value?: string): string {
   if (!value) return "-"
@@ -81,7 +86,7 @@ function getStatusVariant(status: string): "default" | "secondary" | "destructiv
   }
 }
 
-function fromISOByRange(range: TimeRange): string {
+function fromISOByRange(range: SyncJobsTimeRange): string {
   const now = Date.now()
   const delta =
     range === "24h"
@@ -108,11 +113,26 @@ export function SyncJobsPage() {
   const { t } = useTranslation()
   const qc = useQueryClient()
   const spacing = tableColumnSpacing.six
+  const [searchParams, setSearchParams] = useSearchParams()
 
-  const [nodeFilter, setNodeFilter] = useState<number | "all">("all")
-  const [statusFilter, setStatusFilter] = useState<SyncJobStatus | "all">("all")
-  const [timeRange, setTimeRange] = useState<TimeRange>("24h")
+  const filters = useMemo(
+    () => parseSyncJobsSearchParams(searchParams),
+    [searchParams],
+  )
+  const currentOffset = (filters.page - 1) * pageSize
+
   const [selectedJobID, setSelectedJobID] = useState<number | null>(null)
+
+  function updateFilters(patch: Partial<SyncJobsPageFilters>, resetPage = false) {
+    const next: SyncJobsPageFilters = {
+      ...filters,
+      ...patch,
+    }
+    if (resetPage) {
+      next.page = 1
+    }
+    setSearchParams(buildSyncJobsSearchParams(next), { replace: true })
+  }
 
   const nodesQuery = useQuery({
     queryKey: ["nodes", "sync-jobs", { limit: 100, offset: 0 }],
@@ -120,14 +140,15 @@ export function SyncJobsPage() {
   })
 
   const jobsQuery = useQuery({
-    queryKey: ["sync-jobs", { nodeFilter, statusFilter, timeRange }],
+    queryKey: ["sync-jobs", filters],
     queryFn: () =>
       listSyncJobs({
-        limit: 100,
-        offset: 0,
-        node_id: nodeFilter === "all" ? undefined : nodeFilter,
-        status: statusFilter === "all" ? undefined : statusFilter,
-        from: fromISOByRange(timeRange),
+        limit: pageSize,
+        offset: currentOffset,
+        node_id: filters.nodeFilter === "all" ? undefined : filters.nodeFilter,
+        status: filters.statusFilter === "all" ? undefined : filters.statusFilter,
+        trigger_source: filters.sourceFilter === "all" ? undefined : filters.sourceFilter,
+        from: fromISOByRange(filters.timeRange),
         to: new Date().toISOString(),
       }),
     refetchInterval: 15_000,
@@ -188,7 +209,10 @@ export function SyncJobsPage() {
                 </CardDescription>
               </div>
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                <Select value={timeRange} onValueChange={(v) => setTimeRange(v as TimeRange)}>
+                <Select
+                  value={filters.timeRange}
+                  onValueChange={(v) => updateFilters({ timeRange: v as SyncJobsTimeRange }, true)}
+                >
                   <SelectTrigger className="w-full sm:w-44" aria-label={t("syncJobs.timeRange")}>
                     <SelectValue />
                   </SelectTrigger>
@@ -200,8 +224,8 @@ export function SyncJobsPage() {
                 </Select>
 
                 <Select
-                  value={nodeFilter === "all" ? "all" : String(nodeFilter)}
-                  onValueChange={(v) => setNodeFilter(v === "all" ? "all" : Number(v))}
+                  value={filters.nodeFilter === "all" ? "all" : String(filters.nodeFilter)}
+                  onValueChange={(v) => updateFilters({ nodeFilter: v === "all" ? "all" : Number(v) }, true)}
                 >
                   <SelectTrigger className="w-full sm:w-52" aria-label={t("syncJobs.nodeFilter")}>
                     <SelectValue />
@@ -217,17 +241,34 @@ export function SyncJobsPage() {
                 </Select>
 
                 <Select
-                  value={statusFilter}
-                  onValueChange={(v) => setStatusFilter(v as SyncJobStatus | "all")}
+                  value={filters.statusFilter}
+                  onValueChange={(v) => updateFilters({ statusFilter: v as SyncJobsPageFilters["statusFilter"] }, true)}
                 >
                   <SelectTrigger className="w-full sm:w-44" aria-label={t("syncJobs.statusFilter")}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">{t("syncJobs.allStatus")}</SelectItem>
-                    {statusOptions.map((status) => (
+                    {syncJobStatusValues.map((status) => (
                       <SelectItem key={status} value={status}>
                         {statusLabel(t, status)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select
+                  value={filters.sourceFilter}
+                  onValueChange={(v) => updateFilters({ sourceFilter: v as SyncJobsPageFilters["sourceFilter"] }, true)}
+                >
+                  <SelectTrigger className="w-full sm:w-52" aria-label={t("syncJobs.sourceFilter")}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t("syncJobs.allSources")}</SelectItem>
+                    {syncJobSourceValues.map((source) => (
+                      <SelectItem key={source} value={source}>
+                        {sourceLabel(t, source)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -306,6 +347,28 @@ export function SyncJobsPage() {
                 ) : null}
               </TableBody>
             </Table>
+
+            <div className="flex items-center justify-between border-t px-6 py-3 text-sm">
+              <span className="text-muted-foreground">{t("syncJobs.pageLabel", { page: filters.page })}</span>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={filters.page <= 1 || jobsQuery.isFetching}
+                  onClick={() => updateFilters({ page: filters.page - 1 })}
+                >
+                  {t("syncJobs.prevPage")}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={jobsQuery.isFetching || (jobsQuery.data?.length ?? 0) < pageSize}
+                  onClick={() => updateFilters({ page: filters.page + 1 })}
+                >
+                  {t("syncJobs.nextPage")}
+                </Button>
+              </div>
+            </div>
           </CardContent>
         </Card>
 

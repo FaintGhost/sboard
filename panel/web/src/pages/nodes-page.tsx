@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { MoreHorizontal, Pencil } from "lucide-react"
+import { useNavigate } from "react-router-dom"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -80,6 +81,7 @@ function groupName(groups: Group[] | undefined, id: number | null): string {
 
 export function NodesPage() {
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const qc = useQueryClient()
   const spacing = tableColumnSpacing.five
   const [upserting, setUpserting] = useState<EditState | null>(null)
@@ -385,6 +387,13 @@ export function NodesPage() {
                           >
                             <Pencil className="mr-2 size-4" />
                             {t("common.edit")}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              navigate(`/sync-jobs?node_id=${n.id}`)
+                            }}
+                          >
+                            {t("nodes.viewSyncJobs")}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>

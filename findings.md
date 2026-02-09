@@ -1,38 +1,51 @@
 # Findings & Decisions
 
 ## Requirements
-- 修复：新建分组 -> 给用户加分组 -> 删除分组后，用户页显示 `#2`（失效 ID 占位）的问题。
-- 目标：删除分组后，用户分组关系应被正确清理，前端不应展示失效 ID。
-- 额外要求：后续工作持续写入 `task_plan.md` / `findings.md` / `progress.md`。
+- 用户要求：继续推进 M4，并使用文件化计划以便回溯。
+- 当前可确认基线：
+  - M1：同步任务落库 + 重试 + 节点串行。
+  - M2：`/api/sync-jobs` 列表/详情/重试 API。
+  - M3：同步任务前端独立页面与详情弹窗。
 
 ## Research Findings
-- 根因 1（核心）：`panel/internal/db/groups.go` 的 `DeleteGroup` 只删除 `groups`，未删除 `user_groups` 关联。
-- 根因 2（结构）：`0004_groups.up.sql` 的 `user_groups.group_id` 外键未声明 `ON DELETE CASCADE`，不会自动清理。
-- 表现放大点：`panel/web/src/pages/users-page.tsx` 在 group 不存在时使用 `#${groupID}` 兜底，直接暴露脏关联。
+- 当前 `sync-jobs` 页面已有：时间范围、节点、状态筛选 + 详情 + 手动重试。
+- 仍缺可用性增强点：
+  - 触发来源筛选（快速定位自动/手动触发任务）；
+  - 分页浏览（大量任务可控）；
+  - 与节点管理的上下文联动入口。
 
 ## Technical Decisions
 | Decision | Rationale |
 |----------|-----------|
-| 后端事务化清理关联（先删 user_groups，再删 groups） | 从根因上修复数据一致性，避免影响订阅/同步逻辑 |
-| 增加 DB 与 API 回归测试 | 防止后续回归，确保删除行为可验证 |
-| 前端改为仅渲染存在分组，未知分组不显示 #ID | 防御性 UI，避免异常数据污染体验 |
+| M4 增加 trigger source 筛选 | 降低定位成本，尤其排查 auto/user/group 触发问题 |
+| M4 增加分页（limit/offset） | 避免全量请求，提升性能与可扩展性 |
+| M4 增加节点页跳转入口并携带 query | 从“节点问题”直达“该节点同步历史” |
 
 ## Issues Encountered
 | Issue | Resolution |
 |-------|------------|
-| `sed` 读取 `panel/internal/api/test_helpers_test.go` 报不存在 | 确认测试辅助函数在 `users_test.go`，改为读取正确文件 |
+| M4 在仓库中无显式文档定义 | 采用 M1/M2/M3 顺延策略，聚焦可用性增强 |
 
 ## Resources
-- `panel/internal/db/groups.go`
-- `panel/internal/db/groups_test.go`
-- `panel/internal/api/groups_test.go`
-- `panel/internal/db/migrations/0004_groups.up.sql`
-- `panel/web/src/pages/users-page.tsx`
+- `panel/web/src/pages/sync-jobs-page.tsx`
+- `panel/web/src/lib/api/sync-jobs.ts`
+- `panel/internal/api/sync_jobs.go`
+- `panel/web/src/pages/nodes-page.tsx`
 
 ## Visual/Browser Findings
-- 用户报告：分组删除后，用户页分组列出现 `#2`。
-- 修复后行为：删除分组后用户分组为空时展示 `-`，不会出现 `#ID`。
+- 当前同步任务页无“触发来源”筛选与分页。
+- 当前节点页无直达同步任务页并自动过滤节点的入口。
 
 ---
 *Update this file after every 2 view/browser/search operations*
 *This prevents visual information from being lost*
+
+## M4 Implementation Findings
+- 新增 `sync-jobs` URL 过滤解析器：
+  - `parseSyncJobsSearchParams`：从 query 解析 node/status/source/range/page；
+  - `buildSyncJobsSearchParams`：最小化输出 query（默认值不写入）。
+- 同步任务页已接入：
+  - 触发来源筛选（`trigger_source`）；
+  - 分页（`limit=20 + offset=(page-1)*20`）；
+  - query 同步（刷新后保留筛选与页码）。
+- 节点页新增“查看同步任务”入口，跳转 `/sync-jobs?node_id=<id>`。
