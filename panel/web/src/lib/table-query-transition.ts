@@ -13,6 +13,7 @@ type UseTableQueryTransitionResult<Row> = {
   showSkeleton: boolean
   showLoadingHint: boolean
   showNoData: boolean
+  isTransitioning: boolean
 }
 
 export function useTableQueryTransition<Row>(
@@ -27,8 +28,8 @@ export function useTableQueryTransition<Row>(
   } = options
 
   const [isSwitching, setIsSwitching] = useState(false)
-  const [lastSettledRowCount, setLastSettledRowCount] = useState<number | null>(null)
   const prevFilterKeyRef = useRef(filterKey)
+  const prevRowsRef = useRef<Row[]>([])
 
   const justChangedFilter = prevFilterKeyRef.current !== filterKey
   const effectiveSwitching = isSwitching || justChangedFilter
@@ -38,12 +39,6 @@ export function useTableQueryTransition<Row>(
     prevFilterKeyRef.current = filterKey
     setIsSwitching(true)
   }, [filterKey, justChangedFilter])
-
-  useEffect(() => {
-    if (!isFetching && rows) {
-      setLastSettledRowCount(rows.length)
-    }
-  }, [isFetching, rows])
 
   useEffect(() => {
     if (!effectiveSwitching) return
@@ -56,30 +51,34 @@ export function useTableQueryTransition<Row>(
     }
   }, [effectiveSwitching, isError, isFetching, rows])
 
+  // Keep previous rows during transition to avoid flash
+  useEffect(() => {
+    if (rows && !isFetching) {
+      prevRowsRef.current = rows
+    }
+  }, [rows, isFetching])
+
   return useMemo(() => {
-    const hideRowsDuringSwitch = effectiveSwitching && isFetching
-    const keepNoDataVisibleDuringSwitch = hideRowsDuringSwitch && lastSettledRowCount === 0
+    // During filter switch, keep showing previous rows until new data arrives
+    const isTransitioning = effectiveSwitching && isFetching
+    const visibleRows = isTransitioning ? prevRowsRef.current : (rows ?? [])
 
-    const showSkeleton =
-      (isLoading && !effectiveSwitching) ||
-      (hideRowsDuringSwitch && (lastSettledRowCount ?? 0) > 0)
+    // Only show skeleton on initial load (not during filter transitions)
+    const showSkeleton = isLoading && !effectiveSwitching && prevRowsRef.current.length === 0
 
-    const visibleRows = hideRowsDuringSwitch ? [] : (rows ?? [])
-    const showNoData =
-      keepNoDataVisibleDuringSwitch ||
-      (!showSkeleton && rows != null && visibleRows.length === 0)
+    const showNoData = !showSkeleton && !isTransitioning && rows != null && rows.length === 0
 
     return {
       visibleRows,
       showSkeleton,
-      showLoadingHint: showSkeleton,
+      showLoadingHint: isFetching,
       showNoData,
+      isTransitioning,
     }
   }, [
     effectiveSwitching,
     isFetching,
     isLoading,
-    lastSettledRowCount,
     rows,
   ])
 }

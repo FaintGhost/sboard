@@ -29,7 +29,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Skeleton } from "@/components/ui/skeleton"
 import {
   Table,
   TableBody,
@@ -336,29 +335,7 @@ export function InboundsPage() {
                   </TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
-                {inboundsTable.showSkeleton
-                  ? Array.from({ length: 5 }).map((_, index) => (
-                      <TableRow key={index}>
-                        <TableCell className={spacing.cellFirst}>
-                          <Skeleton className="h-4 w-28" />
-                        </TableCell>
-                        <TableCell className={spacing.cellMiddle}>
-                          <Skeleton className="h-4 w-28" />
-                        </TableCell>
-                        <TableCell className={spacing.cellMiddle}>
-                          <Skeleton className="h-4 w-24" />
-                        </TableCell>
-                        <TableCell className={spacing.cellMiddle}>
-                          <Skeleton className="h-4 w-20" />
-                        </TableCell>
-                        <TableCell className={spacing.cellLast}>
-                          <Skeleton className="h-8 w-8" />
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  : null}
-
+              <TableBody className={inboundsTable.isTransitioning ? "opacity-50 transition-opacity duration-150" : "transition-opacity duration-150"}>
                 {inboundsTable.visibleRows.map((inbound) => (
                   <TableRow key={inbound.id}>
                     <TableCell className={`${spacing.cellFirst} font-medium`}>
