@@ -1,7 +1,7 @@
 # Findings & Decisions
 
 ## Requirements
-- 用户要求：继续推进 M4，并使用文件化计划以便回溯。
+- 用户要求：继续推进 M5，并使用文件化计划以便回溯。
 - 当前可确认基线：
   - M1：同步任务落库 + 重试 + 节点串行。
   - M2：`/api/sync-jobs` 列表/详情/重试 API。
@@ -17,14 +17,14 @@
 ## Technical Decisions
 | Decision | Rationale |
 |----------|-----------|
-| M4 增加 trigger source 筛选 | 降低定位成本，尤其排查 auto/user/group 触发问题 |
-| M4 增加分页（limit/offset） | 避免全量请求，提升性能与可扩展性 |
-| M4 增加节点页跳转入口并携带 query | 从“节点问题”直达“该节点同步历史” |
+| M5 增加 trigger source 筛选 | 降低定位成本，尤其排查 auto/user/group 触发问题 |
+| M5 增加分页（limit/offset） | 避免全量请求，提升性能与可扩展性 |
+| M5 增加节点页跳转入口并携带 query | 从“节点问题”直达“该节点同步历史” |
 
 ## Issues Encountered
 | Issue | Resolution |
 |-------|------------|
-| M4 在仓库中无显式文档定义 | 采用 M1/M2/M3 顺延策略，聚焦可用性增强 |
+| M5 在仓库中无显式文档定义 | 采用 M1/M2/M3 顺延策略，聚焦可用性增强 |
 
 ## Resources
 - `panel/web/src/pages/sync-jobs-page.tsx`
@@ -40,7 +40,7 @@
 *Update this file after every 2 view/browser/search operations*
 *This prevents visual information from being lost*
 
-## M4 Implementation Findings
+## M5 Implementation Findings
 - 新增 `sync-jobs` URL 过滤解析器：
   - `parseSyncJobsSearchParams`：从 query 解析 node/status/source/range/page；
   - `buildSyncJobsSearchParams`：最小化输出 query（默认值不写入）。

@@ -2,13 +2,13 @@
 
 ## Session: 2026-02-09
 
-### Phase 1: M4 范围确认与设计落盘
+### Phase 1: M5 范围确认与设计落盘
 - **Status:** in_progress
 - **Started:** 2026-02-09
 - Actions taken:
-  - 切换到 M4 任务并重建文件化计划。
+  - 切换到 M5 任务并重建文件化计划。
   - 基于现有提交识别 M1/M2/M3 基线能力。
-  - 定义 M4 为“同步任务可用性增强”。
+  - 定义 M5 为“同步任务可用性增强”。
 - Files created/modified:
   - `task_plan.md` (updated)
   - `findings.md` (updated)
@@ -34,8 +34,8 @@
 ## 5-Question Reboot Check
 | Question | Answer |
 |----------|--------|
-| Where am I? | Phase 1（M4 范围确认） |
-| Where am I going? | TDD -> 实现 M4 -> 验证交付 |
+| Where am I? | Phase 1（M5 范围确认） |
+| Where am I going? | TDD -> 实现 M5 -> 验证交付 |
 | What's the goal? | 完成同步任务页可用性增强与节点联动 |
 | What have I learned? | M4 未显式定义，需按已完成链路自然推进 |
 | What have I done? | 已完成 M4 计划落盘与范围界定 |
@@ -52,7 +52,7 @@
   - `panel/web/src/lib/sync-jobs-filters.test.ts` (created)
   - `panel/web/src/lib/sync-jobs-filters.ts` (created)
 
-### Phase 3: 实现 M4 功能
+### Phase 3: 实现 M5 功能
 - **Status:** complete
 - Actions taken:
   - `sync-jobs-page` 接入 query filter + source 筛选 + 分页控件。
@@ -75,7 +75,7 @@
 | Question | Answer |
 |----------|--------|
 | Where am I? | Phase 4（验证与交付） |
-| Where am I going? | 提交 M4 增强并继续后续路线 |
+| Where am I going? | 提交 M5 增强并继续后续路线 |
 | What's the goal? | 完成同步任务页可用性增强与节点联动 |
 | What have I learned? | query 同步 + 后端分页参数组合可最小改动实现高收益 |
 | What have I done? | 已完成 TDD、实现、构建验证 |
@@ -84,7 +84,7 @@
 - **Status:** complete
 - Actions taken:
   - 完成代码提交：`2424c32 feat(panel-web): enhance sync jobs filters, pagination and node linking`。
-  - 更新 `task_plan.md`，标记 M4 全阶段完成。
+  - 更新 `task_plan.md`，标记 M5 全阶段完成。
 - Files created/modified:
   - `task_plan.md` (updated)
   - `progress.md` (updated)
