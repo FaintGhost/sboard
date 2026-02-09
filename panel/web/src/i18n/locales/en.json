@@ -173,7 +173,10 @@
     "statusOffline": "Offline",
     "statusUnknown": "Unknown",
     "traffic": "Traffic",
-    "lastSampleAt": "Last Sample",
+    "lastUpdatedAt": "Last Updated",
+    "lastSeen": "Last Seen",
+    "sameAsApiAddress": "Same as API address",
+    "lastSampleAt": "Last Updated",
     "sync": "Sync",
     "syncing": "Syncing...",
     "syncSuccess": "Sync successful",
@@ -300,7 +303,14 @@
     "langZh": "Chinese",
     "langEn": "English",
     "singboxFormatHint": "Native JSON config for sing-box, SFA (Android), and SFI (iOS).",
-    "v2rayFormatHint": "Base64 subscription compatible with clients like V2RayN and Shadowrocket."
+    "v2rayFormatHint": "Base64 subscription compatible with clients like V2RayN and Shadowrocket.",
+    "subscriptionAccess": "Subscription Access Address",
+    "subscriptionAccessHint": "Configure the public domain or IP used in generated subscription URLs, especially for reverse proxy/public deployment.",
+    "subscriptionBaseUrl": "Subscription Base URL (Domain or Public IP)",
+    "subscriptionBaseUrlPlaceholder": "e.g. https://sub.example.com or http://203.0.113.10:8080",
+    "subscriptionBaseUrlHelp": "Leave empty to use the current access address. Must include http:// or https://.",
+    "subscriptionBaseUrlPreview": "Current base used for subscription URL generation",
+    "saveSuccess": "Settings saved"
   },
   "syncJobs": {
     "title": "Sync Jobs",

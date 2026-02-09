@@ -28,8 +28,8 @@ export function useTableQueryTransition<Row>(
   } = options
 
   const [isSwitching, setIsSwitching] = useState(false)
+  const [lastSettledRowCount, setLastSettledRowCount] = useState<number | null>(null)
   const prevFilterKeyRef = useRef(filterKey)
-  const prevRowsRef = useRef<Row[]>([])
 
   const justChangedFilter = prevFilterKeyRef.current !== filterKey
   const effectiveSwitching = isSwitching || justChangedFilter
@@ -39,6 +39,12 @@ export function useTableQueryTransition<Row>(
     prevFilterKeyRef.current = filterKey
     setIsSwitching(true)
   }, [filterKey, justChangedFilter])
+
+  useEffect(() => {
+    if (!isFetching && rows) {
+      setLastSettledRowCount(rows.length)
+    }
+  }, [isFetching, rows])
 
   useEffect(() => {
     if (!effectiveSwitching) return
@@ -51,27 +57,24 @@ export function useTableQueryTransition<Row>(
     }
   }, [effectiveSwitching, isError, isFetching, rows])
 
-  // Keep previous rows during transition to avoid flash
-  useEffect(() => {
-    if (rows && !isFetching) {
-      prevRowsRef.current = rows
-    }
-  }, [rows, isFetching])
-
   return useMemo(() => {
-    // During filter switch, keep showing previous rows until new data arrives
     const isTransitioning = effectiveSwitching && isFetching
-    const visibleRows = isTransitioning ? prevRowsRef.current : (rows ?? [])
+    const visibleRows = isTransitioning ? [] : (rows ?? [])
 
-    // Only show skeleton on initial load (not during filter transitions)
-    const showSkeleton = isLoading && !effectiveSwitching && prevRowsRef.current.length === 0
+    // 用户要求筛选过渡不展示骨架
+    const showSkeleton = false
 
-    const showNoData = !showSkeleton && !isTransitioning && rows != null && rows.length === 0
+    const keepNoDataVisibleDuringSwitch = isTransitioning && lastSettledRowCount === 0
+    const showNoData =
+      keepNoDataVisibleDuringSwitch ||
+      (!isLoading && !isTransitioning && rows != null && visibleRows.length === 0)
+
+    const showLoadingHint = isLoading && !isTransitioning
 
     return {
       visibleRows,
       showSkeleton,
-      showLoadingHint: isFetching,
+      showLoadingHint,
       showNoData,
       isTransitioning,
     }
@@ -79,6 +82,7 @@ export function useTableQueryTransition<Row>(
     effectiveSwitching,
     isFetching,
     isLoading,
+    lastSettledRowCount,
     rows,
   ])
 }

@@ -94,3 +94,76 @@ Complete
 ## Notes
 - 遵循"问题修复协作规则"：不只修复单一页面，应主动排查同类实现
 - 优先抽象为可复用模块
+
+---
+
+# Session Plan: 节点地址联动 + Last Seen + 统计文案（2026-02-09）
+
+## Goal
+围绕节点管理与流量展示做一轮 UX 收敛：
+- 节点编辑支持 API 地址与公网地址联动（默认同值，可手动解耦）
+- 节点列表增加/强化 Last Seen 展示
+- 流量展示文案从“最近采样”统一为“最近更新”，去掉采样语义
+
+## Current Phase
+Complete
+
+## Phases
+
+### Phase 1: 现状核对与方案落盘
+- [x] 核对 `nodes-page`、`traffic` 类型与 i18n 文案
+- [x] 明确不改后端模型，仅做前端交互与展示优化
+- **Status:** complete
+
+### Phase 2: 节点地址联动 + Last Seen 列
+- [x] 增加“公网地址与 API 地址一致”联动开关
+- [x] 创建节点默认联动并自动回填 `public_address`
+- [x] 节点列表新增 `Last Seen` 列并保持表格间距一致
+- **Status:** complete
+
+### Phase 3: 流量文案统一
+- [x] 将“最近采样时间/Last Sample”统一为“最近更新/Last Updated”
+- [x] 排查同类文案，避免局部修复
+- **Status:** complete
+
+### Phase 4: 验证与记录
+- [x] 运行前端相关测试与构建
+- [x] 更新 `findings.md` 与 `progress.md`
+- **Status:** complete
+
+---
+
+# Session Plan: 订阅外部地址可配置（2026-02-09）
+
+## Goal
+在设置页提供可持久化的“订阅基础地址”配置（支持域名/IP），并让订阅管理页面生成正确的公网订阅链接，适配反向代理与公网部署。
+
+## Current Phase
+Complete
+
+## Phases
+
+### Phase 1: 后端配置能力
+- [x] 新增 `system_settings` 数据表迁移
+- [x] 新增 Store 读写接口（get/upsert/delete）
+- [x] 新增 API：`GET/PUT /api/system/settings`
+- [x] 增加 URL 校验与标准化（仅允许 http/https）
+- **Status:** complete
+
+### Phase 2: 前端设置页接入
+- [x] 设置页新增“订阅访问地址”配置区块
+- [x] 支持读取、编辑、保存与错误提示
+- [x] 提供“当前用于生成订阅链接的地址”预览
+- **Status:** complete
+
+### Phase 3: 订阅页接入配置
+- [x] 订阅链接生成从固定 `window.location.origin` 改为“配置优先、本地回退”
+- [x] 兼容带 path 的 base URL（如反代子路径）
+- **Status:** complete
+
+### Phase 4: 验证与文档化
+- [x] Go 后端测试通过
+- [x] 前端全量测试通过
+- [x] 前端构建通过
+- [x] 更新 planning 文件
+- **Status:** complete

@@ -1,4 +1,5 @@
-import { useQuery } from "@tanstack/react-query"
+import { useEffect, useState } from "react"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useTranslation } from "react-i18next"
 import {
   Card,
@@ -15,7 +16,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { getSystemInfo } from "@/lib/api/system"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Button } from "@/components/ui/button"
+import { ApiError } from "@/lib/api/client"
+import { getSystemInfo, getSystemSettings, updateSystemSettings } from "@/lib/api/system"
 
 const languages = [
   { code: "zh", nameKey: "settings.langZh" },
@@ -24,15 +29,40 @@ const languages = [
 
 export function SettingsPage() {
   const { t, i18n } = useTranslation()
+  const qc = useQueryClient()
   const apiBaseUrl = window.location.origin
+  const [subscriptionBaseURL, setSubscriptionBaseURL] = useState("")
+  const [settingsMessage, setSettingsMessage] = useState<string | null>(null)
+
   const systemInfoQuery = useQuery({
     queryKey: ["system-info"],
     queryFn: getSystemInfo,
   })
 
+  const systemSettingsQuery = useQuery({
+    queryKey: ["system-settings"],
+    queryFn: getSystemSettings,
+  })
+
+  useEffect(() => {
+    if (!systemSettingsQuery.data) return
+    setSubscriptionBaseURL(systemSettingsQuery.data.subscription_base_url ?? "")
+  }, [systemSettingsQuery.data])
+
+  const updateSettingsMutation = useMutation({
+    mutationFn: updateSystemSettings,
+    onSuccess: async (data) => {
+      setSubscriptionBaseURL(data.subscription_base_url ?? "")
+      setSettingsMessage(t("settings.saveSuccess"))
+      await qc.invalidateQueries({ queryKey: ["system-settings"] })
+    },
+  })
+
   const handleLanguageChange = (lang: string) => {
     i18n.changeLanguage(lang)
   }
+
+  const resolvedSubscriptionBaseURL = subscriptionBaseURL.trim() || apiBaseUrl
 
   return (
     <div className="px-4 lg:px-6 space-y-6">
@@ -88,6 +118,53 @@ export function SettingsPage() {
               <code className="block text-xs bg-slate-100 px-3 py-2 rounded font-mono">
                 {apiBaseUrl}
               </code>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="md:col-span-2">
+          <CardHeader>
+            <CardTitle>{t("settings.subscriptionAccess")}</CardTitle>
+            <CardDescription>{t("settings.subscriptionAccessHint")}</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="subscription-base-url">{t("settings.subscriptionBaseUrl")}</Label>
+              <Input
+                id="subscription-base-url"
+                value={subscriptionBaseURL}
+                onChange={(e) => {
+                  setSubscriptionBaseURL(e.target.value)
+                  setSettingsMessage(null)
+                }}
+                placeholder={t("settings.subscriptionBaseUrlPlaceholder")}
+              />
+              <p className="text-xs text-muted-foreground">{t("settings.subscriptionBaseUrlHelp")}</p>
+            </div>
+
+            <div className="space-y-2">
+              <div className="text-sm font-medium text-slate-700">{t("settings.subscriptionBaseUrlPreview")}</div>
+              <code className="block text-xs bg-slate-100 px-3 py-2 rounded font-mono">
+                {resolvedSubscriptionBaseURL}
+              </code>
+            </div>
+
+            {settingsMessage ? <p className="text-sm text-emerald-700">{settingsMessage}</p> : null}
+            {updateSettingsMutation.error instanceof ApiError ? (
+              <p className="text-sm text-destructive">{updateSettingsMutation.error.message}</p>
+            ) : null}
+
+            <div className="flex justify-end">
+              <Button
+                onClick={() =>
+                  updateSettingsMutation.mutate({
+                    subscription_base_url: subscriptionBaseURL,
+                  })
+                }
+                disabled={updateSettingsMutation.isPending || systemSettingsQuery.isLoading}
+              >
+                {updateSettingsMutation.isPending ? t("common.saving") : t("common.save")}
+              </Button>
             </div>
           </CardContent>
         </Card>

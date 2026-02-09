@@ -302,3 +302,64 @@
 | Node 启动包编译检查 | `go test ./node/cmd/node -count=1` | 通过 | 通过（无测试文件） | ✓ |
 | 前端模板单测 | `npm test -- src/lib/inbound-template.test.ts` | 通过 | 通过 | ✓ |
 | 前端构建 | `npm run build` | 通过 | 通过（含 chunk size 提示） | ✓ |
+
+## 2026-02-09 Session: Node UX 收敛（进行中）
+- 已完成：
+  - 读取并确认会话恢复信息与当前 git 状态。
+  - 核对节点页、traffic API 类型、i18n 文案落点。
+  - 在 `task_plan.md/findings.md/progress.md` 建立本轮计划与发现。
+- 下一步：
+  - 实现地址联动 + Last Seen 列。
+  - 统一流量文案为“最近更新”。
+
+## 2026-02-09 Session: Node UX 收敛（已实现，待回归收敛）
+- 已完成改动：
+  - `panel/web/src/pages/nodes-page.tsx`
+    - 新增地址联动状态 `linkAddress` 与 UI 开关。
+    - 创建/编辑流程支持 API/公网地址联动与解耦。
+    - 节点表格新增 `Last Seen` 列，并接入时间格式化显示。
+    - 节点流量相关文案切换为 `nodes.lastUpdatedAt`。
+  - `panel/web/src/lib/table-spacing.ts`
+    - 新增 `seven` 列间距规则，节点表按 7 列统一。
+  - `panel/web/src/i18n/locales/zh.json`
+  - `panel/web/src/i18n/locales/en.json`
+    - 新增 `nodes.lastUpdatedAt` / `nodes.lastSeen` / `nodes.sameAsApiAddress`。
+- 验证结果：
+  - `npm run build`：通过。
+  - `npm test -- src/lib/table-query-transition.test.ts src/pages/sync-jobs-page.test.tsx src/pages/users-page.test.tsx src/lib/inbound-template.test.ts`：失败（3 项，属于既有筛选过渡回归点）。
+- 结论：
+  - 本轮目标功能已落地。
+  - 需单开一次回归修复，把 `table-query-transition` 与 `sync-jobs-page` 的失败用例重新拉齐到绿色基线。
+
+
+## 2026-02-09 Session: 无骨架过渡修复（已完成）
+- 需求变更：用户要求“不要骨架”。
+- 实施：
+  - 重写 `panel/web/src/lib/table-query-transition.ts`，去除筛选切换骨架展示；
+  - 调整 `panel/web/src/lib/table-query-transition.test.ts`，断言改为无骨架 + 空态稳定。
+- 验证（严格）：
+  - 定向：`npm test -- src/lib/table-query-transition.test.ts src/pages/sync-jobs-page.test.tsx src/pages/users-page.test.tsx src/lib/inbound-template.test.ts` 通过。
+  - 全量：`npm test` 通过（10 files, 24 tests）。
+  - 构建：`npm run build` 通过。
+
+## 2026-02-09 Session: 订阅外部地址配置（已完成）
+- 后端改动：
+  - 新增迁移：
+    - `panel/internal/db/migrations/0009_system_settings.up.sql`
+    - `panel/internal/db/migrations/0009_system_settings.down.sql`
+  - 新增 DB 接口：`panel/internal/db/system_settings.go`
+  - 新增 API：`panel/internal/api/system_settings.go`
+  - 路由接入：`panel/internal/api/router.go`
+  - 新增测试：`panel/internal/api/system_settings_test.go`
+- 前端改动：
+  - API 封装：`panel/web/src/lib/api/system.ts`
+  - 类型定义：`panel/web/src/lib/api/types.ts`
+  - 设置页：`panel/web/src/pages/settings-page.tsx`
+  - 订阅页：`panel/web/src/pages/subscriptions-page.tsx`
+  - i18n：`panel/web/src/i18n/locales/zh.json`、`panel/web/src/i18n/locales/en.json`
+  - 新增测试：`panel/web/src/pages/subscriptions-page.test.tsx`
+  - 更新测试：`panel/web/src/pages/settings-page.test.tsx`
+- 验证结果（严格）：
+  - `go test ./panel/internal/db ./panel/internal/api -count=1` ✅
+  - `npm test`（11 files, 26 tests）✅
+  - `npm run build` ✅

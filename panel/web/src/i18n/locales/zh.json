@@ -173,7 +173,10 @@
     "statusOffline": "离线",
     "statusUnknown": "未知",
     "traffic": "流量统计",
-    "lastSampleAt": "最近采样时间",
+    "lastUpdatedAt": "最近更新",
+    "lastSeen": "最近在线",
+    "sameAsApiAddress": "与 API 地址一致",
+    "lastSampleAt": "最近更新",
     "sync": "同步",
     "syncing": "同步中...",
     "syncSuccess": "同步成功",
@@ -300,7 +303,14 @@
     "langZh": "中文",
     "langEn": "English",
     "singboxFormatHint": "原生 JSON 配置格式，适用于 sing-box、SFA (Android)、SFI (iOS) 客户端",
-    "v2rayFormatHint": "Base64 编码的订阅链接，兼容 V2RayN、Shadowrocket 等客户端"
+    "v2rayFormatHint": "Base64 编码的订阅链接，兼容 V2RayN、Shadowrocket 等客户端",
+    "subscriptionAccess": "订阅访问地址",
+    "subscriptionAccessHint": "可配置订阅链接对外显示的域名或公网地址，用于反向代理/公网部署场景。",
+    "subscriptionBaseUrl": "订阅基础地址（域名或公网 IP）",
+    "subscriptionBaseUrlPlaceholder": "例如 https://sub.example.com 或 http://203.0.113.10:8080",
+    "subscriptionBaseUrlHelp": "留空则使用当前访问地址。必须包含 http:// 或 https://。",
+    "subscriptionBaseUrlPreview": "当前用于生成订阅链接的地址",
+    "saveSuccess": "设置已保存"
   },
   "syncJobs": {
     "title": "同步任务",

@@ -47,6 +47,8 @@ func NewRouter(cfg config.Config, store *db.Store) *gin.Engine {
 	auth.GET("/traffic/total/summary", TrafficTotalSummary(store))
 	auth.GET("/traffic/timeseries", TrafficTimeseries(store))
 	auth.GET("/system/info", SystemInfoGet())
+	auth.GET("/system/settings", SystemSettingsGet(store))
+	auth.PUT("/system/settings", SystemSettingsPut(store))
 	auth.GET("/sync-jobs", SyncJobsList(store))
 	auth.GET("/sync-jobs/:id", SyncJobsGet(store))
 	auth.POST("/sync-jobs/:id/retry", SyncJobsRetry(store))

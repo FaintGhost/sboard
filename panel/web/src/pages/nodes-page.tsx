@@ -22,6 +22,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import {
   Select,
@@ -59,6 +60,7 @@ type EditState = {
   secretKey: string
   publicAddress: string
   groupID: number | null
+  linkAddress: boolean
 }
 
 const defaultNewNode: Node = {
@@ -79,11 +81,18 @@ function groupName(groups: Group[] | undefined, id: number | null): string {
   return g ? g.name : String(id)
 }
 
+function formatDateTime(value?: string | null): string {
+  if (!value) return "-"
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  return date.toLocaleString()
+}
+
 export function NodesPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const qc = useQueryClient()
-  const spacing = tableColumnSpacing.five
+  const spacing = tableColumnSpacing.seven
   const [upserting, setUpserting] = useState<EditState | null>(null)
   const [trafficNode, setTrafficNode] = useState<Node | null>(null)
   const [actionMessage, setActionMessage] = useState<string | null>(null)
@@ -184,8 +193,9 @@ export function NodesPage() {
                 apiAddress: "127.0.0.1",
                 apiPort: 3000,
                 secretKey: "",
-                publicAddress: "",
+                publicAddress: "127.0.0.1",
                 groupID: null,
+                linkAddress: true,
               })
             }}
           >
@@ -257,7 +267,7 @@ export function NodesPage() {
                     />
                   </div>
                   <div className="flex items-center justify-between gap-3">
-                    <span className="text-muted-foreground">{t("nodes.lastSampleAt")}</span>
+                    <span className="text-muted-foreground">{t("nodes.lastUpdatedAt")}</span>
                     <span className="truncate">
                       <FlashValue value={last || "-"} className="max-w-full" />
                     </span>
@@ -309,6 +319,7 @@ export function NodesPage() {
                   <TableHead className={spacing.headMiddle}>{t("nodes.apiAddress")}</TableHead>
                   <TableHead className={spacing.headMiddle}>{t("nodes.publicAddress")}</TableHead>
                   <TableHead className={spacing.headMiddle}>{t("nodes.status")}</TableHead>
+                  <TableHead className={spacing.headMiddle}>{t("nodes.lastSeen")}</TableHead>
                   <TableHead className={`w-12 ${spacing.headLast}`}>
                     <span className="sr-only">{t("common.actions")}</span>
                   </TableHead>
@@ -333,6 +344,9 @@ export function NodesPage() {
                         </TableCell>
                         <TableCell className={spacing.cellMiddle}>
                           <Skeleton className="h-4 w-16" />
+                        </TableCell>
+                        <TableCell className={spacing.cellMiddle}>
+                          <Skeleton className="h-4 w-36" />
                         </TableCell>
                         <TableCell className={spacing.cellLast}>
                           <Skeleton className="h-8 w-8" />
@@ -359,6 +373,9 @@ export function NodesPage() {
                         labelUnknown={t("nodes.statusUnknown")}
                       />
                     </TableCell>
+                    <TableCell className={`${spacing.cellMiddle} text-muted-foreground`}>
+                      {formatDateTime(n.last_seen_at)}
+                    </TableCell>
                     <TableCell className={spacing.cellLast}>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -382,6 +399,7 @@ export function NodesPage() {
                                 secretKey: n.secret_key,
                                 publicAddress: n.public_address,
                                 groupID: n.group_id,
+                                linkAddress: n.public_address.trim() === n.api_address.trim(),
                               })
                             }}
                           >
@@ -402,7 +420,7 @@ export function NodesPage() {
                 ))}
                 {!nodesQuery.isLoading && nodesQuery.data && nodesQuery.data.length === 0 ? (
                   <TableRow>
-                    <TableCell className={`${spacing.cellFirst} py-8 text-center text-muted-foreground`} colSpan={6}>
+                    <TableCell className={`${spacing.cellFirst} py-8 text-center text-muted-foreground`} colSpan={7}>
                       {t("common.noData")}
                     </TableCell>
                   </TableRow>
@@ -448,7 +466,14 @@ export function NodesPage() {
                     id="node-api-addr"
                     value={upserting.apiAddress}
                     onChange={(e) =>
-                      setUpserting((p) => (p ? { ...p, apiAddress: e.target.value } : p))
+                      setUpserting((p) => {
+                        if (!p) return p
+                        const apiAddress = e.target.value
+                        if (p.linkAddress) {
+                          return { ...p, apiAddress, publicAddress: apiAddress }
+                        }
+                        return { ...p, apiAddress }
+                      })
                     }
                     placeholder={t("nodes.apiHostPlaceholder")}
                   />
@@ -536,9 +561,30 @@ export function NodesPage() {
                 </div>
 
                 <div className="space-y-1 md:col-span-2">
-                  <Label className="text-sm text-slate-700" htmlFor="node-public">
-                    {t("nodes.publicAddress")}
-                  </Label>
+                  <div className="flex items-center justify-between gap-2">
+                    <Label className="text-sm text-slate-700" htmlFor="node-public">
+                      {t("nodes.publicAddress")}
+                    </Label>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Checkbox
+                        id="node-link-address"
+                        checked={upserting.linkAddress}
+                        onCheckedChange={(checked) =>
+                          setUpserting((p) => {
+                            if (!p) return p
+                            const linkAddress = checked === true
+                            if (linkAddress) {
+                              return { ...p, linkAddress, publicAddress: p.apiAddress }
+                            }
+                            return { ...p, linkAddress }
+                          })
+                        }
+                      />
+                      <Label htmlFor="node-link-address" className="cursor-pointer text-xs text-muted-foreground">
+                        {t("nodes.sameAsApiAddress")}
+                      </Label>
+                    </div>
+                  </div>
                   <Input
                     id="node-public"
                     value={upserting.publicAddress}
@@ -546,6 +592,7 @@ export function NodesPage() {
                       setUpserting((p) => (p ? { ...p, publicAddress: e.target.value } : p))
                     }
                     placeholder={t("nodes.publicAddressPlaceholder")}
+                    disabled={upserting.linkAddress}
                   />
                 </div>
 
@@ -653,7 +700,7 @@ export function NodesPage() {
                   <TableRow>
                     <TableHead>{t("inbounds.tag")}</TableHead>
                     <TableHead>{t("users.traffic")}</TableHead>
-                    <TableHead>{t("nodes.lastSampleAt")}</TableHead>
+                    <TableHead>{t("nodes.lastUpdatedAt")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

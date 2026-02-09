@@ -31,6 +31,10 @@ export type SystemInfo = {
 
 export type UserStatus = "active" | "disabled" | "expired" | "traffic_exceeded"
 
+export type SystemSettings = {
+  subscription_base_url: string
+}
+
 export type User = {
   id: number
   uuid: string

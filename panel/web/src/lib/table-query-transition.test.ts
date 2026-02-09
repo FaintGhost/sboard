@@ -26,7 +26,8 @@ describe("useTableQueryTransition", () => {
       },
     )
 
-    expect(result.current.showSkeleton).toBe(true)
+    expect(result.current.showSkeleton).toBe(false)
+    expect(result.current.showLoadingHint).toBe(true)
 
     rerender({
       filterKey: "manual_node_sync",
@@ -39,6 +40,7 @@ describe("useTableQueryTransition", () => {
     await waitFor(() => {
       expect(result.current.showNoData).toBe(true)
       expect(result.current.showSkeleton).toBe(false)
+      expect(result.current.showLoadingHint).toBe(false)
     })
 
     rerender({
@@ -56,7 +58,7 @@ describe("useTableQueryTransition", () => {
     })
   })
 
-  it("shows skeleton during switching when previous filter has rows", async () => {
+  it("hides stale rows without skeleton when switching filters", async () => {
     const { result, rerender } = renderHook(
       (props: HookProps) => useTableQueryTransition(props),
       {
@@ -79,7 +81,8 @@ describe("useTableQueryTransition", () => {
     })
 
     await waitFor(() => {
-      expect(result.current.showSkeleton).toBe(true)
+      expect(result.current.showSkeleton).toBe(false)
+      expect(result.current.showLoadingHint).toBe(false)
       expect(result.current.visibleRows).toEqual([])
       expect(result.current.showNoData).toBe(false)
     })

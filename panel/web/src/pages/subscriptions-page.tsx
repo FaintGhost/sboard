@@ -35,15 +35,27 @@ import {
 } from "@/components/ui/tooltip"
 import { Badge } from "@/components/ui/badge"
 import { listUsers } from "@/lib/api/users"
+import { getSystemSettings } from "@/lib/api/system"
 import type { User, UserStatus } from "@/lib/api/types"
 import { tableColumnSpacing } from "@/lib/table-spacing"
 import { useTableQueryTransition } from "@/lib/table-query-transition"
 
 type StatusFilter = UserStatus | "all"
 
-function getSubscriptionUrl(userUuid: string, format?: string): string {
-  const base = `${window.location.origin}/api/sub/${userUuid}`
-  return format ? `${base}?format=${format}` : base
+function resolveSubscriptionBaseURL(configured?: string): string {
+  const value = configured?.trim() ?? ""
+  if (value) return value
+  return window.location.origin
+}
+
+function getSubscriptionUrl(userUuid: string, format?: string, configuredBaseURL?: string): string {
+  const baseURL = resolveSubscriptionBaseURL(configuredBaseURL)
+  const normalizedBase = baseURL.endsWith("/") ? baseURL : `${baseURL}/`
+  const url = new URL(`api/sub/${userUuid}`, normalizedBase)
+  if (format) {
+    url.searchParams.set("format", format)
+  }
+  return url.toString()
 }
 
 function CopyButton({ text, label }: { text: string; label?: string }) {
@@ -120,6 +132,12 @@ export function SubscriptionsPage() {
     queryKey: ["users", queryParams],
     queryFn: () => listUsers(queryParams),
   })
+
+  const systemSettingsQuery = useQuery({
+    queryKey: ["system-settings"],
+    queryFn: getSystemSettings,
+  })
+
 
   const usersTable = useTableQueryTransition({
     filterKey: statusFilter,
@@ -249,7 +267,7 @@ export function SubscriptionsPage() {
               </TableRow>
             ) : (
               filteredUsers.map((user) => (
-                <UserSubscriptionRow key={user.id} user={user} />
+                <UserSubscriptionRow key={user.id} user={user} subscriptionBaseURL={systemSettingsQuery.data?.subscription_base_url} />
               ))
             )}
           </TableBody>
@@ -259,11 +277,11 @@ export function SubscriptionsPage() {
   )
 }
 
-function UserSubscriptionRow({ user }: { user: User }) {
+function UserSubscriptionRow({ user, subscriptionBaseURL }: { user: User; subscriptionBaseURL?: string }) {
   const { t } = useTranslation()
   const spacing = tableColumnSpacing.four
-  const subUrl = getSubscriptionUrl(user.uuid)
-  const singboxUrl = getSubscriptionUrl(user.uuid, "singbox")
+  const subUrl = getSubscriptionUrl(user.uuid, undefined, subscriptionBaseURL)
+  const singboxUrl = getSubscriptionUrl(user.uuid, "singbox", subscriptionBaseURL)
 
   return (
     <TableRow>

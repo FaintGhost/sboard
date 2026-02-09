@@ -162,3 +162,41 @@
 - 验证结果：
   - Go：`panel/internal/node`、`panel/internal/api`、`panel/internal/singboxcli`、`node/internal/sync`、`node/internal/core` 全部通过。
   - Web：`src/lib/inbound-template.test.ts` 通过，`npm run build` 通过。
+
+## Session Findings (2026-02-09, Node UX)
+- 节点后端模型已包含 `last_seen_at`（`panel/internal/api/nodes.go` 与前端 `Node` 类型都已定义）。
+- 当前节点表仅展示 `name/group/api/public/status`，未单独展示 last seen。
+- 节点编辑里 `api_address` 与 `public_address` 是完全独立输入，缺少“同地址”快捷体验。
+- 流量相关文案当前使用 `nodes.lastSampleAt`，语义偏采样实现细节，不够用户导向。
+- 本轮优先只改前端交互与文案，不引入后端 schema 变更。
+
+## Session Findings (2026-02-09, Node UX 实施结果)
+- 已在 `nodes-page` 增加“公网地址与 API 地址一致”联动开关：
+  - 创建节点默认开启联动，`public_address` 初始跟随 `api_address`。
+  - 联动开启时，编辑 `api_address` 会自动同步更新 `public_address`。
+  - 可手动关闭联动后独立填写公网地址。
+- 节点列表新增 `Last Seen` 列，并扩展统一表格间距规则到 `seven` 列场景，避免局部样式漂移。
+- 流量展示文案已统一为“最近更新 / Last Updated”：
+  - 节点卡片统计
+  - 节点流量弹窗列头
+  - 中英文 i18n 节点文案
+- 测试阶段发现：`table-query-transition` 与 `sync-jobs-page` 的既有回归测试仍失败（与本轮节点页改动无直接耦合，属于当前基线问题）。
+
+
+## Session Findings (2026-02-09, 无骨架修复)
+- 用户明确要求筛选过渡不要骨架，统一调整 `useTableQueryTransition` 为无骨架策略。
+- 过渡策略更新后行为：
+  - 筛选切换期间不展示旧行、不展示骨架；
+  - 空 -> 空切换保持 `暂无数据` 稳定可见；
+  - 首次加载可保留顶部 loading 文案，不影响表格稳定性。
+- 该策略是通用 hook 级别修复，已覆盖 `sync-jobs/users/inbounds/subscriptions` 同类筛选表格。
+
+## Session Findings (2026-02-09, Subscription Base URL)
+- 根因确认：订阅页此前使用 `window.location.origin` 拼接订阅地址，导致“管理入口地址”和“用户实际订阅入口地址”不一致时（反向代理/公网域名）链接错误。
+- 设计决策：
+  - 采用后端持久化配置项 `subscription_base_url`（存 DB），而不是仅前端本地缓存。
+  - 输入值要求完整 URL（含协议），仅允许 `http/https`，避免歧义与非法拼接。
+  - 订阅页生成 URL 时使用 `new URL("api/sub/<uuid>", base)`，兼容带路径前缀的反向代理场景。
+- 覆盖范围：
+  - 后端：migration + DB + API + 路由 + API 测试。
+  - 前端：settings 保存链路 + subscriptions 链接生成 + 页面测试。
