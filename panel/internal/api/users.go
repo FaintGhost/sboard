@@ -115,13 +115,22 @@ func UsersList(store *db.Store) gin.HandlerFunc {
 			}
 			users = filtered
 		}
+
+		// Batch fetch group IDs to avoid N+1 queries
+		userIDs := make([]int64, len(users))
+		for i, u := range users {
+			userIDs[i] = u.ID
+		}
+		groupIDsMap, err := store.ListUserGroupIDsBatch(c.Request.Context(), userIDs)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "load user groups failed"})
+			return
+		}
+
 		out := make([]userDTO, 0, len(users))
 		for _, u := range users {
-			dto, err := buildUserDTO(c.Request.Context(), store, u)
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "load user groups failed"})
-				return
-			}
+			dto := toUserDTO(u)
+			dto.GroupIDs = groupIDsMap[u.ID]
 			out = append(out, dto)
 		}
 		c.JSON(http.StatusOK, gin.H{"data": out})

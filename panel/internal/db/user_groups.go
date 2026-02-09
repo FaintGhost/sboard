@@ -25,6 +25,49 @@ func (s *Store) ListUserGroupIDs(ctx context.Context, userID int64) ([]int64, er
   return out, rows.Err()
 }
 
+// ListUserGroupIDsBatch returns a map from user IDs to their group IDs.
+// This avoids N+1 queries when building DTOs for multiple users.
+func (s *Store) ListUserGroupIDsBatch(ctx context.Context, userIDs []int64) (map[int64][]int64, error) {
+  result := make(map[int64][]int64, len(userIDs))
+  if len(userIDs) == 0 {
+    return result, nil
+  }
+
+  // Initialize all user IDs with empty slices
+  for _, id := range userIDs {
+    result[id] = []int64{}
+  }
+
+  // Build query with IN clause
+  placeholders := make([]string, len(userIDs))
+  args := make([]any, len(userIDs))
+  for i, id := range userIDs {
+    placeholders[i] = "?"
+    args[i] = id
+  }
+
+  query := fmt.Sprintf(
+    "SELECT user_id, group_id FROM user_groups WHERE user_id IN (%s) ORDER BY user_id, group_id ASC",
+    stringsJoin(placeholders, ","),
+  )
+
+  rows, err := s.DB.QueryContext(ctx, query, args...)
+  if err != nil {
+    return nil, err
+  }
+  defer rows.Close()
+
+  for rows.Next() {
+    var userID, groupID int64
+    if err := rows.Scan(&userID, &groupID); err != nil {
+      return nil, err
+    }
+    result[userID] = append(result[userID], groupID)
+  }
+
+  return result, rows.Err()
+}
+
 // ReplaceUserGroups replaces the user's group memberships (set semantics).
 func (s *Store) ReplaceUserGroups(ctx context.Context, userID int64, groupIDs []int64) error {
   // Verify user exists early to give consistent errors.
