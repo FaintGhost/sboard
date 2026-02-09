@@ -1,4 +1,10 @@
 {
+  "error": {
+    "title": "Something went wrong",
+    "description": "Sorry, the page encountered an unexpected error.",
+    "retry": "Retry",
+    "reload": "Reload page"
+  },
   "common": {
     "loading": "Loading...",
     "loadFailed": "Load failed",

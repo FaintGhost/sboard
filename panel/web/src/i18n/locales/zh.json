@@ -1,4 +1,10 @@
 {
+  "error": {
+    "title": "页面出错了",
+    "description": "抱歉，页面遇到了一个意外错误。",
+    "retry": "重试",
+    "reload": "刷新页面"
+  },
   "common": {
     "loading": "加载中...",
     "loadFailed": "加载失败",
