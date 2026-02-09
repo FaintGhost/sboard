@@ -59,21 +59,40 @@ func New(ctx context.Context, logLevel string) (*Core, error) {
 
 	// Track inbound-level traffic via router tracker. This is independent from sync/persistence.
 	tracker := stats.NewInboundTrafficTracker()
-	b.Router().AppendTracker(tracker)
+	if router := b.Router(); router != nil {
+		router.AppendTracker(tracker)
+	}
 
 	return &Core{ctx: ctx, box: b, logFactory: lf, traffic: tracker}, nil
 }
 
 func (c *Core) Apply(inbounds []option.Inbound, raw []byte) error {
-	loggerFactory := func(typ, tag string) log.ContextLogger {
-		if c.logFactory == nil {
-			return nil
-		}
-		return c.logFactory.NewLogger("inbound/" + typ + "[" + tag + "]")
-	}
-	if err := ApplyInbounds(c.ctx, c.box.Router(), loggerFactory, c.box.Inbound(), inbounds); err != nil {
+	return c.ApplyOptions(option.Options{Inbounds: inbounds}, raw)
+}
+
+func (c *Core) ApplyOptions(options option.Options, raw []byte) error {
+	newBox, err := NewBox(sbbox.Options{Options: options, Context: c.ctx})
+	if err != nil {
 		return err
 	}
+	if err := newBox.Start(); err != nil {
+		_ = newBox.Close()
+		return err
+	}
+
+	if c.traffic == nil {
+		c.traffic = stats.NewInboundTrafficTracker()
+	}
+	if router := newBox.Router(); router != nil {
+		router.AppendTracker(c.traffic)
+	}
+
+	oldBox := c.box
+	c.box = newBox
+	if oldBox != nil {
+		_ = oldBox.Close()
+	}
+
 	sum := sha256.Sum256(raw)
 	c.hash = hex.EncodeToString(sum[:])
 	c.at = time.Now()

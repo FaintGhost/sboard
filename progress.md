@@ -193,3 +193,112 @@
 | 同步任务回归 | `npm test -- src/pages/sync-jobs-page.test.tsx` | 通过 | 通过 | ✓ |
 | 用户页回归 | `npm test -- src/pages/users-page.test.tsx` | 通过 | 通过 | ✓ |
 | 前端构建 | `npm run build` | 通过 | 通过（含 chunk size 提示） | ✓ |
+
+### Feature: 入站编辑改为 JSON 模板
+- **Status:** complete
+- Actions taken:
+  - 新增 `inbound-template` 解析/构建工具与测试（先红后绿）。
+  - `inbounds-page` 编辑弹窗改为“节点选择 + 模板 JSON”模式。
+  - 新增中英文文案：模板说明、users 自动注入提示、模板解析错误提示。
+  - 验证测试与构建通过。
+- Files created/modified:
+  - `panel/web/src/lib/inbound-template.ts` (created)
+  - `panel/web/src/lib/inbound-template.test.ts` (created)
+  - `panel/web/src/pages/inbounds-page.tsx` (modified)
+  - `panel/web/src/i18n/locales/zh.json` (modified)
+  - `panel/web/src/i18n/locales/en.json` (modified)
+
+### Phase 6: Inbounds Monaco + sing-box 工具化（2026-02-09）
+- **Status:** complete
+- Actions taken:
+  - 入站编辑器从 `Textarea` 切换为 `Monaco Editor`（JSON 高亮、自动布局、2 空格缩进配置）。
+  - 入站模板支持预置协议快速切换：`vless/vmess/trojan/shadowsocks` + `custom`。
+  - 新增后端 `sing-box` 工具 API：`/api/sing-box/format`、`/api/sing-box/check`、`/api/sing-box/generate`。
+  - 前端入站编辑弹窗接入工具按钮：格式化、检查、生成（UUID/各类 keypair）。
+  - 补充后端 API 测试与前端模板工具测试，完成构建验证。
+- Files created/modified:
+  - `panel/internal/singboxcli/service.go` (created)
+  - `panel/internal/api/singbox_tools.go` (created)
+  - `panel/internal/api/singbox_tools_test.go` (created)
+  - `panel/internal/api/router.go` (modified)
+  - `panel/internal/config/config.go` (modified)
+  - `panel/web/src/pages/inbounds-page.tsx` (modified)
+  - `panel/web/src/lib/api/singbox-tools.ts` (created)
+  - `panel/web/src/lib/api/types.ts` (modified)
+  - `panel/web/src/lib/inbound-template.test.ts` (modified)
+  - `panel/web/src/i18n/locales/zh.json` (modified)
+  - `panel/web/src/i18n/locales/en.json` (modified)
+
+### Phase 7: Inbounds 模板语义修正 + 内嵌 sing-box 工具化（2026-02-09）
+- **Status:** complete
+- Actions taken:
+  - 修正入站模板语义：模板不再展示/输出 `public_port`（避免与 sing-box 原生字段混淆）。
+  - `sing-box format/check/generate` 改为 Panel 内嵌实现，不依赖容器内外部 `sing-box` 二进制。
+  - 后端 wrapper 在 inbound 模式下会剔除 `public_port` 再进行格式化/校验。
+  - 生成命令收敛为无需额外参数的常用项：`uuid/reality-keypair/wg-keypair/vapid-keypair`。
+- Files created/modified:
+  - `panel/internal/singboxcli/service.go` (modified)
+  - `panel/internal/api/singbox_tools.go` (modified)
+  - `panel/internal/api/singbox_tools_test.go` (modified)
+  - `panel/internal/config/config.go` (modified)
+  - `panel/internal/api/router.go` (modified)
+  - `panel/web/src/lib/inbound-template.ts` (modified)
+  - `panel/web/src/lib/inbound-template.test.ts` (modified)
+  - `panel/web/src/lib/api/types.ts` (modified)
+  - `panel/web/src/pages/inbounds-page.tsx` (modified)
+  - `panel/go.mod` (modified)
+
+### Phase 8: 严格检查 + 检查按钮交互优化（2026-02-09）
+- **Status:** complete
+- Actions taken:
+  - `singboxcli.Check` 升级为严格运行态检查：反序列化后执行 `box.New(...)` 初始化并立即释放。
+  - 入站编辑“检查配置”按钮文案固定，不再在极短请求中闪烁切换为“加载中”。
+- Files created/modified:
+  - `panel/internal/singboxcli/service.go` (modified)
+  - `panel/web/src/pages/inbounds-page.tsx` (modified)
+
+### Phase 9: SS2022 Base64 密钥一键生成并回填（2026-02-09）
+- **Status:** complete
+- Actions taken:
+  - 新增生成命令：`rand-base64-16` 与 `rand-base64-32`（对应 SS2022 128/256 key length）。
+  - 前端生成后自动回填当前模板 `password` 字段，减少手工复制粘贴错误。
+  - 新增后端单测验证生成长度与非法参数。
+- Files created/modified:
+  - `panel/internal/singboxcli/service.go` (modified)
+  - `panel/internal/singboxcli/service_test.go` (created)
+  - `panel/web/src/lib/api/types.ts` (modified)
+  - `panel/web/src/pages/inbounds-page.tsx` (modified)
+  - `panel/web/src/i18n/locales/zh.json` (modified)
+  - `panel/web/src/i18n/locales/en.json` (modified)
+
+### Phase 10: 全配置模板链路打通（Panel + Node，2026-02-09）
+- **Status:** complete
+- Actions taken:
+  - 完成“完整 sing-box 配置模板”端到端改造：前端模板、Panel payload、Node 解析与应用链路统一。
+  - `node` 改为解析完整 `option.Options` 并通过 `ApplyOptions` 重建 box，确保 `route/outbounds/dns` 真正生效。
+  - 修复生成回填在完整配置下写入路径（优先 `inbounds[0].password`）。
+  - 工具链在完整配置模式也统一剔除 `public_port` 元字段，避免误检。
+  - 更新中英文入站模板提示文案为“完整配置”语义。
+- Files created/modified:
+  - `panel/web/src/lib/inbound-template.ts` (modified)
+  - `panel/web/src/lib/inbound-template.test.ts` (modified)
+  - `panel/web/src/pages/inbounds-page.tsx` (modified)
+  - `panel/web/src/i18n/locales/zh.json` (modified)
+  - `panel/web/src/i18n/locales/en.json` (modified)
+  - `panel/internal/node/build_config.go` (modified)
+  - `panel/internal/node/build_config_test.go` (modified)
+  - `panel/internal/api/singbox_tools.go` (modified)
+  - `panel/internal/api/singbox_tools_test.go` (modified)
+  - `node/internal/sync/parse.go` (modified)
+  - `node/internal/sync/parse_test.go` (modified)
+  - `node/internal/core/core.go` (modified)
+  - `node/cmd/node/main.go` (modified)
+  - `task_plan.md` / `findings.md` / `progress.md` (updated)
+
+## Test Results (Phase 10)
+| Test | Input | Expected | Actual | Status |
+|------|-------|----------|--------|--------|
+| Panel + Node 定向 Go 测试 | `go test ./panel/internal/node ./panel/internal/api ./panel/internal/singboxcli ./node/internal/sync ./node/internal/core -count=1` | 全部通过 | 通过 | ✓ |
+| Node 启动包编译检查 | `go test ./node/cmd/node -count=1` | 通过 | 通过（无测试文件） | ✓ |
+| 前端模板单测 | `npm test -- src/lib/inbound-template.test.ts` | 通过 | 通过 | ✓ |
+| 前端构建 | `npm run build` | 通过 | 通过（含 chunk size 提示） | ✓ |

@@ -155,3 +155,26 @@ export type ListSyncJobsParams = {
   from?: string
   to?: string
 }
+
+export type SingBoxToolMode = "auto" | "inbound" | "config"
+
+export type SingBoxFormatResponse = {
+  formatted: string
+}
+
+export type SingBoxCheckResponse = {
+  ok: boolean
+  output: string
+}
+
+export type SingBoxGenerateCommand =
+  | "uuid"
+  | "reality-keypair"
+  | "wg-keypair"
+  | "vapid-keypair"
+  | "rand-base64-16"
+  | "rand-base64-32"
+
+export type SingBoxGenerateResponse = {
+  output: string
+}

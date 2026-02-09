@@ -19,11 +19,11 @@ type coreAdapter struct {
 }
 
 func (a *coreAdapter) ApplyConfig(ctx *gin.Context, body []byte) error {
-	inbounds, err := sync.ParseAndValidateInbounds(a.sbctx, body)
+	options, err := sync.ParseAndValidateConfig(a.sbctx, body)
 	if err != nil {
 		return err
 	}
-	if err := a.c.Apply(inbounds, body); err != nil {
+	if err := a.c.ApplyOptions(options, body); err != nil {
 		return err
 	}
 	if err := state.Persist(a.statePath, body); err != nil {
@@ -44,12 +44,12 @@ func main() {
 
 	if applied, err := state.Restore(cfg.StatePath, func(raw []byte) error {
 		// ApplyConfig expects a gin.Context for logging hooks; startup restore has no HTTP context.
-		// We still validate and apply the same payload to restore inbounds after restart.
-		inbounds, err := sync.ParseAndValidateInbounds(sbctx, raw)
+		// We still validate and apply the same payload to restore config after restart.
+		options, err := sync.ParseAndValidateConfig(sbctx, raw)
 		if err != nil {
 			return err
 		}
-		return c.Apply(inbounds, raw)
+		return c.ApplyOptions(options, raw)
 	}); err != nil {
 		log.Printf("[state] restore failed path=%s err=%v", cfg.StatePath, err)
 	} else if applied {

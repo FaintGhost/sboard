@@ -1,7 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import Editor from "@monaco-editor/react"
+import { MoreHorizontal, Pencil, Trash2 } from "lucide-react"
 import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { MoreHorizontal, Pencil, Trash2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -20,7 +21,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
   Select,
@@ -29,6 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   Table,
   TableBody,
@@ -37,26 +38,30 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Textarea } from "@/components/ui/textarea"
-import { Skeleton } from "@/components/ui/skeleton"
 import { ApiError } from "@/lib/api/client"
 import { createInbound, deleteInbound, listInbounds, updateInbound } from "@/lib/api/inbounds"
 import { listNodes } from "@/lib/api/nodes"
-import type { Inbound, Node } from "@/lib/api/types"
+import { checkSingBoxConfig, formatSingBoxConfig, generateSingBoxValue } from "@/lib/api/singbox-tools"
+import type { Inbound, Node, SingBoxGenerateCommand } from "@/lib/api/types"
+import {
+  buildInboundTemplateText,
+  buildPresetInboundTemplateText,
+  inboundTemplatePresetProtocols,
+  parseInboundTemplateToPayload,
+  readTemplateProtocol,
+  type InboundTemplatePresetProtocol,
+} from "@/lib/inbound-template"
 import { tableColumnSpacing } from "@/lib/table-spacing"
 import { useTableQueryTransition } from "@/lib/table-query-transition"
+
+type TemplatePreset = InboundTemplatePresetProtocol | "custom"
 
 type EditState = {
   mode: "create" | "edit"
   inbound: Inbound
   nodeID: number
-  tag: string
-  protocol: string
-  listenPort: number
-  publicPort: number
-  settingsText: string
-  tlsText: string
-  transportText: string
+  templateText: string
+  preset: TemplatePreset
 }
 
 const defaultNewInbound: Inbound = {
@@ -72,59 +77,78 @@ const defaultNewInbound: Inbound = {
   transport_settings: null,
 }
 
-const protocolOptions = ["vless", "vmess", "trojan", "shadowsocks"] as const
+const defaultPreset: InboundTemplatePresetProtocol = "vless"
 
-const shadowsocksMethods = [
-  { value: "2022-blake3-aes-128-gcm", keyLength: 16 },
-  { value: "2022-blake3-aes-256-gcm", keyLength: 32 },
-  // 2022-blake3-chacha20-poly1305 is excluded: sing-box does not support it in multi-user mode.
-  { value: "none", keyLength: null },
-  { value: "aes-128-gcm", keyLength: null },
-  { value: "aes-192-gcm", keyLength: null },
-  { value: "aes-256-gcm", keyLength: null },
-  { value: "chacha20-ietf-poly1305", keyLength: null },
-  { value: "xchacha20-ietf-poly1305", keyLength: null },
-] as const
+const generateCommandOptions: Array<{ value: SingBoxGenerateCommand; labelKey: string }> = [
+  { value: "uuid", labelKey: "inbounds.generateUuid" },
+  { value: "reality-keypair", labelKey: "inbounds.generateReality" },
+  { value: "wg-keypair", labelKey: "inbounds.generateWg" },
+  { value: "vapid-keypair", labelKey: "inbounds.generateVapid" },
+  { value: "rand-base64-16", labelKey: "inbounds.generateRand16" },
+  { value: "rand-base64-32", labelKey: "inbounds.generateRand32" },
+]
 
 function nodeName(nodes: Node[] | undefined, id: number): string {
   if (!nodes) return String(id)
-  const n = nodes.find((x) => x.id === id)
-  return n ? n.name : String(id)
+  const node = nodes.find((item) => item.id === id)
+  return node ? node.name : String(id)
 }
 
-function normalizeJSON(input: string): { ok: true; value: unknown } | { ok: false } {
-  const raw = input.trim()
-  if (!raw) return { ok: true, value: {} }
-  try {
-    return { ok: true, value: JSON.parse(raw) }
-  } catch {
-    return { ok: false }
+function templateHint(t: (key: string) => string, input: string): string | null {
+  const parsed = parseInboundTemplateToPayload(input)
+  return parsed.ok ? null : `${t("inbounds.templateParseFailed")}: ${parsed.error}`
+}
+
+function presetTextKey(preset: TemplatePreset): string {
+  switch (preset) {
+    case "vless":
+      return "inbounds.presetVless"
+    case "vmess":
+      return "inbounds.presetVmess"
+    case "trojan":
+      return "inbounds.presetTrojan"
+    case "shadowsocks":
+      return "inbounds.presetShadowsocks"
+    default:
+      return "inbounds.presetCustom"
   }
 }
 
-function jsonHint(t: (key: string) => string, input: string): string | null {
-  const out = normalizeJSON(input)
-  return out.ok ? null : t("inbounds.jsonParseFailed")
+function toApiErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof ApiError) return error.message
+  if (error instanceof Error) return error.message
+  return fallback
 }
 
-function getObjectFromJSONText(input: string): { ok: true; value: Record<string, unknown> } | { ok: false } {
-  const out = normalizeJSON(input)
-  if (!out.ok) return { ok: false }
-  if (!out.value || typeof out.value !== "object" || Array.isArray(out.value)) return { ok: true, value: {} }
-  return { ok: true, value: out.value as Record<string, unknown> }
-}
+function applyGeneratedValueToTemplate(
+  templateText: string,
+  command: SingBoxGenerateCommand,
+  output: string,
+): string {
+  if (command !== "rand-base64-16" && command !== "rand-base64-32") {
+    return templateText
+  }
 
-function getShadowsocksMethod(settingsText: string): string | null {
-  const obj = getObjectFromJSONText(settingsText)
-  if (!obj.ok) return null
-  const method = obj.value.method
-  return typeof method === "string" ? method : null
-}
+  try {
+    const parsed = JSON.parse(templateText) as Record<string, unknown>
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return templateText
+    }
 
-function setShadowsocksMethod(settingsText: string, method: string): string {
-  const obj = getObjectFromJSONText(settingsText)
-  const next = obj.ok ? { ...obj.value, method } : { method }
-  return JSON.stringify(next, null, 2)
+    const inbounds = parsed.inbounds
+    if (Array.isArray(inbounds) && inbounds.length > 0) {
+      const first = inbounds[0]
+      if (first && typeof first === "object" && !Array.isArray(first)) {
+        ;(first as Record<string, unknown>).password = output.trim()
+        return JSON.stringify(parsed, null, 2)
+      }
+    }
+
+    parsed.password = output.trim()
+    return JSON.stringify(parsed, null, 2)
+  } catch {
+    return templateText
+  }
 }
 
 export function InboundsPage() {
@@ -133,6 +157,9 @@ export function InboundsPage() {
   const spacing = tableColumnSpacing.five
   const [nodeFilter, setNodeFilter] = useState<number | "all">("all")
   const [upserting, setUpserting] = useState<EditState | null>(null)
+  const [toolMessage, setToolMessage] = useState<{ tone: "ok" | "error"; text: string } | null>(null)
+  const [generateCommand, setGenerateCommand] = useState<SingBoxGenerateCommand>("uuid")
+  const [generateOutput, setGenerateOutput] = useState<string>("")
 
   const queryParams = useMemo(() => ({ limit: 50, offset: 0 }), [])
 
@@ -183,6 +210,70 @@ export function InboundsPage() {
     },
   })
 
+  const formatMutation = useMutation({
+    mutationFn: (config: string) => formatSingBoxConfig({ config, mode: "inbound" }),
+  })
+
+  const checkMutation = useMutation({
+    mutationFn: (config: string) => checkSingBoxConfig({ config, mode: "inbound" }),
+  })
+
+  const generateMutation = useMutation({
+    mutationFn: (command: SingBoxGenerateCommand) => generateSingBoxValue(command),
+  })
+
+  const openCreateDialog = () => {
+    const firstNode = nodesQuery.data?.[0]
+    if (!firstNode) return
+
+    createMutation.reset()
+    updateMutation.reset()
+    formatMutation.reset()
+    checkMutation.reset()
+    generateMutation.reset()
+    setToolMessage(null)
+    setGenerateOutput("")
+    setGenerateCommand("uuid")
+
+    setUpserting({
+      mode: "create",
+      inbound: defaultNewInbound,
+      nodeID: firstNode.id,
+      templateText: buildPresetInboundTemplateText(defaultPreset),
+      preset: defaultPreset,
+    })
+  }
+
+  const openEditDialog = (inbound: Inbound) => {
+    createMutation.reset()
+    updateMutation.reset()
+    formatMutation.reset()
+    checkMutation.reset()
+    generateMutation.reset()
+    setToolMessage(null)
+    setGenerateOutput("")
+    setGenerateCommand("uuid")
+
+    const templateText = buildInboundTemplateText(inbound)
+    setUpserting({
+      mode: "edit",
+      inbound,
+      nodeID: inbound.node_id,
+      templateText,
+      preset: readTemplateProtocol(templateText) ?? "custom",
+    })
+  }
+
+  const currentTemplateHint = upserting ? templateHint(t, upserting.templateText) : null
+
+  const mutationErrorText =
+    createMutation.isError || updateMutation.isError
+      ? toApiErrorMessage(
+          createMutation.error ?? updateMutation.error,
+          t("inbounds.saveFailed"),
+        )
+      : null
+
   return (
     <div className="px-4 lg:px-6">
       <section className="space-y-6">
@@ -192,24 +283,7 @@ export function InboundsPage() {
             <p className="text-sm text-muted-foreground">{t("inbounds.subtitle")}</p>
           </div>
           <Button
-            onClick={() => {
-              const firstNode = nodesQuery.data?.[0]
-              if (!firstNode) return
-              createMutation.reset()
-              updateMutation.reset()
-              setUpserting({
-                mode: "create",
-                inbound: defaultNewInbound,
-                nodeID: firstNode.id,
-                tag: "",
-                protocol: "vless",
-                listenPort: 443,
-                publicPort: 0,
-                settingsText: "{}",
-                tlsText: "",
-                transportText: "",
-              })
-            }}
+            onClick={openCreateDialog}
             disabled={!nodesQuery.data || nodesQuery.data.length === 0}
           >
             {t("inbounds.createInbound")}
@@ -224,22 +298,24 @@ export function InboundsPage() {
                 <CardDescription>
                   {inboundsTable.showLoadingHint ? t("common.loading") : null}
                   {inboundsQuery.isError ? t("common.loadFailed") : null}
-                  {!inboundsTable.showLoadingHint && inboundsQuery.data ? t("inbounds.count", { count: inboundsTable.visibleRows.length }) : null}
+                  {!inboundsTable.showLoadingHint && inboundsQuery.data
+                    ? t("inbounds.count", { count: inboundsTable.visibleRows.length })
+                    : null}
                 </CardDescription>
               </div>
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                 <Select
                   value={nodeFilter === "all" ? "all" : String(nodeFilter)}
-                  onValueChange={(v) => setNodeFilter(v === "all" ? "all" : Number(v))}
+                  onValueChange={(value) => setNodeFilter(value === "all" ? "all" : Number(value))}
                 >
                   <SelectTrigger className="w-full sm:w-56" aria-label={t("inbounds.nodeFilter")}>
                     <SelectValue placeholder={t("inbounds.selectNode")} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">{t("inbounds.allNodes")}</SelectItem>
-                    {nodesQuery.data?.map((n) => (
-                      <SelectItem key={n.id} value={String(n.id)}>
-                        {n.name}
+                    {nodesQuery.data?.map((node) => (
+                      <SelectItem key={node.id} value={String(node.id)}>
+                        {node.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -261,10 +337,9 @@ export function InboundsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {inboundsTable.showSkeleton ? (
-                  <>
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <TableRow key={i}>
+                {inboundsTable.showSkeleton
+                  ? Array.from({ length: 5 }).map((_, index) => (
+                      <TableRow key={index}>
                         <TableCell className={spacing.cellFirst}>
                           <Skeleton className="h-4 w-28" />
                         </TableCell>
@@ -281,20 +356,22 @@ export function InboundsPage() {
                           <Skeleton className="h-8 w-8" />
                         </TableCell>
                       </TableRow>
-                    ))}
-                  </>
-                ) : null}
-                {inboundsTable.visibleRows.map((i) => (
-                  <TableRow key={i.id}>
+                    ))
+                  : null}
+
+                {inboundsTable.visibleRows.map((inbound) => (
+                  <TableRow key={inbound.id}>
                     <TableCell className={`${spacing.cellFirst} font-medium`}>
-                      {nodeName(nodesQuery.data, i.node_id)}
+                      {nodeName(nodesQuery.data, inbound.node_id)}
                     </TableCell>
-                    <TableCell className={`${spacing.cellMiddle} font-medium`}>{i.tag}</TableCell>
-                    <TableCell className={`${spacing.cellMiddle} text-muted-foreground`}>{i.protocol}</TableCell>
+                    <TableCell className={`${spacing.cellMiddle} font-medium`}>{inbound.tag}</TableCell>
                     <TableCell className={`${spacing.cellMiddle} text-muted-foreground`}>
-                      {i.public_port > 0
-                        ? `${i.public_port} (${t("inbounds.publicPortShort")})`
-                        : i.listen_port}
+                      {inbound.protocol}
+                    </TableCell>
+                    <TableCell className={`${spacing.cellMiddle} text-muted-foreground`}>
+                      {inbound.public_port > 0
+                        ? `${inbound.public_port} (${t("inbounds.publicPortShort")})`
+                        : inbound.listen_port}
                     </TableCell>
                     <TableCell className={spacing.cellLast}>
                       <DropdownMenu>
@@ -305,26 +382,7 @@ export function InboundsPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onClick={() => {
-                              createMutation.reset()
-                              updateMutation.reset()
-                              setUpserting({
-                                mode: "edit",
-                                inbound: i,
-                                nodeID: i.node_id,
-                                tag: i.tag,
-                                protocol: i.protocol,
-                                listenPort: i.listen_port,
-                                publicPort: i.public_port ?? 0,
-                                settingsText: JSON.stringify(i.settings ?? {}, null, 2),
-                                tlsText: i.tls_settings ? JSON.stringify(i.tls_settings, null, 2) : "",
-                                transportText: i.transport_settings
-                                  ? JSON.stringify(i.transport_settings, null, 2)
-                                  : "",
-                              })
-                            }}
-                          >
+                          <DropdownMenuItem onClick={() => openEditDialog(inbound)}>
                             <Pencil className="mr-2 size-4" />
                             {t("common.edit")}
                           </DropdownMenuItem>
@@ -332,7 +390,7 @@ export function InboundsPage() {
                           <DropdownMenuItem
                             variant="destructive"
                             disabled={deleteMutation.isPending}
-                            onClick={() => deleteMutation.mutate(i.id)}
+                            onClick={() => deleteMutation.mutate(inbound.id)}
                           >
                             <Trash2 className="mr-2 size-4" />
                             {t("common.delete")}
@@ -342,6 +400,7 @@ export function InboundsPage() {
                     </TableCell>
                   </TableRow>
                 ))}
+
                 {inboundsTable.showNoData ? (
                   <TableRow>
                     <TableCell className={`${spacing.cellFirst} py-8 text-center text-muted-foreground`} colSpan={5}>
@@ -356,21 +415,14 @@ export function InboundsPage() {
 
         <Dialog open={!!upserting} onOpenChange={(open) => (!open ? setUpserting(null) : null)}>
           <DialogContent
-            aria-label={
-              upserting?.mode === "create"
-                ? t("inbounds.createInbound")
-                : t("inbounds.editInbound")
-            }
+            className="sm:max-w-4xl"
+            aria-label={upserting?.mode === "create" ? t("inbounds.createInbound") : t("inbounds.editInbound")}
           >
             <DialogHeader>
               <DialogTitle>
-                {upserting?.mode === "create"
-                  ? t("inbounds.createInbound")
-                  : t("inbounds.editInbound")}
+                {upserting?.mode === "create" ? t("inbounds.createInbound") : t("inbounds.editInbound")}
               </DialogTitle>
-              {upserting?.mode === "edit" ? (
-                <DialogDescription>{upserting.inbound.tag}</DialogDescription>
-              ) : null}
+              {upserting?.mode === "edit" ? <DialogDescription>{upserting.inbound.tag}</DialogDescription> : null}
             </DialogHeader>
 
             {upserting ? (
@@ -379,190 +431,236 @@ export function InboundsPage() {
                   <Label className="text-sm text-slate-700">{t("inbounds.node")}</Label>
                   <Select
                     value={String(upserting.nodeID)}
-                    onValueChange={(v) =>
-                      setUpserting((p) => (p ? { ...p, nodeID: Number(v) } : p))
+                    onValueChange={(value) =>
+                      setUpserting((prev) => (prev ? { ...prev, nodeID: Number(value) } : prev))
                     }
                   >
                     <SelectTrigger aria-label={t("inbounds.selectNode")}>
                       <SelectValue placeholder={t("inbounds.selectNode")} />
                     </SelectTrigger>
                     <SelectContent>
-                      {nodesQuery.data?.map((n) => (
-                        <SelectItem key={n.id} value={String(n.id)}>
-                          {n.name}
+                      {nodesQuery.data?.map((node) => (
+                        <SelectItem key={node.id} value={String(node.id)}>
+                          {node.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
 
-                <div className="space-y-1">
-                  <Label className="text-sm text-slate-700" htmlFor="inb-tag">
-                    {t("inbounds.tag")}
-                  </Label>
-                  <Input
-                    id="inb-tag"
-                    value={upserting.tag}
-                    onChange={(e) => setUpserting((p) => (p ? { ...p, tag: e.target.value } : p))}
-                    placeholder={t("inbounds.tagPlaceholder")}
-                    autoFocus={upserting.mode === "create"}
-                  />
-                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <Label className="text-sm text-slate-700">{t("inbounds.template")}</Label>
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                      <Label className="text-xs text-slate-500">{t("inbounds.templatePreset")}</Label>
+                      <Select
+                        value={upserting.preset}
+                        onValueChange={(value) => {
+                          const preset = value as TemplatePreset
+                          if (preset === "custom") {
+                            setUpserting((prev) => (prev ? { ...prev, preset } : prev))
+                            return
+                          }
+                          setUpserting((prev) =>
+                            prev
+                              ? {
+                                  ...prev,
+                                  preset,
+                                  templateText: buildPresetInboundTemplateText(preset),
+                                }
+                              : prev,
+                          )
+                          setToolMessage(null)
+                        }}
+                      >
+                        <SelectTrigger className="w-full sm:w-56" aria-label={t("inbounds.templatePreset")}>
+                          <SelectValue placeholder={t("inbounds.templatePreset")} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {inboundTemplatePresetProtocols.map((protocol) => (
+                            <SelectItem key={protocol} value={protocol}>
+                              {t(presetTextKey(protocol))}
+                            </SelectItem>
+                          ))}
+                          <SelectItem value="custom">{t("inbounds.presetCustom")}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
 
-                <div className="space-y-1">
-                  <Label className="text-sm text-slate-700">{t("inbounds.protocol")}</Label>
-                  <Select
-                    value={upserting.protocol}
-                    onValueChange={(v) =>
-                      setUpserting((p) => (p ? { ...p, protocol: v } : p))
-                    }
-                  >
-                    <SelectTrigger aria-label={t("inbounds.selectProtocol")}>
-                      <SelectValue placeholder={t("inbounds.selectProtocol")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {protocolOptions.map((p) => (
-                        <SelectItem key={p} value={p}>
-                          {p}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {upserting.protocol === "shadowsocks" ? (
-                  <div className="space-y-1 md:col-span-2">
-                    <Label className="text-sm text-slate-700">{t("inbounds.ssMethod")}</Label>
-                    <Select
-                      value={getShadowsocksMethod(upserting.settingsText) ?? ""}
-                      onValueChange={(v) =>
-                        setUpserting((p) =>
-                          p ? { ...p, settingsText: setShadowsocksMethod(p.settingsText, v) } : p,
+                  <div className="overflow-hidden rounded-md border">
+                    <Editor
+                      height="360px"
+                      defaultLanguage="json"
+                      language="json"
+                      theme="vs-dark"
+                      value={upserting.templateText}
+                      onChange={(value) => {
+                        setUpserting((prev) =>
+                          prev
+                            ? {
+                                ...prev,
+                                templateText: value ?? "",
+                                preset: readTemplateProtocol(value ?? "") ?? "custom",
+                              }
+                            : prev,
                         )
-                      }
+                        setToolMessage(null)
+                      }}
+                      options={{
+                        minimap: { enabled: false },
+                        fontSize: 13,
+                        lineNumbersMinChars: 3,
+                        scrollBeyondLastLine: false,
+                        wordWrap: "on",
+                        tabSize: 2,
+                        automaticLayout: true,
+                      }}
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={formatMutation.isPending || !upserting.templateText.trim()}
+                      onClick={() => {
+                        formatMutation.mutate(upserting.templateText, {
+                          onSuccess: (result) => {
+                            setUpserting((prev) =>
+                              prev
+                                ? {
+                                    ...prev,
+                                    templateText: result.formatted,
+                                    preset: readTemplateProtocol(result.formatted) ?? "custom",
+                                  }
+                                : prev,
+                            )
+                            setToolMessage({ tone: "ok", text: t("inbounds.formatSuccess") })
+                          },
+                          onError: (error) => {
+                            setToolMessage({
+                              tone: "error",
+                              text: toApiErrorMessage(error, t("inbounds.formatFailed")),
+                            })
+                          },
+                        })
+                      }}
                     >
-                      <SelectTrigger aria-label={t("inbounds.ssMethod")}>
-                        <SelectValue placeholder={t("inbounds.ssMethodPlaceholder")} />
+                      {t("inbounds.formatTemplate")}
+                    </Button>
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={checkMutation.isPending || !upserting.templateText.trim()}
+                      onClick={() => {
+                        checkMutation.mutate(upserting.templateText, {
+                          onSuccess: (result) => {
+                            if (result.ok) {
+                              setToolMessage({ tone: "ok", text: t("inbounds.checkSuccess") })
+                            } else {
+                              setToolMessage({
+                                tone: "error",
+                                text: `${t("inbounds.checkFailed")}: ${result.output}`,
+                              })
+                            }
+                          },
+                          onError: (error) => {
+                            setToolMessage({
+                              tone: "error",
+                              text: toApiErrorMessage(error, t("inbounds.checkFailed")),
+                            })
+                          },
+                        })
+                      }}
+                    >
+                      {t("inbounds.checkTemplate")}
+                    </Button>
+
+                    <Select
+                      value={generateCommand}
+                      onValueChange={(value) => setGenerateCommand(value as SingBoxGenerateCommand)}
+                    >
+                      <SelectTrigger className="w-full sm:w-56" aria-label={t("inbounds.generateCommand")}>
+                        <SelectValue placeholder={t("inbounds.generateCommand")} />
                       </SelectTrigger>
                       <SelectContent>
-                        {shadowsocksMethods.map((m) => (
-                          <SelectItem key={m.value} value={m.value}>
-                            {m.keyLength ? `${m.value} (${m.keyLength})` : m.value}
+                        {generateCommandOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {t(option.labelKey)}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
-                    <p className="text-xs text-slate-500">
-                      {t("inbounds.ssMethodHelp")}
-                    </p>
-                    {!getShadowsocksMethod(upserting.settingsText)?.trim() ? (
-                      <p className="text-xs text-amber-700">{t("inbounds.ssMethodRequiredHint")}</p>
-                    ) : null}
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={generateMutation.isPending}
+                      onClick={() => {
+                        generateMutation.mutate(generateCommand, {
+                          onSuccess: (result) => {
+                            setGenerateOutput(result.output)
+                            setUpserting((prev) =>
+                              prev
+                                ? {
+                                    ...prev,
+                                    templateText: applyGeneratedValueToTemplate(
+                                      prev.templateText,
+                                      generateCommand,
+                                      result.output,
+                                    ),
+                                  }
+                                : prev,
+                            )
+                            setToolMessage({
+                              tone: "ok",
+                              text:
+                                generateCommand === "rand-base64-16" || generateCommand === "rand-base64-32"
+                                  ? t("inbounds.generateAndFillPassword")
+                                  : t("inbounds.generateSuccess"),
+                            })
+                          },
+                          onError: (error) => {
+                            setToolMessage({
+                              tone: "error",
+                              text: toApiErrorMessage(error, t("inbounds.generateFailed")),
+                            })
+                          },
+                        })
+                      }}
+                    >
+                      {t("inbounds.generateRun")}
+                    </Button>
                   </div>
-                ) : null}
 
-                <div className="space-y-1">
-                  <Label className="text-sm text-slate-700" htmlFor="inb-listen">
-                    {t("inbounds.listenPort")}
-                  </Label>
-                  <Input
-                    id="inb-listen"
-                    type="number"
-                    min={1}
-                    value={upserting.listenPort}
-                    onChange={(e) =>
-                      setUpserting((p) =>
-                        p ? { ...p, listenPort: Number(e.target.value || 0) } : p,
-                      )
-                    }
-                  />
-                </div>
+                  <p className="text-xs text-slate-500">{t("inbounds.templateHelp")}</p>
+                  <p className="text-xs text-slate-500">{t("inbounds.usersManagedHint")}</p>
 
-                <div className="space-y-1">
-                  <Label className="text-sm text-slate-700" htmlFor="inb-public">
-                    {t("inbounds.publicPort")}
-                  </Label>
-                  <Input
-                    id="inb-public"
-                    type="number"
-                    min={0}
-                    value={upserting.publicPort}
-                    onChange={(e) =>
-                      setUpserting((p) =>
-                        p ? { ...p, publicPort: Number(e.target.value || 0) } : p,
-                      )
-                    }
-                  />
-                  <p className="text-xs text-slate-500">
-                    {t("inbounds.publicPortHelp")}
-                  </p>
-                </div>
-
-                <div className="space-y-1 md:col-span-2">
-                  <Label className="text-sm text-slate-700" htmlFor="inb-settings">
-                    {t("inbounds.settings")}
-                  </Label>
-                  <Textarea
-                    id="inb-settings"
-                    value={upserting.settingsText}
-                    onChange={(e) =>
-                      setUpserting((p) => (p ? { ...p, settingsText: e.target.value } : p))
-                    }
-                    rows={8}
-                    className="font-mono text-xs"
-                    placeholder={t("inbounds.settingsPlaceholder")}
-                  />
-                  {jsonHint(t, upserting.settingsText) ? (
-                    <p className="text-xs text-amber-700">{jsonHint(t, upserting.settingsText)}</p>
+                  {currentTemplateHint ? (
+                    <p className="text-xs text-amber-700">{currentTemplateHint}</p>
                   ) : null}
-                </div>
 
-                <div className="space-y-1 md:col-span-2">
-                  <Label className="text-sm text-slate-700" htmlFor="inb-tls">
-                    {t("inbounds.tlsSettings")}
-                  </Label>
-                  <Textarea
-                    id="inb-tls"
-                    value={upserting.tlsText}
-                    onChange={(e) =>
-                      setUpserting((p) => (p ? { ...p, tlsText: e.target.value } : p))
-                    }
-                    rows={5}
-                    className="font-mono text-xs"
-                    placeholder={t("inbounds.tlsSettingsPlaceholder")}
-                  />
-                  {upserting.tlsText.trim() && jsonHint(t, upserting.tlsText) ? (
-                    <p className="text-xs text-amber-700">{jsonHint(t, upserting.tlsText)}</p>
+                  {toolMessage ? (
+                    <p className={toolMessage.tone === "ok" ? "text-xs text-emerald-700" : "text-xs text-amber-700"}>
+                      {toolMessage.text}
+                    </p>
                   ) : null}
-                </div>
 
-                <div className="space-y-1 md:col-span-2">
-                  <Label className="text-sm text-slate-700" htmlFor="inb-transport">
-                    {t("inbounds.transportSettings")}
-                  </Label>
-                  <Textarea
-                    id="inb-transport"
-                    value={upserting.transportText}
-                    onChange={(e) =>
-                      setUpserting((p) => (p ? { ...p, transportText: e.target.value } : p))
-                    }
-                    rows={5}
-                    className="font-mono text-xs"
-                    placeholder={t("inbounds.transportSettingsPlaceholder")}
-                  />
-                  {upserting.transportText.trim() && jsonHint(t, upserting.transportText) ? (
-                    <p className="text-xs text-amber-700">{jsonHint(t, upserting.transportText)}</p>
+                  {generateOutput ? (
+                    <div className="rounded-md border bg-muted/30 p-2">
+                      <p className="mb-1 text-xs text-slate-500">{t("inbounds.generateOutput")}</p>
+                      <pre className="whitespace-pre-wrap break-all text-xs text-slate-700">{generateOutput}</pre>
+                    </div>
                   ) : null}
                 </div>
 
                 <div className="text-sm text-amber-700 md:col-span-2">
-                  {createMutation.isError || updateMutation.isError ? (
-                    (createMutation.error instanceof ApiError
-                      ? createMutation.error.message
-                      : updateMutation.error instanceof ApiError
-                        ? updateMutation.error.message
-                        : t("inbounds.saveFailed"))
-                  ) : null}
+                  {mutationErrorText}
                 </div>
               </div>
             ) : null}
@@ -578,30 +676,14 @@ export function InboundsPage() {
               <Button
                 onClick={() => {
                   if (!upserting) return
-                  const tag = upserting.tag.trim()
-                  const protocol = upserting.protocol.trim()
-                  if (!tag || !protocol || upserting.nodeID <= 0 || upserting.listenPort <= 0) return
+                  if (upserting.nodeID <= 0) return
 
-                  const settings = normalizeJSON(upserting.settingsText)
-                  if (!settings.ok) return
-                  if (protocol === "shadowsocks") {
-                    const method = getShadowsocksMethod(upserting.settingsText)
-                    if (!method || !method.trim()) return
-                  }
-                  const tls = normalizeJSON(upserting.tlsText)
-                  if (!tls.ok) return
-                  const transport = normalizeJSON(upserting.transportText)
-                  if (!transport.ok) return
+                  const parsedTemplate = parseInboundTemplateToPayload(upserting.templateText)
+                  if (!parsedTemplate.ok) return
 
                   const payload = {
                     node_id: upserting.nodeID,
-                    tag,
-                    protocol,
-                    listen_port: upserting.listenPort,
-                    public_port: upserting.publicPort,
-                    settings: settings.value,
-                    tls_settings: upserting.tlsText.trim() ? tls.value : undefined,
-                    transport_settings: upserting.transportText.trim() ? transport.value : undefined,
+                    ...parsedTemplate.payload,
                   }
 
                   if (upserting.mode === "create") {

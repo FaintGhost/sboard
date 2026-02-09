@@ -16,6 +16,9 @@ func NewRouter(cfg config.Config, store *db.Store) *gin.Engine {
 	r.POST("/api/admin/bootstrap", AdminBootstrapPost(cfg, store))
 	r.POST("/api/admin/login", AdminLogin(cfg, store))
 	r.GET("/api/sub/:user_uuid", SubscriptionGet(store))
+
+	singBoxTools := singBoxToolsFactory()
+
 	auth := r.Group("/api")
 	auth.Use(AuthMiddleware(cfg.JWTSecret))
 	auth.GET("/users", UsersList(store))
@@ -52,6 +55,9 @@ func NewRouter(cfg config.Config, store *db.Store) *gin.Engine {
 	auth.GET("/inbounds/:id", InboundsGet(store))
 	auth.PUT("/inbounds/:id", InboundsUpdate(store))
 	auth.DELETE("/inbounds/:id", InboundsDelete(store))
+	auth.POST("/sing-box/format", SingBoxFormat(singBoxTools))
+	auth.POST("/sing-box/check", SingBoxCheck(singBoxTools))
+	auth.POST("/sing-box/generate", SingBoxGenerate(singBoxTools))
 
 	if cfg.ServeWeb {
 		ServeWebUI(r, cfg.WebDir)

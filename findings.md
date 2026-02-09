@@ -90,3 +90,75 @@
   - 同步检测 `filterKey` 变化，避免切换首帧误显示骨架；
   - 空结果切空结果时保持 `noData`；
   - 有数据切换时才显示骨架过渡，避免“旧内容闪现”。
+
+## Inbounds Template Mode (2026-02-09)
+- 目标：把“编辑入站”改成纯 JSON 模板输入，减少表单字段分裂与协议特化 UI 复杂度。
+- 方案：
+  - 前端保留 `node_id` 选择；
+  - 其余字段统一来自模板 JSON（`type/tag/listen_port/...`）；
+  - `users` 字段仅作为展示占位，提交时忽略；
+  - `tls`/`transport` 顶层对象映射为 `tls_settings`/`transport_settings`；
+  - 其他顶层字段自动归入 `settings`。
+- 与现有后端兼容：
+  - API 仍接收 `protocol/tag/listen_port/public_port/settings/tls_settings/transport_settings`；
+  - Node 下发时继续由 Panel 自动注入 `users`，模板中的 `users` 不参与下发。
+
+## Monaco + sing-box Tools Findings (2026-02-09)
+- 用户诉求明确：
+  - 前端编辑器改为 `Monaco`。
+  - 充分利用 `sing-box format/check/generate`，避免自造轮子。
+- 架构落地：
+  - 新增 `panel/internal/singboxcli`，将命令执行与 API 层解耦。
+  - API 层仅做请求校验、模式转换（`inbound` 模板自动包裹成最小可校验完整配置）、错误映射。
+- 兼容策略：
+  - `format/check` 支持 `mode=inbound|config|auto`。
+  - `inbound` 模式下会自动封装 `inbounds/outbounds`，并在 format 后回提取第一个 inbound。
+- 运行时注意：
+  - 若运行环境无 `sing-box` 可执行文件，接口返回 `503 sing-box command not available`。
+  - 可通过 `PANEL_SING_BOX_BIN` 指定二进制路径（默认 `sing-box`）。
+
+## Hotfix Findings: public_port 语义与工具依赖（2026-02-09）
+- 用户反馈成立：
+  - `public_port` 不是 sing-box inbound 原生字段，放在模板里会干扰“原生配置心智模型”。
+  - Docker 场景下要求外部 `sing-box` 命令不可接受，工具能力应内嵌在 Panel。
+- 修复决策：
+  - 将 `public_port` 视为 Panel 元数据，不再作为模板字段参与编辑；wrapper 校验前会剔除该字段。
+  - 把 `format/check/generate` 下沉为 Panel 内部服务实现：
+    - format：`badjson.Omitempty` + JSON pretty print
+    - check：`option.Options` 反序列化校验
+    - generate：内置常见命令（uuid/reality/wg/vapid）
+
+## Strict Check + UX Findings (2026-02-09)
+- 严格检查定义：不仅做 JSON/Options 反序列化，还进行 sing-box 运行初始化（`box.New`）验证。
+- 交互修正：快速请求场景下按钮文字闪变会引起“跳闪”感，改为固定按钮文案，仅保留禁用态。
+
+## SS2022 Password Generation Findings (2026-02-09)
+- 需求：针对 `2022-blake3-aes-128-gcm` / `2022-blake3-aes-256-gcm` 提供基于 key length 的 base64 随机密码生成。
+- 落地：
+  - 通过 `Generate(rand-base64-16|32)` 统一输出 base64 文本；
+  - UI 侧命令执行成功后自动写回模板 `password` 字段，降低误操作成本。
+- 校验：
+  - 后端单测已验证 16/32 字节解码长度正确；
+  - 非法长度输入返回 `ErrInvalidGenerateKind`。
+
+## Full Config Template End-to-End Findings (2026-02-09)
+- 用户目标确认：入站模板需要直接编辑“完整 sing-box 配置”而非仅 inbound 片段，并希望可通过 `route/outbounds` 实现服务端分流。
+- 关键链路缺口：
+  - Panel 侧虽然可把 `settings.__config` 合并进 sync payload，但 Node 仍只解析/应用 `inbounds`，导致全局字段被忽略。
+  - 生成密钥回填逻辑仅写根级 `password`，对完整模板（`inbounds[0].password`）不稳定。
+- 本次改造：
+  - 前端模板：
+    - 支持完整 config 读写（含 `$schema/log/dns/route/outbounds/...`）。
+    - 生成 `rand-base64-16/32` 后优先回填 `inbounds[0].password`。
+  - Panel sync payload：
+    - `SyncPayload` 增加 `$schema`。
+    - 全局配置合并改为“仅首次合并”，避免多入站重复拼接 `outbounds/services/endpoints`。
+  - Node 应用链路：
+    - `ParseAndValidateConfig` 解析完整 `option.Options`。
+    - `Core.ApplyOptions` 基于完整 options 重建并切换 box，真正让 route/outbounds/dns 等生效。
+    - 启动恢复链路同步切换到完整配置解析与应用。
+  - sing-box 工具 API：
+    - inbound/auto 模式遇到完整配置时也会清理 `inbounds[].public_port`（Panel 元字段）。
+- 验证结果：
+  - Go：`panel/internal/node`、`panel/internal/api`、`panel/internal/singboxcli`、`node/internal/sync`、`node/internal/core` 全部通过。
+  - Web：`src/lib/inbound-template.test.ts` 通过，`npm run build` 通过。
