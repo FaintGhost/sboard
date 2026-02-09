@@ -113,3 +113,11 @@ func (c *Core) InboundTrafficMeta() stats.InboundTrafficMeta {
 	}
 	return c.traffic.Meta()
 }
+
+// Close stops the sing-box instance and releases resources.
+func (c *Core) Close() error {
+	if c == nil || c.box == nil {
+		return nil
+	}
+	return c.box.Close()
+}

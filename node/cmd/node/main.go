@@ -3,6 +3,11 @@ package main
 import (
 	"context"
 	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"sboard/node/internal/api"
@@ -57,7 +62,44 @@ func main() {
 	}
 
 	r := api.NewRouter(cfg.SecretKey, adapter, c)
-	if err := r.Run(cfg.HTTPAddr); err != nil {
-		log.Fatal(err)
+
+	// Create HTTP server with explicit address
+	srv := &http.Server{
+		Addr:    cfg.HTTPAddr,
+		Handler: r,
 	}
+
+	// Start server in goroutine
+	go func() {
+		log.Printf("[http] starting server on %s", cfg.HTTPAddr)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("[http] listen error: %v", err)
+		}
+	}()
+
+	// Wait for interrupt signal for graceful shutdown
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	sig := <-quit
+	log.Printf("[shutdown] received signal: %v", sig)
+
+	// Graceful shutdown with timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// Shutdown HTTP server
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Printf("[shutdown] http server shutdown error: %v", err)
+	} else {
+		log.Printf("[shutdown] http server stopped")
+	}
+
+	// Close sing-box core
+	if err := c.Close(); err != nil {
+		log.Printf("[shutdown] core close error: %v", err)
+	} else {
+		log.Printf("[shutdown] core stopped")
+	}
+
+	log.Printf("[shutdown] graceful shutdown complete")
 }
