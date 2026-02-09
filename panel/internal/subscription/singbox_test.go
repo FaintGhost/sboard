@@ -27,6 +27,37 @@ func TestSingboxGenerateOutbounds(t *testing.T) {
 	require.Contains(t, string(out), "vless")
 }
 
+func TestSingboxFiltersInternalConfigField(t *testing.T) {
+	user := subscription.User{UUID: "u-1", Username: "alice"}
+	items := []subscription.Item{
+		{
+			InboundType:       "shadowsocks",
+			NodePublicAddress: "a.example.com",
+			InboundListenPort: 443,
+			// Settings contains __config which should be filtered out
+			Settings: json.RawMessage(`{"method":"2022-blake3-aes-256-gcm","__config":{"log":{},"dns":{}}}`),
+		},
+	}
+
+	out, err := subscription.BuildSingbox(user, items)
+	require.NoError(t, err)
+
+	// __config should not appear in output
+	require.NotContains(t, string(out), "__config")
+
+	// Verify it's valid JSON and has expected fields
+	var payload struct {
+		Outbounds []map[string]any `json:"outbounds"`
+	}
+	require.NoError(t, json.Unmarshal(out, &payload))
+	require.Len(t, payload.Outbounds, 1)
+
+	outbound := payload.Outbounds[0]
+	_, hasConfig := outbound["__config"]
+	require.False(t, hasConfig, "__config should be filtered from outbound")
+	require.Equal(t, "2022-blake3-aes-256-gcm", outbound["method"])
+}
+
 func TestSingboxShadowsocks2022UsesPerUserPassword(t *testing.T) {
 	inboundUUID := "11111111-1111-4111-8111-111111111111"
 	userA := subscription.User{UUID: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", Username: "alice"}

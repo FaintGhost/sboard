@@ -65,6 +65,10 @@ func BuildSingbox(user User, items []Item) ([]byte, error) {
 
     injectCredentials(user, item.InboundUUID, item.InboundType, settings)
     for k, v := range settings {
+      // Skip internal fields that shouldn't be in the output
+      if k == "__config" {
+        continue
+      }
       outbound[k] = v
     }
 
