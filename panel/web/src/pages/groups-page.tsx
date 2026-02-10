@@ -28,6 +28,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Table,
   TableBody,
@@ -520,30 +521,40 @@ export function GroupsPage() {
                         </div>
 
                         <div className="flex flex-row items-center justify-center gap-2 lg:flex-col lg:gap-3">
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            onClick={moveCandidatesToMembers}
-                            disabled={selectedCandidateIDs.length === 0}
-                            title={t("groups.addSelected")}
-                            aria-label={t("groups.addSelected")}
-                          >
-                            <ArrowLeft className="size-4" />
-                            <span className="hidden lg:inline">{t("groups.addSelected")}</span>
-                          </Button>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            onClick={moveMembersToCandidates}
-                            disabled={selectedMemberIDs.length === 0}
-                            title={t("groups.removeSelected")}
-                            aria-label={t("groups.removeSelected")}
-                          >
-                            <ArrowRight className="size-4" />
-                            <span className="hidden lg:inline">{t("groups.removeSelected")}</span>
-                          </Button>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                onClick={moveCandidatesToMembers}
+                                disabled={selectedCandidateIDs.length === 0}
+                                aria-label={t("groups.addSelected")}
+                              >
+                                <ArrowLeft className="size-4" />
+                                <span className="hidden lg:inline">{t("groups.addSelected")}</span>
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>{t("groups.addSelected")}</TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                onClick={moveMembersToCandidates}
+                                disabled={selectedMemberIDs.length === 0}
+                                aria-label={t("groups.removeSelected")}
+                              >
+                                <ArrowRight className="size-4" />
+                                <span className="hidden lg:inline">
+                                  {t("groups.removeSelected")}
+                                </span>
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>{t("groups.removeSelected")}</TooltipContent>
+                          </Tooltip>
                         </div>
 
                         <div className="flex min-h-0 flex-col rounded-md border">

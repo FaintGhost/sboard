@@ -72,17 +72,21 @@ function CopyButton({ text, label }: { text: string; label?: string }) {
   };
 
   return (
-    <Button
-      type="button"
-      variant="ghost"
-      size="icon"
-      className="h-7 w-7 shrink-0"
-      onClick={handleCopy}
-      aria-label={accessibleLabel}
-      title={accessibleLabel}
-    >
-      {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
-    </Button>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7 shrink-0"
+          onClick={handleCopy}
+          aria-label={accessibleLabel}
+        >
+          {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>{accessibleLabel}</TooltipContent>
+    </Tooltip>
   );
 }
 
@@ -324,7 +328,6 @@ function UserSubscriptionRow({
                 className="h-7 w-7"
                 onClick={() => window.open(singboxUrl, "_blank")}
                 aria-label={t("subscriptions.previewSingbox")}
-                title={t("subscriptions.previewSingbox")}
               >
                 <ExternalLink className="h-4 w-4" />
               </Button>

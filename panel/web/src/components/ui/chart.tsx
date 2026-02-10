@@ -230,6 +230,12 @@ function ChartTooltipContent({
   );
 }
 
+const ChartAreaChart = RechartsPrimitive.AreaChart;
+const ChartArea = RechartsPrimitive.Area;
+const ChartCartesianGrid = RechartsPrimitive.CartesianGrid;
+const ChartXAxis = RechartsPrimitive.XAxis;
+const ChartYAxis = RechartsPrimitive.YAxis;
+
 const ChartLegend = RechartsPrimitive.Legend;
 
 function ChartLegendContent({
@@ -315,10 +321,15 @@ function getPayloadConfigFromPayload(config: ChartConfig, payload: unknown, key:
 }
 
 export {
+  ChartArea,
+  ChartAreaChart,
+  ChartCartesianGrid,
   ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
   ChartLegend,
   ChartLegendContent,
   ChartStyle,
+  ChartTooltip,
+  ChartTooltipContent,
+  ChartXAxis,
+  ChartYAxis,
 };

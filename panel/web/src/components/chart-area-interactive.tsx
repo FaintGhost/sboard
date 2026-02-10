@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { useTranslation } from "react-i18next";
 
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -15,9 +14,15 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
+  ChartArea,
+  ChartAreaChart,
+  ChartCartesianGrid,
   ChartContainer,
+  ChartLegend,
   ChartTooltip,
   ChartTooltipContent,
+  ChartXAxis,
+  ChartYAxis,
   type ChartConfig,
 } from "@/components/ui/chart";
 import {
@@ -28,6 +33,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Badge } from "@/components/ui/badge";
 import { listTrafficTimeseries, type TrafficTimeseriesPoint } from "@/lib/api/traffic";
 import { resolveTrafficChartRows } from "@/lib/traffic-chart-data";
 import { useSystemStore } from "@/store/system";
@@ -41,17 +47,6 @@ function rangeToQueryParams(range: RangeKey): { window: string; bucket: "hour" |
   return { window: "30d", bucket: "day" };
 }
 
-const chartConfig = {
-  upload: {
-    label: "Upload",
-    color: "var(--primary)",
-  },
-  download: {
-    label: "Download",
-    color: "hsl(var(--muted-foreground))",
-  },
-} satisfies ChartConfig;
-
 export function ChartAreaInteractive() {
   const { t, i18n } = useTranslation();
   const timezone = useSystemStore((state) => state.timezone);
@@ -59,6 +54,20 @@ export function ChartAreaInteractive() {
   const [timeRange, setTimeRange] = React.useState<RangeKey>("24h");
   const [displayRows, setDisplayRows] = React.useState<TrafficTimeseriesPoint[]>([]);
   const [animNonce, setAnimNonce] = React.useState(0);
+
+  const chartConfig = React.useMemo<ChartConfig>(
+    () => ({
+      upload: {
+        label: t("dashboard.uplink"),
+        color: "var(--primary)",
+      },
+      download: {
+        label: t("dashboard.downlink"),
+        color: "var(--chart-2)",
+      },
+    }),
+    [t],
+  );
 
   React.useEffect(() => {
     if (isMobile) setTimeRange("24h");
@@ -145,7 +154,7 @@ export function ChartAreaInteractive() {
           }
         >
           <ChartContainer config={chartConfig} className="aspect-auto h-[260px] w-full">
-            <AreaChart data={chartData}>
+            <ChartAreaChart data={chartData}>
               <defs>
                 <linearGradient id="fillUpload" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="var(--color-upload)" stopOpacity={0.9} />
@@ -157,14 +166,14 @@ export function ChartAreaInteractive() {
                 </linearGradient>
               </defs>
 
-              <CartesianGrid vertical={false} />
-              <YAxis
+              <ChartCartesianGrid vertical={false} />
+              <ChartYAxis
                 tickLine={false}
                 axisLine={false}
                 width={64}
                 tickFormatter={(v) => `${formatBytesWithUnit(Number(v), chartUnit)} ${chartUnit}`}
               />
-              <XAxis
+              <ChartXAxis
                 dataKey="at"
                 tickLine={false}
                 axisLine={false}
@@ -205,7 +214,40 @@ export function ChartAreaInteractive() {
                 }
               />
 
-              <Area
+              <ChartLegend
+                content={({ payload }) => (
+                  <div className="pt-3">
+                    <div className="flex flex-wrap items-center justify-center gap-2">
+                      {(payload ?? [])
+                        .filter((item) => item.type !== "none")
+                        .map((item) => {
+                          const key = String(item.dataKey ?? item.value ?? "");
+                          const label =
+                            key === "upload"
+                              ? t("dashboard.uplink")
+                              : key === "download"
+                                ? t("dashboard.downlink")
+                                : String(item.value ?? key);
+                          return (
+                            <Badge
+                              key={key}
+                              variant="outline"
+                              className="gap-1.5 rounded-full border-border/70 bg-background/70 px-2.5 py-1 text-xs"
+                            >
+                              <span
+                                className="size-2 shrink-0 rounded-full"
+                                style={{ backgroundColor: item.color }}
+                              />
+                              {label}
+                            </Badge>
+                          );
+                        })}
+                    </div>
+                  </div>
+                )}
+              />
+
+              <ChartArea
                 dataKey="upload"
                 type="monotoneX"
                 stroke="var(--color-upload)"
@@ -218,7 +260,7 @@ export function ChartAreaInteractive() {
                 animationEasing="ease-out"
                 animationBegin={0}
               />
-              <Area
+              <ChartArea
                 dataKey="download"
                 type="monotoneX"
                 stroke="var(--color-download)"
@@ -231,7 +273,7 @@ export function ChartAreaInteractive() {
                 animationEasing="ease-out"
                 animationBegin={0}
               />
-            </AreaChart>
+            </ChartAreaChart>
           </ChartContainer>
         </div>
 

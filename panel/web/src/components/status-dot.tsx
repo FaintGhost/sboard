@@ -25,7 +25,6 @@ export function StatusDot(props: StatusDotProps) {
         className="relative inline-flex size-3 shrink-0"
         data-status={isOnline ? "online" : isOffline ? "offline" : "unknown"}
         aria-label={label}
-        title={label}
       >
         <span
           className={cn(

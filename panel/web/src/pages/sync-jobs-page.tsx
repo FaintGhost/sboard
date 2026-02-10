@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Table,
   TableBody,
@@ -472,9 +473,16 @@ export function SyncJobsPage() {
                       </span>
                       <span className="tabular-nums">{detailJob.active_user_count ?? 0}</span>
                     </p>
-                    <p title={detailJob.payload_hash || ""}>
+                    <p>
                       <span className="text-muted-foreground">{t("syncJobs.payloadHash")}: </span>
-                      <span className="font-mono text-xs">{shortHash(detailJob.payload_hash)}</span>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="font-mono text-xs">
+                            {shortHash(detailJob.payload_hash)}
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent>{detailJob.payload_hash || "-"}</TooltipContent>
+                      </Tooltip>
                     </p>
                   </div>
                 </div>
