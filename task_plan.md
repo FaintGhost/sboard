@@ -682,3 +682,48 @@ Complete
 - [x] 复跑 `panel`/`node` Go 全量测试与覆盖率
 - [x] 更新 `findings.md` 与 `progress.md`
 - **Status:** complete
+
+## 2026-02-10 Session: 后端覆盖率提升（P3）
+
+### Goal
+优先拉升 `panel/internal/api` 覆盖率，补齐 bootstrap/traffic/helper 与多条 handler 校验分支。
+
+### Phases
+
+#### Phase 1: 热点扫描
+- [x] 扫描 `panel/internal/api` 低覆盖函数（重点 `inbounds/nodes/groups/traffic/bootstrap/helpers`）
+- **Status:** complete
+
+#### Phase 2: 补测实施
+- [x] 新增 `helpers` 纯函数测试（window/bool/debug/sync error/token）
+- [x] 新增 `bootstrap` 额外分支测试（store 缺失、header token、重复初始化）
+- [x] 新增 `nodes/groups/inbounds` 校验分支测试
+- [x] 新增 `traffic/timeseries` 参数校验与成功分支测试
+- **Status:** complete
+
+#### Phase 3: 全量复测与记录
+- [x] 复跑 `panel`/`node` 全量 Go 测试与覆盖率
+- [x] 更新 `findings.md` 与 `progress.md`
+- **Status:** complete
+
+## 2026-02-10 Session: 后端覆盖率提升（P4）
+
+### Goal
+提升 `node/internal/core` 覆盖率，补齐 `Apply/InboundTraffic/Close` 等核心分支。
+
+### Phases
+
+#### Phase 1: 热点扫描
+- [x] 扫描 `node/internal/core` 低覆盖函数
+- **Status:** complete
+
+#### Phase 2: 补测实施
+- [x] 新增 `Core.Apply` 分支测试
+- [x] 新增 `ApplyOptions` 工厂错误与 start 错误分支测试
+- [x] 新增 `InboundTraffic/InboundTrafficMeta/Close` 分支测试
+- **Status:** complete
+
+#### Phase 3: 全量复测与记录
+- [x] 复跑 `panel`/`node` 全量 Go 测试与覆盖率
+- [x] 更新 `findings.md` 与 `progress.md`
+- **Status:** complete

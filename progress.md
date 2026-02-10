@@ -855,3 +855,51 @@
 - Panel：`63.1%`
 - Node：`70.3%`
 - Backend Combined：`63.9%`
+
+## 2026-02-10 Progress: 后端覆盖率提升（P3）
+
+### 已完成
+- 新增 `helpers` 测试：
+  - `parseWindowOrDefault` / `parseBoolQuery`。
+  - `normalizeSyncError` / `normalizeSyncClientError` / `parseSyncHTTPStatus` / `shouldDebugSyncPayload`。
+  - `GenerateSetupToken`。
+- 新增 `bootstrap` 测试：
+  - store 缺失导致 `GET /api/admin/bootstrap` 返回 500。
+  - header token 路径可初始化管理员。
+  - 二次初始化返回 409。
+- 新增 `handlers` 校验测试：
+  - `nodes/groups/inbounds` 的 id/body/字段校验与 not found 分支。
+  - `traffic/timeseries` 的 window/bucket/node_id 校验与成功分支。
+
+### 验证命令
+- `cd panel && GOCACHE=/tmp/go-build GOMODCACHE=/tmp/go/pkg/mod go test ./internal/api`
+- `cd panel && GOCACHE=/tmp/go-build GOMODCACHE=/tmp/go/pkg/mod go test ./... -coverprofile=/tmp/panel.cover.next3 -covermode=atomic`
+- `cd node && GOCACHE=/tmp/go-build GOMODCACHE=/tmp/go/pkg/mod go test ./... -coverprofile=/tmp/node.cover.next3 -covermode=atomic`
+- `{ head -n1 /tmp/panel.cover.next3; tail -n +2 /tmp/panel.cover.next3; tail -n +2 /tmp/node.cover.next3; } > /tmp/backend.cover.next3`
+- `GOCACHE=/tmp/go-build go tool cover -func=/tmp/backend.cover.next3 | tail -n1`
+
+### 结果
+- Panel：`69.0%`
+- Node：`70.3%`
+- Backend Combined：`69.2%`
+
+## 2026-02-10 Progress: 后端覆盖率提升（P4）
+
+### 已完成
+- 新增 `node/internal/core/core_extra_test.go`：
+  - `Apply` 走 `ApplyOptions` 成功路径并校验 hash/时间更新。
+  - `ApplyOptions` 覆盖 `NewBox` 失败与 `Start` 失败（失败时会关闭新 box）。
+  - `InboundTraffic` / `InboundTrafficMeta` 覆盖 nil core 与空 tracker 分支。
+  - `Close` 覆盖 nil core、nil box、返回错误分支。
+
+### 验证命令
+- `cd node && GOCACHE=/tmp/go-build GOMODCACHE=/tmp/go/pkg/mod go test ./internal/core`
+- `cd panel && GOCACHE=/tmp/go-build GOMODCACHE=/tmp/go/pkg/mod go test ./... -coverprofile=/tmp/panel.cover.next4 -covermode=atomic`
+- `cd node && GOCACHE=/tmp/go-build GOMODCACHE=/tmp/go/pkg/mod go test ./... -coverprofile=/tmp/node.cover.next4 -covermode=atomic`
+- `{ head -n1 /tmp/panel.cover.next4; tail -n +2 /tmp/panel.cover.next4; tail -n +2 /tmp/node.cover.next4; } > /tmp/backend.cover.next4`
+- `GOCACHE=/tmp/go-build go tool cover -func=/tmp/backend.cover.next4 | tail -n1`
+
+### 结果
+- Panel：`69.0%`
+- Node：`73.6%`
+- Backend Combined：`69.5%`

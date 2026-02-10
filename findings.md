@@ -727,3 +727,36 @@
 - 后端合并覆盖率：`57.3% -> 63.9%`
 - 包级（本批重点）：
   - `panel/internal/db`: `75.5%`
+
+## 2026-02-10 Findings: 后端覆盖率提升（P3）
+
+### 关键发现
+- `panel/internal/api` 中大量低覆盖来自参数校验分支与纯 helper（并非主流程逻辑）。
+- 通过补齐 `bootstrap + helpers + validation handlers`，可在不改业务实现的前提下快速提升 API 包覆盖率。
+- `inbounds` 的 `tls_settings/transport_settings` 当前绑定语义下，难以构造“整体 JSON 合法但该字段 raw JSON 非法”的专门分支，已记录为后续可测试性优化点。
+
+### 新增测试文件
+- `panel/internal/api/helpers_extra_test.go`
+- `panel/internal/api/bootstrap_extra_test.go`
+- `panel/internal/api/handlers_validation_test.go`
+
+### 覆盖率结果
+- `panel/internal/api`：`52.6% -> 64.3%`
+- Panel 总覆盖率：`63.1% -> 69.0%`
+- Node 总覆盖率：`70.3%`（本批未改 node 业务测试）
+- 后端合并覆盖率：`63.9% -> 69.2%`
+
+## 2026-02-10 Findings: 后端覆盖率提升（P4）
+
+### 关键发现
+- `node/internal/core` 的低覆盖主要集中在生命周期包装函数（`Apply`、`Close`）与 tracker 访问器。
+- 通过注入 `NewBox` 工厂替身，可稳定覆盖 `NewBox` 失败、`Start` 失败、旧 box 释放等关键分支。
+
+### 新增测试文件
+- `node/internal/core/core_extra_test.go`
+
+### 覆盖率结果
+- `node/internal/core`：`59.3% -> 83.1%`
+- Node 总覆盖率：`70.3% -> 73.6%`
+- Panel 总覆盖率：`69.0%`（本批未改 panel 业务测试）
+- 后端合并覆盖率：`69.2% -> 69.5%`
