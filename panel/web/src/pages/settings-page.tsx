@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { FieldHint } from "@/components/ui/field-hint"
 import { Button } from "@/components/ui/button"
 import { AsyncButton } from "@/components/ui/async-button"
 import { ApiError } from "@/lib/api/client"
@@ -499,7 +500,10 @@ export function SettingsPage() {
                 </div>
 
                 <div className="min-w-0 flex-1 space-y-2">
-                  <Label htmlFor="subscription-host-port">{t("settings.subscriptionAddress")}</Label>
+                  <div className="flex items-center gap-1">
+                    <Label htmlFor="subscription-host-port">{t("settings.subscriptionAddress")}</Label>
+                    <FieldHint label={t("settings.subscriptionAddress")}>{t("settings.subscriptionAddressHelp")}</FieldHint>
+                  </div>
                   <Input
                     id="subscription-host-port"
                     ref={hostPortInputRef}
@@ -512,14 +516,10 @@ export function SettingsPage() {
                     onBlur={handleHostPortBlur}
                     placeholder={t("settings.subscriptionAddressPlaceholder")}
                     aria-invalid={!!validationError}
-                    aria-describedby="subscription-host-port-help"
                     autoComplete="off"
                   />
                 </div>
               </div>
-              <p id="subscription-host-port-help" className="text-xs text-muted-foreground">
-                {t("settings.subscriptionAddressHelp")}
-              </p>
             </div>
 
             <div className="space-y-2">
@@ -704,7 +704,10 @@ export function SettingsPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="system-timezone">{t("settings.timezone")}</Label>
+              <div className="flex items-center gap-1">
+                <Label htmlFor="system-timezone">{t("settings.timezone")}</Label>
+                <FieldHint label={t("settings.timezone")}>{t("settings.timezoneHelp")}</FieldHint>
+              </div>
               <Input
                 id="system-timezone"
                 ref={timezoneInputRef}
@@ -730,16 +733,12 @@ export function SettingsPage() {
                 placeholder={t("settings.timezonePlaceholder")}
                 autoComplete="off"
                 aria-invalid={!!timezoneValidationError}
-                aria-describedby="system-timezone-help"
               />
               <datalist id="system-timezone-options">
                 {filteredTimezoneOptions.map((item) => (
                   <option key={item.name} value={item.name} label={item.label} />
                 ))}
               </datalist>
-              <p id="system-timezone-help" className="text-xs text-muted-foreground">
-                {t("settings.timezoneHelp")}
-              </p>
             </div>
 
             <div className="min-h-5 space-y-1" aria-live="polite">

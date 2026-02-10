@@ -265,6 +265,33 @@ describe("UsersPage", () => {
         )
       }
 
+      if (req.method === "PUT" && pathname === "/api/users/99") {
+        const body = (await req.json()) as Record<string, unknown>
+        expect(body.status).toBe("active")
+        expect(body.traffic_limit).toBe(2 * 1024 * 1024 * 1024)
+        expect(body.traffic_reset_day).toBe(5)
+        expect(typeof body.expire_at).toBe("string")
+        expect(String(body.expire_at)).toMatch(/-15T00:00:00(?:\.000)?Z$/)
+        return new Response(
+          JSON.stringify({
+            data: {
+              id: 99,
+              uuid: "u-99",
+              username: "bob",
+              traffic_limit: 2 * 1024 * 1024 * 1024,
+              traffic_used: 0,
+              traffic_reset_day: 5,
+              expire_at: "2030-01-15T00:00:00Z",
+              status: "active",
+            },
+          }),
+          {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          },
+        )
+      }
+
       if (req.method === "PUT" && pathname === "/api/users/99/groups") {
         const body = (await req.json()) as Record<string, unknown>
         expect(body.group_ids).toEqual([11])
@@ -291,6 +318,12 @@ describe("UsersPage", () => {
 
     await userEvent.click(await screen.findByRole("button", { name: "创建用户" }))
     await userEvent.type(screen.getByLabelText("用户名"), "bob")
+    await userEvent.clear(screen.getByLabelText("流量上限（GB）"))
+    await userEvent.type(screen.getByLabelText("流量上限（GB）"), "2")
+    await userEvent.clear(screen.getByLabelText("重置日"))
+    await userEvent.type(screen.getByLabelText("重置日"), "5")
+    await userEvent.click(screen.getByLabelText("到期日期"))
+    await userEvent.click(await screen.findByRole("button", { name: /15/ }))
     await userEvent.click(screen.getByText("VIP"))
     await userEvent.click(screen.getByRole("button", { name: "创建" }))
 

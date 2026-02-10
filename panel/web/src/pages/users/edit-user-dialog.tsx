@@ -18,6 +18,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { FieldHint } from "@/components/ui/field-hint"
 import {
   Select,
   SelectContent,
@@ -104,10 +105,10 @@ export function EditUserDialog({
     await onSave(editState)
   }
 
-  const isPending =
-    editState?.mode === "create"
-      ? createMutation.isPending
-      : updateMutation.isPending || saveGroupsMutation.isPending
+  const isPending = createMutation.isPending || updateMutation.isPending || saveGroupsMutation.isPending
+
+  const hasSaveError = createMutation.isError || updateMutation.isError || saveGroupsMutation.isError
+  const saveError = createMutation.error ?? updateMutation.error ?? saveGroupsMutation.error
 
   return (
     <Dialog
@@ -144,16 +145,19 @@ export function EditUserDialog({
             </div>
 
             <div className="space-y-2 md:col-span-2">
-              <Label className="text-sm text-slate-700">{t("users.groups")}</Label>
-              <p className="text-xs text-slate-500">
-                {t("users.groupsHint")}
-              </p>
+              <div className="flex items-center gap-1">
+                <Label className="text-sm text-slate-700">{t("users.groups")}</Label>
+                <FieldHint label={t("users.groups")}>{t("users.groupsHint")}</FieldHint>
+              </div>
               <div className="rounded-lg border border-slate-200 p-3">
-                <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-2">
+                <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
                   {groupsQuery.data?.map((g) => {
                     const checked = editState.groupIDs.includes(g.id)
                     return (
-                      <label key={g.id} className="flex cursor-pointer items-center gap-2 text-sm text-slate-800">
+                      <label
+                        key={g.id}
+                        className="flex w-full cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm text-slate-800 transition-colors hover:bg-slate-50"
+                      >
                         <Checkbox
                           checked={checked}
                           onCheckedChange={(v) => {
@@ -179,173 +183,172 @@ export function EditUserDialog({
                   ) : null}
                 </div>
               </div>
-              <div className="text-sm text-amber-700">
-                {saveGroupsMutation.isError ? (
-                  saveGroupsMutation.error instanceof ApiError ? saveGroupsMutation.error.message : t("users.saveGroupsFailed")
-                ) : null}
-              </div>
             </div>
 
-            {editState.mode === "edit" ? (
-              <>
-                <div className="space-y-1">
-                  <Label className="text-sm text-slate-700">{t("common.status")}</Label>
-                  <Select
-                    value={editState.status}
-                    onValueChange={(value) =>
-                      setEditState((prev) =>
-                        prev ? { ...prev, status: value as UserStatus } : prev,
-                      )
-                    }
-                  >
-                    <SelectTrigger className="w-full" aria-label={t("common.status")}>
-                      <SelectValue placeholder={t("users.statusFilter")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {editableStatusOptions.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+            <>
+              <div className="space-y-1">
+                <Label className="text-sm text-slate-700">{t("common.status")}</Label>
+                <Select
+                  value={editState.status}
+                  onValueChange={(value) =>
+                    setEditState((prev) =>
+                      prev ? { ...prev, status: value as UserStatus } : prev,
+                    )
+                  }
+                >
+                  <SelectTrigger className="w-full" aria-label={t("common.status")}>
+                    <SelectValue placeholder={t("users.statusFilter")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {editableStatusOptions.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-                <div className="space-y-1">
+              <div className="space-y-1">
+                <div className="flex items-center gap-1">
                   <Label className="text-sm text-slate-700" htmlFor="edit-traffic-limit">
                     {t("users.trafficLimit")}
                   </Label>
-                  <div className="relative">
-                    <Input
-                      id="edit-traffic-limit"
-                      inputMode="decimal"
-                      value={editState.trafficLimit}
-                      onChange={(e) =>
-                        setEditState((prev) =>
-                          prev ? { ...prev, trafficLimit: e.target.value } : prev,
-                        )
-                      }
-                      className="pr-12"
-                      aria-label={t("users.trafficLimit")}
-                    />
-                    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">
-                      GB
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-500">{t("users.trafficLimitHint")}</p>
+                  <FieldHint label={t("users.trafficLimit")}>
+                    {t("users.trafficLimitHint")}
+                  </FieldHint>
                 </div>
+                <div className="relative">
+                  <Input
+                    id="edit-traffic-limit"
+                    inputMode="decimal"
+                    value={editState.trafficLimit}
+                    onChange={(e) =>
+                      setEditState((prev) =>
+                        prev ? { ...prev, trafficLimit: e.target.value } : prev,
+                      )
+                    }
+                    className="pr-12"
+                    aria-label={t("users.trafficLimit")}
+                  />
+                  <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">
+                    GB
+                  </span>
+                </div>
+              </div>
 
-                <div className="space-y-1">
+              <div className="space-y-1">
+                <div className="flex items-center gap-1">
                   <Label className="text-sm text-slate-700" htmlFor="edit-traffic-reset-day">
                     {t("users.trafficResetDay")}
                   </Label>
-                  <Input
-                    id="edit-traffic-reset-day"
-                    type="number"
-                    min={0}
-                    max={31}
-                    step={1}
-                    inputMode="numeric"
-                    value={String(editState.trafficResetDay)}
-                    onChange={(e) => {
-                      const v = Number(e.target.value)
+                  <FieldHint label={t("users.trafficResetDay")}>
+                    {t("users.trafficResetDayHint")}
+                  </FieldHint>
+                </div>
+                <Input
+                  id="edit-traffic-reset-day"
+                  type="number"
+                  min={0}
+                  max={31}
+                  step={1}
+                  inputMode="numeric"
+                  value={String(editState.trafficResetDay)}
+                  onChange={(e) => {
+                    const v = Number(e.target.value)
+                    setEditState((prev) =>
+                      prev
+                        ? {
+                          ...prev,
+                          trafficResetDay: Number.isFinite(v) ? v : 0,
+                        }
+                        : prev,
+                    )
+                  }}
+                  onBlur={() =>
+                    setEditState((prev) => {
+                      if (!prev) return prev
+                      const v = Math.trunc(prev.trafficResetDay)
+                      const clamped = Math.min(31, Math.max(0, v))
+                      return { ...prev, trafficResetDay: clamped }
+                    })
+                  }
+                  aria-label={t("users.trafficResetDay")}
+                />
+              </div>
+
+              <div className="space-y-1 md:col-span-2">
+                <Label className="text-sm text-slate-700" htmlFor="edit-expire">
+                  {t("users.expireDate")}
+                </Label>
+                <div className="flex flex-col gap-2 md:flex-row md:items-center">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        id="edit-expire"
+                        variant="outline"
+                        className="w-full justify-start font-normal md:flex-1"
+                      >
+                        {editState.expireDate ? (
+                          format(editState.expireDate, "yyyy-MM-dd")
+                        ) : (
+                          <span className="text-slate-500">{t("users.selectDate")}</span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={editState.expireDate ?? undefined}
+                        onSelect={(date) =>
+                          setEditState((prev) =>
+                            prev
+                              ? {
+                                ...prev,
+                                expireDate: date ?? null,
+                                clearExpireAt: false,
+                              }
+                              : prev,
+                          )
+                        }
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="md:w-24"
+                    onClick={() =>
                       setEditState((prev) =>
                         prev
-                          ? {
-                              ...prev,
-                              trafficResetDay: Number.isFinite(v) ? v : 0,
-                            }
+                          ? { ...prev, expireDate: null, clearExpireAt: true }
                           : prev,
                       )
-                    }}
-                    onBlur={() =>
-                      setEditState((prev) => {
-                        if (!prev) return prev
-                        const v = Math.trunc(prev.trafficResetDay)
-                        const clamped = Math.min(31, Math.max(0, v))
-                        return { ...prev, trafficResetDay: clamped }
-                      })
                     }
-                    aria-label={t("users.trafficResetDay")}
-                  />
-                  <p className="text-xs text-slate-500">
-                    {t("users.trafficResetDayHint")}
-                  </p>
+                    disabled={editState.clearExpireAt}
+                  >
+                    {t("users.clearDate")}
+                  </Button>
                 </div>
-
-                <div className="space-y-1 md:col-span-2">
-                  <Label className="text-sm text-slate-700" htmlFor="edit-expire">
-                    {t("users.expireDate")}
-                  </Label>
-                  <div className="flex flex-col gap-2 md:flex-row md:items-center">
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          id="edit-expire"
-                          variant="outline"
-                          className="w-full justify-start font-normal md:flex-1"
-                        >
-                          {editState.expireDate ? (
-                            format(editState.expireDate, "yyyy-MM-dd")
-                          ) : (
-                            <span className="text-slate-500">{t("users.selectDate")}</span>
-                          )}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={editState.expireDate ?? undefined}
-                          onSelect={(date) =>
-                            setEditState((prev) =>
-                              prev
-                                ? {
-                                    ...prev,
-                                    expireDate: date ?? null,
-                                    clearExpireAt: false,
-                                  }
-                                : prev,
-                            )
-                          }
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="md:w-24"
-                      onClick={() =>
-                        setEditState((prev) =>
-                          prev
-                            ? { ...prev, expireDate: null, clearExpireAt: true }
-                            : prev,
-                        )
-                      }
-                      disabled={editState.clearExpireAt}
-                    >
-                      {t("users.clearDate")}
-                    </Button>
-                  </div>
-                </div>
-              </>
-            ) : null}
+              </div>
+            </>
           </div>
         ) : null}
 
-        {editState?.mode === "create" && createMutation.isError ? (
+        {editState?.mode === "create" && hasSaveError ? (
           <p className="text-sm text-red-600">
-            {createMutation.error instanceof ApiError
-              ? createMutation.error.message
+            {saveError instanceof ApiError
+              ? saveError.message
               : t("users.createFailed")}
           </p>
         ) : null}
 
-        {editState?.mode === "edit" && updateMutation.isError ? (
+        {editState?.mode === "edit" && hasSaveError ? (
           <p className="text-sm text-red-600">
-            {updateMutation.error instanceof ApiError
-              ? updateMutation.error.message
+            {saveError instanceof ApiError
+              ? saveError.message
               : t("users.saveFailed")}
           </p>
         ) : null}

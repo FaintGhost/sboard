@@ -213,6 +213,27 @@ export function GroupsPage() {
   const hasMemberChanges = !upserting
     ? false
     : !sameIDs(upserting.initialUserIDs, upserting.memberIDs)
+  const isEditNoChanges = !upserting
+    ? false
+    : upserting.mode === "edit"
+      && !hasMemberChanges
+      && upserting.name.trim() === upserting.group.name
+      && upserting.description.trim() === upserting.group.description
+  const saveDisabled =
+    saveMutation.isPending
+    || usersQuery.isLoading
+    || !membersReady
+    || !upserting?.name.trim()
+    || isEditNoChanges
+  const saveDisabledReason = !upserting
+    ? ""
+    : !membersReady
+      ? t("groups.membersLoadingHint")
+      : !upserting.name.trim()
+        ? t("groups.nameRequiredHint")
+        : isEditNoChanges
+          ? t("groups.noChangesHint")
+          : ""
 
   const moveCandidatesToMembers = () => {
     if (!upserting || selectedCandidateIDs.length === 0) return
@@ -387,18 +408,20 @@ export function GroupsPage() {
             }
           }}
         >
-          <DialogContent className="sm:max-w-5xl">
-            <DialogHeader>
-              <DialogTitle>
-                {upserting?.mode === "create" ? t("groups.createGroup") : t("groups.editGroup")}
-              </DialogTitle>
-              <DialogDescription>
-                {upserting?.mode === "edit" ? upserting.group.name : t("groups.createGroup")}
-              </DialogDescription>
-            </DialogHeader>
+          <DialogContent className="sm:max-w-5xl max-h-[86dvh] overflow-hidden p-0">
+            <div className="flex h-full max-h-[86dvh] flex-col">
+              <DialogHeader className="border-b px-6 pt-6 pb-4">
+                <DialogTitle>
+                  {upserting?.mode === "create" ? t("groups.createGroup") : t("groups.editGroup")}
+                </DialogTitle>
+                <DialogDescription>
+                  {upserting?.mode === "edit" ? upserting.group.name : t("groups.createGroup")}
+                </DialogDescription>
+              </DialogHeader>
 
-            {upserting ? (
-              <div className="space-y-4">
+              {upserting ? (
+                <div className="flex-1 overflow-y-auto px-6 py-4">
+                  <div className="space-y-4">
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <div className="space-y-1">
                     <Label htmlFor="group-name" className="text-sm text-slate-700">
@@ -434,7 +457,12 @@ export function GroupsPage() {
                   <div className="grid grid-cols-1 gap-4 rounded-md border p-3 lg:grid-cols-[1fr_auto_1fr]">
                     <div className="flex min-h-0 flex-col rounded-md border">
                       <div className="border-b p-3">
-                        <div className="text-sm font-medium">{t("groups.currentMembers")}</div>
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="text-sm font-medium">{t("groups.currentMembers")}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {t("groups.selectedUsers", { count: selectedMemberIDs.length })}
+                          </div>
+                        </div>
                         <div className="mt-2 relative">
                           <Search className="pointer-events-none absolute left-2 top-2.5 size-4 text-muted-foreground" />
                           <Input
@@ -475,10 +503,10 @@ export function GroupsPage() {
                       </div>
                     </div>
 
-                    <div className="flex flex-row items-center justify-center gap-2 lg:flex-col">
+                    <div className="flex flex-row items-center justify-center gap-2 lg:flex-col lg:gap-3">
                       <Button
                         type="button"
-                        size="icon"
+                        size="sm"
                         variant="outline"
                         onClick={moveCandidatesToMembers}
                         disabled={selectedCandidateIDs.length === 0}
@@ -486,10 +514,11 @@ export function GroupsPage() {
                         aria-label={t("groups.addSelected")}
                       >
                         <ArrowLeft className="size-4" />
+                        <span className="hidden lg:inline">{t("groups.addSelected")}</span>
                       </Button>
                       <Button
                         type="button"
-                        size="icon"
+                        size="sm"
                         variant="outline"
                         onClick={moveMembersToCandidates}
                         disabled={selectedMemberIDs.length === 0}
@@ -497,12 +526,18 @@ export function GroupsPage() {
                         aria-label={t("groups.removeSelected")}
                       >
                         <ArrowRight className="size-4" />
+                        <span className="hidden lg:inline">{t("groups.removeSelected")}</span>
                       </Button>
                     </div>
 
                     <div className="flex min-h-0 flex-col rounded-md border">
                       <div className="border-b p-3">
-                        <div className="text-sm font-medium">{t("groups.availableUsers")}</div>
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="text-sm font-medium">{t("groups.availableUsers")}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {t("groups.selectedUsers", { count: selectedCandidateIDs.length })}
+                          </div>
+                        </div>
                         <div className="mt-2 relative">
                           <Search className="pointer-events-none absolute left-2 top-2.5 size-4 text-muted-foreground" />
                           <Input
@@ -552,45 +587,44 @@ export function GroupsPage() {
                         : t("groups.saveFailed"))
                     : null}
                 </div>
-              </div>
-            ) : null}
+                  </div>
+                </div>
+              ) : null}
 
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setUpserting(null)}
-                disabled={saveMutation.isPending}
-              >
-                {t("common.cancel")}
-              </Button>
-              <AsyncButton
-                onClick={() => {
-                  if (!upserting) return
-                  const name = upserting.name.trim()
-                  const description = upserting.description.trim()
-                  if (!name || !membersReady) return
-                  saveMutation.mutate({
-                    mode: upserting.mode,
-                    groupID: upserting.group.id,
-                    name,
-                    description,
-                    userIDs: upserting.memberIDs,
-                    replaceMembers: upserting.mode === "create" || hasMemberChanges,
-                  })
-                }}
-                disabled={
-                  saveMutation.isPending
-                  || usersQuery.isLoading
-                  || !membersReady
-                  || !upserting?.name.trim()
-                  || (upserting?.mode === "edit" && !hasMemberChanges && upserting.name.trim() === upserting.group.name && upserting.description.trim() === upserting.group.description)
-                }
-                pending={saveMutation.isPending}
-                pendingText={t("common.saving")}
-              >
-                {t("common.save")}
-              </AsyncButton>
-            </DialogFooter>
+              <DialogFooter className="border-t bg-background px-6 py-4 sm:items-center">
+                <div className="mr-auto min-h-5 text-xs text-muted-foreground">
+                  {!saveMutation.isPending && saveDisabledReason ? saveDisabledReason : null}
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={() => setUpserting(null)}
+                  disabled={saveMutation.isPending}
+                >
+                  {t("common.cancel")}
+                </Button>
+                <AsyncButton
+                  onClick={() => {
+                    if (!upserting) return
+                    const name = upserting.name.trim()
+                    const description = upserting.description.trim()
+                    if (!name || !membersReady) return
+                    saveMutation.mutate({
+                      mode: upserting.mode,
+                      groupID: upserting.group.id,
+                      name,
+                      description,
+                      userIDs: upserting.memberIDs,
+                      replaceMembers: upserting.mode === "create" || hasMemberChanges,
+                    })
+                  }}
+                  disabled={saveDisabled}
+                  pending={saveMutation.isPending}
+                  pendingText={t("common.saving")}
+                >
+                  {t("common.save")}
+                </AsyncButton>
+              </DialogFooter>
+            </div>
           </DialogContent>
         </Dialog>
       </section>

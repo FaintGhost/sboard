@@ -7,13 +7,7 @@ export function useUserMutations() {
   const qc = useQueryClient()
 
   const createMutation = useMutation({
-    mutationFn: async (input: { username: string; groupIDs: number[] }) => {
-      const created = await createUser({ username: input.username })
-      if (input.groupIDs.length > 0) {
-        await putUserGroups(created.id, { group_ids: input.groupIDs })
-      }
-      return created
-    },
+    mutationFn: async (input: { username: string }) => createUser({ username: input.username }),
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["users"] })
     },

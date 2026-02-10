@@ -28,6 +28,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
+import { FieldHint } from "@/components/ui/field-hint"
 import {
   Select,
   SelectContent,
@@ -632,7 +633,10 @@ export function NodesPage() {
                 </div>
 
                 <div className="space-y-1 md:col-span-2">
-                  <Label className="text-sm text-slate-700">{t("nodes.group")}</Label>
+                  <div className="flex items-center gap-1">
+                    <Label className="text-sm text-slate-700">{t("nodes.group")}</Label>
+                    <FieldHint label={t("nodes.group")}>{t("nodes.groupRequiredHint")}</FieldHint>
+                  </div>
                   <Select
                     value={upserting.groupID == null ? "none" : String(upserting.groupID)}
                     onValueChange={(v) =>
@@ -653,9 +657,6 @@ export function NodesPage() {
                       ))}
                     </SelectContent>
                   </Select>
-                  <p className="text-xs text-slate-500">
-                    {t("nodes.groupRequiredHint")}
-                  </p>
                 </div>
 
                 <div className="text-sm text-amber-700 md:col-span-2">

@@ -8,6 +8,7 @@ import { AsyncButton } from "@/components/ui/async-button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { FieldHint } from "@/components/ui/field-hint"
 
 type BootstrapValues = {
   setup_token: string
@@ -65,7 +66,10 @@ export function BootstrapForm({
 
         <form onSubmit={form.handleSubmit((values) => onBootstrap(values))} className="grid gap-4">
           <div className="grid gap-2">
-            <Label htmlFor="setup_token">{t("auth.setupTokenLabel")}</Label>
+            <div className="flex items-center gap-1">
+              <Label htmlFor="setup_token">{t("auth.setupTokenLabel")}</Label>
+              <FieldHint label={t("auth.setupTokenLabel")}>{t("auth.setupTokenHint")}</FieldHint>
+            </div>
             <Input
               id="setup_token"
               placeholder={t("auth.setupTokenPlaceholder")}
@@ -74,9 +78,7 @@ export function BootstrapForm({
             />
             {form.formState.errors.setup_token ? (
               <p className="text-destructive text-sm">{form.formState.errors.setup_token.message}</p>
-            ) : (
-              <p className="text-muted-foreground text-xs">{t("auth.setupTokenHint")}</p>
-            )}
+            ) : null}
           </div>
 
           <div className="grid gap-2">

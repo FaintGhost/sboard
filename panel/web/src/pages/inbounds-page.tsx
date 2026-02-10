@@ -24,6 +24,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Label } from "@/components/ui/label"
+import { FieldHint } from "@/components/ui/field-hint"
 import {
   Select,
   SelectContent,
@@ -437,7 +438,13 @@ export function InboundsPage() {
 
                 <div className="space-y-2 md:col-span-2">
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <Label className="text-sm text-slate-700">{t("inbounds.template")}</Label>
+                    <div className="flex items-center gap-1">
+                      <Label className="text-sm text-slate-700">{t("inbounds.template")}</Label>
+                      <FieldHint label={t("inbounds.template")}>
+                        <p>{t("inbounds.templateHelp")}</p>
+                        <p className="mt-1">{t("inbounds.usersManagedHint")}</p>
+                      </FieldHint>
+                    </div>
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                       <Label className="text-xs text-slate-500">{t("inbounds.templatePreset")}</Label>
                       <Select
@@ -632,9 +639,6 @@ export function InboundsPage() {
                       {t("inbounds.generateRun")}
                     </AsyncButton>
                   </div>
-
-                  <p className="text-xs text-slate-500">{t("inbounds.templateHelp")}</p>
-                  <p className="text-xs text-slate-500">{t("inbounds.usersManagedHint")}</p>
 
                   {currentTemplateHint ? (
                     <p className="text-xs text-amber-700">{currentTemplateHint}</p>

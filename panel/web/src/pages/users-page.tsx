@@ -204,10 +204,18 @@ export function UsersPage() {
 
   const handleSave = async (state: EditState) => {
     if (state.mode === "create") {
-      await createMutation.mutateAsync({
+      const created = await createMutation.mutateAsync({
         username: state.username.trim(),
-        groupIDs: state.groupIDs,
       })
+      const payload = buildUpdatePayload({
+        ...state,
+        mode: "edit",
+        user: created,
+      })
+      await Promise.all([
+        updateMutation.mutateAsync({ id: created.id, payload }),
+        saveGroupsMutation.mutateAsync({ userId: created.id, groupIDs: state.groupIDs }),
+      ])
       setUpserting(null)
       return
     }
