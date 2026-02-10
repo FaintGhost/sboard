@@ -23,7 +23,8 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { listTrafficTimeseries, type TrafficTimeseriesPoint } from "@/lib/api/traffic"
-import { bytesToGBString } from "@/lib/units"
+import { resolveTrafficChartRows } from "@/lib/traffic-chart-data"
+import { formatBytesWithUnit, pickByteUnit } from "@/lib/units"
 
 type RangeKey = "24h" | "7d" | "30d"
 
@@ -63,20 +64,28 @@ export function ChartAreaInteractive() {
   })
 
   React.useEffect(() => {
-    const rows = tsQuery.data ?? []
-    if (rows.length === 0) return
-    setDisplayRows(rows)
+    if (tsQuery.data === undefined) return
+    setDisplayRows(tsQuery.data)
     setAnimNonce((x) => x + 1)
   }, [tsQuery.data])
 
   const chartData = React.useMemo(() => {
-    const rows = (tsQuery.data && tsQuery.data.length > 0) ? tsQuery.data : displayRows
+    const rows = resolveTrafficChartRows(tsQuery.data, displayRows)
     return rows.map((r) => ({
       at: r.bucket_start,
       upload: r.upload,
       download: r.download,
     }))
   }, [tsQuery.data, displayRows])
+
+  const chartUnit = React.useMemo(() => {
+    let maxBytes = 0
+    for (const row of chartData) {
+      if (row.upload > maxBytes) maxBytes = row.upload
+      if (row.download > maxBytes) maxBytes = row.download
+    }
+    return pickByteUnit(maxBytes)
+  }, [chartData])
 
   const isUpdating = tsQuery.isFetching && !tsQuery.isLoading
 
@@ -146,7 +155,7 @@ export function ChartAreaInteractive() {
               tickLine={false}
               axisLine={false}
               width={64}
-              tickFormatter={(v) => `${bytesToGBString(Number(v))}G`}
+              tickFormatter={(v) => `${formatBytesWithUnit(Number(v), chartUnit)} ${chartUnit}`}
             />
             <XAxis
               dataKey="at"
@@ -174,7 +183,7 @@ export function ChartAreaInteractive() {
                   formatter={(value, name) => {
                     const n = typeof value === "number" ? value : Number(value)
                     const label = name === "upload" ? t("dashboard.uplink") : t("dashboard.downlink")
-                    return [`${bytesToGBString(n)} GB`, label]
+                    return [`${formatBytesWithUnit(n, chartUnit)} ${chartUnit}`, label]
                   }}
                 />
               }
@@ -182,7 +191,7 @@ export function ChartAreaInteractive() {
 
             <Area
               dataKey="upload"
-              type="monotone"
+              type="monotoneX"
               stroke="var(--color-upload)"
               fill="url(#fillUpload)"
               strokeWidth={2}
@@ -195,7 +204,7 @@ export function ChartAreaInteractive() {
             />
             <Area
               dataKey="download"
-              type="monotone"
+              type="monotoneX"
               stroke="var(--color-download)"
               fill="url(#fillDownload)"
               strokeWidth={2}

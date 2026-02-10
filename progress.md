@@ -579,3 +579,40 @@
   - `panel` 后端全量测试 ✅
   - `panel/web` 前端全量测试 ✅
   - `panel/web` 构建 ✅
+
+## 2026-02-10 Session: 仪表盘流量趋势图空数据回退修复（已完成）
+- 新增：
+  - `panel/web/src/lib/traffic-chart-data.ts`
+  - `panel/web/src/lib/traffic-chart-data.test.ts`
+- 修改：
+  - `panel/web/src/components/chart-area-interactive.tsx`
+    - 空数组结果不再回退旧折线；
+    - 仅在 query 数据为 `undefined`（加载中）时保留旧数据。
+- 严格验证：
+  - `cd panel/web && npm test -- --run` ✅（14 files, 34 tests）
+  - `cd panel/web && npm run build` ✅
+
+## 2026-02-10 Session: 仪表盘流量趋势单位与曲线感知修复（已完成）
+- 变更：
+  - `panel/web/src/components/chart-area-interactive.tsx`
+    - 图表 Y 轴与 tooltip 改为自适应单位显示。
+    - 线型从 `monotone` 调整为 `linear`。
+  - `panel/web/src/lib/units.ts`
+    - 新增 `pickByteUnit` / `formatBytesWithUnit`。
+  - `panel/web/src/lib/units.test.ts`
+    - 新增单位选择与格式化测试。
+- 既有回归保持：
+  - `panel/web/src/lib/traffic-chart-data.ts` 与其测试继续生效，确保空数组不回退旧折线。
+- 验证：
+  - `npm test -- --run` ✅
+  - `npm run build` ✅
+
+## 2026-02-10 Session: 仪表盘趋势图平滑曲线优化（已完成）
+- 修改文件：
+  - `panel/web/src/components/chart-area-interactive.tsx`
+- 完成内容：
+  - 将 upload/download 曲线类型由 `linear` 改为 `monotoneX`，恢复平滑观感；
+  - 保留自适应单位显示与空数据回退修复，确保视觉与数值一致。
+- 严格验证：
+  - `cd panel/web && npm test -- --run` ✅（15 files, 39 tests）
+  - `cd panel/web && npm run build` ✅

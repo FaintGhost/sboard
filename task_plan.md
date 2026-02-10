@@ -428,3 +428,90 @@ Complete
 - [x] `panel/web` 构建通过
 - [x] 更新 `findings.md` / `progress.md`
 - **Status:** complete
+
+---
+
+# Session Plan: 仪表盘流量趋势图空数据回退修复（2026-02-10）
+
+## Goal
+修复流量趋势图在接口返回空数据时仍展示旧折线的问题，确保图形与 hover 数值一致。
+
+## Current Phase
+Complete
+
+## Phases
+
+### Phase 1: 复现与根因
+- [x] 复现“无流量但折线仍上扬”
+- [x] 定位到 chart 数据回退逻辑导致的陈旧数据复用
+- **Status:** complete
+
+### Phase 2: TDD 修复
+- [x] 新增图表数据选择逻辑测试
+- [x] 修复空数组时回退旧数据的逻辑
+- [x] 接入图表组件
+- **Status:** complete
+
+### Phase 3: 验证与记录
+- [x] 前端全量测试通过
+- [x] 前端构建通过
+- [x] 更新 `findings.md` / `progress.md`
+- **Status:** complete
+
+---
+
+# Session Plan: 仪表盘流量趋势“上扬但 0GB”修复（2026-02-10）
+
+## Goal
+修复趋势图视觉与 tooltip 数值不一致问题，避免小流量被错误感知为逻辑异常。
+
+## Current Phase
+Complete
+
+## Phases
+
+### Phase 1: 根因定位
+- [x] 确认空数据回退逻辑已修复
+- [x] 识别固定 GB 单位导致的“0GB 错觉”
+- [x] 识别平滑曲线造成的视觉放大
+- **Status:** complete
+
+### Phase 2: 实施修复
+- [x] 图表改为自适应单位显示
+- [x] 线型由 monotone 改为 linear
+- [x] 补充单位工具与测试
+- **Status:** complete
+
+### Phase 3: 验证与记录
+- [x] 前端全量测试通过
+- [x] 前端构建通过
+- [x] 更新 `findings.md` / `progress.md`
+- **Status:** complete
+
+---
+
+# Session Plan: 仪表盘趋势图平滑曲线优化（2026-02-10）
+
+## Goal
+在不牺牲数据准确性的前提下，将趋势图恢复为更自然的平滑曲线。
+
+## Current Phase
+Complete
+
+## Phases
+
+### Phase 1: 影响面确认
+- [x] 全局检索图表线型配置
+- [x] 确认仅 dashboard 趋势图受影响
+- **Status:** complete
+
+### Phase 2: 最小改动实施
+- [x] 将 upload/download 曲线改为 `monotoneX`
+- [x] 保持单位与数据回退逻辑不变
+- **Status:** complete
+
+### Phase 3: 严格验证与记录
+- [x] 前端全量测试通过
+- [x] 前端构建通过
+- [x] 更新 `findings.md` / `progress.md`
+- **Status:** complete

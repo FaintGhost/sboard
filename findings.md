@@ -449,3 +449,50 @@
   - `cd panel && GOCACHE=/tmp/go-build GOMODCACHE=/tmp/go/pkg/mod go test ./...` ✅
   - `cd panel/web && npm test -- --run` ✅（13 files, 31 tests）
   - `cd panel/web && npm run build` ✅
+
+## Session Findings (2026-02-10, 仪表盘流量趋势图空数据回退修复)
+- 用户反馈：24 小时未使用流量时，折线图仍上扬；hover 显示 0 GB，视觉与数据不一致。
+- 根因：
+  - `ChartAreaInteractive` 采用“无数据时回退 displayRows”策略防闪烁，
+  - 但当接口成功返回 `[]` 时被错误当作“继续使用旧数据”，导致旧曲线残留。
+- 修复：
+  - 新增 `resolveTrafficChartRows(queryRows, fallbackRows)`：
+    - `queryRows === undefined`（请求中）才允许回退；
+    - `queryRows = []`（请求成功且空）必须展示空图。
+  - 图表组件同步修改：
+    - `tsQuery.data` 只要有值（含空数组）就写回 `displayRows`；
+    - 计算 `chartData` 时使用新策略，杜绝陈旧数据。
+- 同类排查：
+  - 已检索前端图表相关组件，当前仅 `chart-area-interactive.tsx` 存在该模式并已修复。
+- 验证：
+  - 新增测试：`panel/web/src/lib/traffic-chart-data.test.ts`（3 cases）✅
+  - `npm test -- --run` ✅（14 files, 34 tests）
+  - `npm run build` ✅
+
+## Session Findings (2026-02-10, 仪表盘流量趋势单位与曲线感知修复)
+- 复盘结果：
+  - 折线仍上扬并非“旧数据残留”单一原因。
+  - 即使真实流量很小（例如 KB/MB 级），固定按 GB 展示会被四舍五入为 `0 GB`，导致“曲线有变化但 hover 显示 0GB”的错觉。
+- 修复动作：
+  - 图表改为自适应单位（B/KB/MB/GB/TB）：
+    - Y 轴与 tooltip 使用同一单位，确保视觉与数值一致。
+  - 折线插值从 `monotone` 调整为 `linear`，减少平滑曲线造成的“虚假上扬感”。
+- 兼容性：
+  - 保持卡片统计现有 GB 文案不变，仅修正趋势图读数逻辑与视觉解释。
+- 验证：
+  - `npm test -- --run` ✅（15 files, 39 tests）
+  - `npm run build` ✅
+
+## Session Findings (2026-02-10, 仪表盘流量趋势平滑曲线回调)
+- 背景：用户确认“硬折线”视觉生硬，希望恢复平滑曲线，但不能回到“看起来涨很多却显示 0GB”的误导状态。
+- 根因复盘：
+  - 之前从 `monotone` 切到 `linear` 是为了降低视觉夸张；
+  - 但当前已引入自适应单位后，读数一致性问题已被解决，线型可以重新优化为更自然的平滑曲线。
+- 实施方案：
+  - 将趋势图两条 `Area` 曲线从 `linear` 调整为 `monotoneX`；
+  - 保持“自适应单位 + 空数组不回退旧数据”的逻辑不变。
+- 同类排查：
+  - 全局检索图表线型定义，当前仅 `chart-area-interactive.tsx` 使用该配置，已全量覆盖。
+- 验证：
+  - `cd panel/web && npm test -- --run` ✅（15 files, 39 tests）
+  - `cd panel/web && npm run build` ✅
