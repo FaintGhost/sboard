@@ -465,18 +465,21 @@ export function NodesPage() {
         <Dialog open={!!upserting} onOpenChange={(open) => (!open ? setUpserting(null) : null)}>
           <DialogContent
             aria-label={upserting?.mode === "create" ? t("nodes.createNode") : t("nodes.editNode")}
+            className="sm:max-w-2xl max-h-[86dvh] overflow-hidden p-0"
           >
-            <DialogHeader>
-              <DialogTitle>
-                {upserting?.mode === "create" ? t("nodes.createNode") : t("nodes.editNode")}
-              </DialogTitle>
-              <DialogDescription>
-                {upserting?.mode === "edit" ? upserting.node.name : t("nodes.createNode")}
-              </DialogDescription>
-            </DialogHeader>
+            <div className="flex h-full max-h-[86dvh] flex-col">
+              <DialogHeader className="border-b px-6 pt-6 pb-4">
+                <DialogTitle>
+                  {upserting?.mode === "create" ? t("nodes.createNode") : t("nodes.editNode")}
+                </DialogTitle>
+                <DialogDescription>
+                  {upserting?.mode === "edit" ? upserting.node.name : t("nodes.createNode")}
+                </DialogDescription>
+              </DialogHeader>
 
-            {upserting ? (
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              {upserting ? (
+                <div className="overflow-y-auto px-6 py-4">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="space-y-1 md:col-span-2">
                   <Label className="text-sm text-slate-700" htmlFor="node-name">
                     {t("nodes.name")}
@@ -562,7 +565,7 @@ export function NodesPage() {
                       <div className="text-xs text-muted-foreground">{t("nodes.deploySubtitle")}</div>
                     </div>
 
-                    <pre className="bg-muted overflow-x-auto rounded-md p-3 text-xs leading-relaxed">
+                    <pre className="bg-muted max-h-52 overflow-auto rounded-md p-3 text-xs leading-relaxed">
                       <code>
                         {buildNodeDockerCompose({
                           port: upserting.apiPort,
@@ -664,53 +667,55 @@ export function NodesPage() {
                         : t("nodes.saveFailed"))
                   ) : null}
                 </div>
+                  </div>
+                </div>
+              ) : null}
+
+              <DialogFooter className="border-t bg-background px-6 py-4">
+                <Button
+                  variant="outline"
+                  onClick={() => setUpserting(null)}
+                  disabled={createMutation.isPending || updateMutation.isPending}
+                >
+                  {t("common.cancel")}
+                </Button>
+                <AsyncButton
+                  onClick={() => {
+                    if (!upserting) return
+                    const name = upserting.name.trim()
+                    const api_address = upserting.apiAddress.trim()
+                    const secret_key = upserting.secretKey.trim()
+                    const public_address = upserting.publicAddress.trim()
+                    const api_port = upserting.apiPort
+                    if (!name || !api_address || !secret_key || !public_address || api_port <= 0) return
+
+                    const payload = {
+                      name,
+                      api_address,
+                      api_port,
+                      secret_key,
+                      public_address,
+                      group_id: upserting.groupID,
+                    }
+
+                    if (upserting.mode === "create") {
+                      createMutation.mutate(payload)
+                    } else {
+                      updateMutation.mutate({ id: upserting.node.id, payload })
+                    }
+                  }}
+                  disabled={createMutation.isPending || updateMutation.isPending}
+                  pending={createMutation.isPending || updateMutation.isPending}
+                  pendingText={
+                    upserting?.mode === "create"
+                      ? t("common.creating")
+                      : t("common.saving")
+                  }
+                >
+                  {t("common.save")}
+                </AsyncButton>
+              </DialogFooter>
               </div>
-            ) : null}
-
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setUpserting(null)}
-                disabled={createMutation.isPending || updateMutation.isPending}
-              >
-                {t("common.cancel")}
-              </Button>
-              <AsyncButton
-                onClick={() => {
-                  if (!upserting) return
-                  const name = upserting.name.trim()
-                  const api_address = upserting.apiAddress.trim()
-                  const secret_key = upserting.secretKey.trim()
-                  const public_address = upserting.publicAddress.trim()
-                  const api_port = upserting.apiPort
-                  if (!name || !api_address || !secret_key || !public_address || api_port <= 0) return
-
-                  const payload = {
-                    name,
-                    api_address,
-                    api_port,
-                    secret_key,
-                    public_address,
-                    group_id: upserting.groupID,
-                  }
-
-                  if (upserting.mode === "create") {
-                    createMutation.mutate(payload)
-                  } else {
-                    updateMutation.mutate({ id: upserting.node.id, payload })
-                  }
-                }}
-                disabled={createMutation.isPending || updateMutation.isPending}
-                pending={createMutation.isPending || updateMutation.isPending}
-                pendingText={
-                  upserting?.mode === "create"
-                    ? t("common.creating")
-                    : t("common.saving")
-                }
-              >
-                {t("common.save")}
-              </AsyncButton>
-            </DialogFooter>
           </DialogContent>
         </Dialog>
 
