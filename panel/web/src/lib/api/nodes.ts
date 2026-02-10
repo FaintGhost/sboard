@@ -42,8 +42,14 @@ export function updateNode(
   });
 }
 
-export function deleteNode(id: number) {
-  return apiRequest<{ status: string }>(`/api/nodes/${id}`, { method: "DELETE" });
+export function deleteNode(id: number, options: { force?: boolean } = {}) {
+  const query = new URLSearchParams();
+  if (options.force) query.set("force", "true");
+  const suffix = query.toString() ? `?${query.toString()}` : "";
+  return apiRequest<{ status: string; force?: boolean; deleted_inbounds?: number }>(
+    `/api/nodes/${id}${suffix}`,
+    { method: "DELETE" },
+  );
 }
 
 export function nodeHealth(id: number) {

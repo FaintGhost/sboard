@@ -635,3 +635,35 @@
   - cd panel/web && npm test -- --run src/pages/settings-page.test.tsx src/pages/settings-timezone.test.tsx ✅
   - cd panel/web && npm test -- --run ✅（17 files, 44 tests）
   - cd panel/web && npm run build ✅
+
+## Session: 2026-02-10 (Panel graceful shutdown + force node delete)
+
+### Task: 节点删除策略与 Panel 停机行为落地
+- **Status:** complete
+- Actions taken:
+  - 修复 `panel/internal/api/nodes.go` 语法损坏问题（`toNodeDTO` 函数拼接错误）。
+  - 落地 `DELETE /api/nodes/:id?force=true`：
+    - 默认删除保持安全策略（有入站返回冲突）。
+    - force 删除时先向 node 下发空入站配置（drain），再删除该节点所有入站，最后删除节点。
+  - 落地 `panel/cmd/panel/main.go` 优雅停机：接收 `SIGINT/SIGTERM`，停止 monitor，shutdown HTTP server，关闭 DB。
+  - 补齐测试：
+    - API：`TestNodesDelete_ForceDrainsNodeAndDeletesInbounds`
+    - DB：`TestDeleteInboundsByNode`
+  - 完整验证通过：`go test ./panel/... ./node/... -count=1`
+- Files created/modified:
+  - `panel/cmd/panel/main.go`
+  - `panel/internal/api/nodes.go`
+  - `panel/internal/db/inbounds.go`
+  - `panel/internal/api/nodes_inbounds_test.go`
+  - `panel/internal/db/nodes_inbounds_test.go`
+
+### Hotfix: 节点删除弹窗 i18n 混排修复（2026-02-10）
+- **Status:** complete
+- Actions taken:
+  - 节点删除错误新增本地化映射：`ApiError.status === 409` 或命中 `node is in use` 时统一展示 `nodes.deleteInUse`。
+  - 删除弹窗不再拼接原始英文错误与中文提示，避免出现 `node is in use该节点...` 混排。
+  - 同步补充中英文文案键：`nodes.deleteInUse`。
+- Files created/modified:
+  - `panel/web/src/pages/nodes-page.tsx`
+  - `panel/web/src/i18n/locales/zh.json`
+  - `panel/web/src/i18n/locales/en.json`

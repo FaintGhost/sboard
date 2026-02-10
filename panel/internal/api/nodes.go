@@ -8,6 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"sboard/panel/internal/db"
+	"sboard/panel/internal/node"
 )
 
 type nodeDTO struct {
@@ -210,6 +211,60 @@ func NodesDelete(store *db.Store) gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
 			return
 		}
+
+		force := parseBoolQuery(c.Query("force"))
+		if !force {
+			if err := store.DeleteNode(c.Request.Context(), id); err != nil {
+				if errors.Is(err, db.ErrNotFound) {
+					c.JSON(http.StatusNotFound, gin.H{"error": "node not found"})
+					return
+				}
+				if errors.Is(err, db.ErrConflict) {
+					c.JSON(http.StatusConflict, gin.H{"error": "node is in use"})
+					return
+				}
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "delete node failed"})
+				return
+			}
+			c.JSON(http.StatusOK, gin.H{"status": "ok"})
+			return
+		}
+
+		n, err := store.GetNodeByID(c.Request.Context(), id)
+		if err != nil {
+			if errors.Is(err, db.ErrNotFound) {
+				c.JSON(http.StatusNotFound, gin.H{"error": "node not found"})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "get node failed"})
+			return
+		}
+
+		inbounds, err := store.ListInbounds(c.Request.Context(), 10000, 0, n.ID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "list inbounds failed"})
+			return
+		}
+
+		if len(inbounds) > 0 {
+			lock := nodeLock(n.ID)
+			lock.Lock()
+			defer lock.Unlock()
+
+			client := nodeClientFactory()
+			emptyPayload := node.SyncPayload{Inbounds: []map[string]any{}}
+			if err := client.SyncConfig(c.Request.Context(), n, emptyPayload); err != nil {
+				c.JSON(http.StatusBadGateway, gin.H{"error": "force drain failed: " + err.Error()})
+				return
+			}
+			_ = store.MarkNodeOnline(c.Request.Context(), n.ID, store.NowUTC())
+		}
+
+		deletedInbounds, err := store.DeleteInboundsByNode(c.Request.Context(), id)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "delete node inbounds failed"})
+			return
+		}
 		if err := store.DeleteNode(c.Request.Context(), id); err != nil {
 			if errors.Is(err, db.ErrNotFound) {
 				c.JSON(http.StatusNotFound, gin.H{"error": "node not found"})
@@ -222,7 +277,17 @@ func NodesDelete(store *db.Store) gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "delete node failed"})
 			return
 		}
-		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+		c.JSON(http.StatusOK, gin.H{"status": "ok", "force": true, "deleted_inbounds": deletedInbounds})
+	}
+}
+
+func parseBoolQuery(raw string) bool {
+	v := strings.TrimSpace(strings.ToLower(raw))
+	switch v {
+	case "1", "true", "yes", "y", "on":
+		return true
+	default:
+		return false
 	}
 }
 

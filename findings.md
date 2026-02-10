@@ -496,3 +496,21 @@
 - 验证：
   - `cd panel/web && npm test -- --run` ✅（15 files, 39 tests）
   - `cd panel/web && npm run build` ✅
+
+## Findings: 2026-02-10 节点删除/停机策略
+
+- 删除节点策略调整为双轨：
+  - 默认删除：保持安全保护，节点仍有关联入站时返回冲突。
+  - 强制删除：显式 `force=true` 才执行远端 drain + 本地级联删除。
+- 强制删除的顺序（避免端口残留与脏状态）：
+  1. 获取节点与该节点入站。
+  2. 若存在入站，先调用 node `/api/config/sync` 下发空 `inbounds`。
+  3. 删除本地 `inbounds` 记录。
+  4. 删除 `node` 记录。
+- Panel 停机行为补齐为 graceful shutdown：
+  - 停止 monitor context。
+  - 优雅关闭 HTTP 服务。
+  - 关闭 DB 连接。
+- 回归验证结果：
+  - `go test ./panel/internal/api ./panel/internal/db -count=1` 通过。
+  - `go test ./panel/... ./node/... -count=1` 全绿。

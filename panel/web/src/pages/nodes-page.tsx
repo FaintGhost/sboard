@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { MoreHorizontal, Pencil, ShieldAlert, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 import { AsyncButton } from "@/components/ui/async-button";
@@ -71,6 +71,11 @@ type EditState = {
   linkAddress: boolean;
 };
 
+type DeleteNodeState = {
+  node: Node;
+  force: boolean;
+};
+
 const defaultNewNode: Node = {
   id: 0,
   uuid: "",
@@ -106,6 +111,7 @@ export function NodesPage() {
   const [upserting, setUpserting] = useState<EditState | null>(null);
   const [trafficNode, setTrafficNode] = useState<Node | null>(null);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<DeleteNodeState | null>(null);
 
   const queryParams = useMemo(() => ({ limit: 50, offset: 0 }), []);
   const nodesQuery = useQuery({
@@ -156,15 +162,30 @@ export function NodesPage() {
     },
   });
 
+  const resolveDeleteNodeErrorMessage = (error: unknown): string => {
+    if (error instanceof ApiError) {
+      if (error.status === 409 || error.message.toLowerCase().includes("node is in use")) {
+        return t("nodes.deleteInUse");
+      }
+      return error.message;
+    }
+    return t("nodes.deleteFailed");
+  };
+
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => deleteNode(id),
-    onSuccess: async () => {
+    mutationFn: (input: { id: number; force: boolean }) =>
+      deleteNode(input.id, { force: input.force }),
+    onSuccess: async (_data, variables) => {
+      setDeleting(null);
+      setActionMessage(variables.force ? t("nodes.deleteForcedSuccess") : t("nodes.deleteSuccess"));
       await qc.invalidateQueries({ queryKey: ["nodes"] });
     },
     onError: (e) => {
-      setActionMessage(e instanceof ApiError ? e.message : t("nodes.deleteFailed"));
+      setActionMessage(resolveDeleteNodeErrorMessage(e));
     },
   });
+
+  const deleteErrorMessage = resolveDeleteNodeErrorMessage(deleteMutation.error);
 
   const trafficQuery = useQuery({
     queryKey: ["nodes", "traffic", trafficNode?.id ?? 0],
@@ -447,7 +468,8 @@ export function NodesPage() {
                             disabled={deleteMutation.isPending}
                             onClick={() => {
                               setActionMessage(null);
-                              deleteMutation.mutate(n.id);
+                              deleteMutation.reset();
+                              setDeleting({ node: n, force: false });
                             }}
                           >
                             <Trash2 className="mr-2 size-4" />
@@ -734,6 +756,101 @@ export function NodesPage() {
                 </AsyncButton>
               </DialogFooter>
             </div>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog
+          open={!!deleting}
+          onOpenChange={(open) => {
+            if (!open) {
+              setDeleting(null);
+              deleteMutation.reset();
+            }
+          }}
+        >
+          <DialogContent
+            aria-label={t("nodes.deleteNode")}
+            className="overflow-hidden p-0 sm:max-w-xl"
+          >
+            <DialogHeader className="border-b px-6 pt-6 pb-4">
+              <div className="flex items-start gap-3">
+                <span className="flex size-9 items-center justify-center rounded-full bg-muted text-destructive">
+                  <ShieldAlert className="size-5" />
+                </span>
+                <div className="space-y-1">
+                  <DialogTitle>{t("nodes.deleteDialogTitle")}</DialogTitle>
+                  <DialogDescription>{t("nodes.deleteDialogDescription")}</DialogDescription>
+                </div>
+              </div>
+            </DialogHeader>
+
+            <div className="space-y-4 px-6 py-5">
+              <div className="rounded-md border bg-muted/30 p-3">
+                <p className="text-xs text-muted-foreground">{t("nodes.deleteDialogTarget")}</p>
+                <p className="truncate text-sm font-semibold">{deleting?.node.name}</p>
+              </div>
+
+              <div className="rounded-md border bg-muted/20 p-3">
+                <p className="text-xs font-medium text-foreground">
+                  {t("nodes.deleteDialogImpact")}
+                </p>
+                <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+                  <li>• {t("nodes.deleteImpactNode")}</li>
+                  <li>• {t("nodes.deleteImpactInbounds")}</li>
+                </ul>
+              </div>
+
+              <div className="rounded-lg border border-border/70 bg-background/70 p-3">
+                <div className="flex items-start gap-3">
+                  <Checkbox
+                    id="node-force-delete"
+                    checked={deleting?.force ?? false}
+                    onCheckedChange={(checked) =>
+                      setDeleting((prev) => (prev ? { ...prev, force: checked === true } : prev))
+                    }
+                    disabled={deleteMutation.isPending}
+                  />
+                  <div className="space-y-1">
+                    <Label
+                      htmlFor="node-force-delete"
+                      className="cursor-pointer text-sm font-medium"
+                    >
+                      {t("nodes.forceDeleteLabel")}
+                    </Label>
+                    <p className="text-xs text-muted-foreground">{t("nodes.forceDeleteHint")}</p>
+                  </div>
+                </div>
+              </div>
+
+              {deleteMutation.isError ? (
+                <p className="text-sm text-destructive">{deleteErrorMessage}</p>
+              ) : null}
+            </div>
+
+            <DialogFooter className="border-t bg-background px-6 py-4">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setDeleting(null);
+                  deleteMutation.reset();
+                }}
+                disabled={deleteMutation.isPending}
+              >
+                {t("common.cancel")}
+              </Button>
+              <AsyncButton
+                variant="destructive"
+                onClick={() => {
+                  if (!deleting) return;
+                  deleteMutation.mutate({ id: deleting.node.id, force: deleting.force });
+                }}
+                disabled={deleteMutation.isPending}
+                pending={deleteMutation.isPending}
+                pendingText={t("common.deleting")}
+              >
+                {deleting?.force ? t("nodes.forceDeleteAction") : t("nodes.deleteConfirmAction")}
+              </AsyncButton>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
 

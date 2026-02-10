@@ -3,6 +3,10 @@ package main
 import (
 	"context"
 	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"sboard/panel/internal/api"
@@ -20,8 +24,6 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	// Use embedded migrations by default to make Docker images robust.
-	// Tests can still call db.MigrateUp(db, dir) with a filesystem path when needed.
 	if err := db.MigrateUp(database, ""); err != nil {
 		log.Fatal(err)
 	}
@@ -31,8 +33,6 @@ func main() {
 		log.Fatalf("init timezone failed: %v", err)
 	}
 
-	// If the panel is not initialized yet, require a setup token for secure onboarding.
-	// If not provided via env, generate one and print it once at startup.
 	if n, err := db.AdminCount(store); err == nil && n == 0 {
 		if cfg.SetupToken == "" {
 			token, err := api.GenerateSetupToken()
@@ -44,32 +44,68 @@ func main() {
 		log.Printf("[setup] no admin found. setup token: %s", cfg.SetupToken)
 	}
 
+	monitorCtx, monitorCancel := context.WithCancel(context.Background())
+
 	if cfg.NodeMonitorInterval > 0 {
 		m := monitor.NewNodesMonitor(store, nil)
-		ctx := context.Background()
-		// initial pass for fast feedback in UI
 		go func() {
-			if err := m.CheckOnce(ctx); err != nil {
+			if err := m.CheckOnce(monitorCtx); err != nil {
 				log.Printf("[monitor] check failed: %v", err)
 			}
 			ticker := time.NewTicker(cfg.NodeMonitorInterval)
 			defer ticker.Stop()
-			for range ticker.C {
-				if err := m.CheckOnce(ctx); err != nil {
-					log.Printf("[monitor] check failed: %v", err)
+			for {
+				select {
+				case <-monitorCtx.Done():
+					return
+				case <-ticker.C:
+					if err := m.CheckOnce(monitorCtx); err != nil {
+						log.Printf("[monitor] check failed: %v", err)
+					}
 				}
 			}
 		}()
 		log.Printf("[monitor] nodes enabled interval=%s", cfg.NodeMonitorInterval)
 	}
 
-	ctx := context.Background()
 	tm := monitor.NewTrafficMonitor(store, nil)
-	go tm.Run(ctx, cfg.TrafficMonitorInterval)
+	go tm.Run(monitorCtx, cfg.TrafficMonitorInterval)
 	log.Printf("[monitor] traffic enabled interval=%s", cfg.TrafficMonitorInterval)
 
 	r := api.NewRouter(cfg, store)
-	if err := r.Run(cfg.HTTPAddr); err != nil {
-		log.Fatal(err)
+	srv := &http.Server{
+		Addr:    cfg.HTTPAddr,
+		Handler: r,
 	}
+
+	go func() {
+		log.Printf("[http] starting server on %s", cfg.HTTPAddr)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("[http] listen error: %v", err)
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	sig := <-quit
+	log.Printf("[shutdown] received signal: %v", sig)
+
+	monitorCancel()
+
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer shutdownCancel()
+
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		log.Printf("[shutdown] http server shutdown error: %v", err)
+	} else {
+		log.Printf("[shutdown] http server stopped")
+	}
+
+	if err := database.Close(); err != nil {
+		log.Printf("[shutdown] db close error: %v", err)
+	} else {
+		log.Printf("[shutdown] db closed")
+	}
+
+	log.Printf("[shutdown] graceful shutdown complete")
 }
