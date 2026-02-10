@@ -760,3 +760,39 @@
 - Node 总覆盖率：`70.3% -> 73.6%`
 - Panel 总覆盖率：`69.0%`（本批未改 panel 业务测试）
 - 后端合并覆盖率：`69.2% -> 69.5%`
+
+## 2026-02-10 Findings: 后端覆盖率提升（P5）
+
+### 关键发现
+- `node/internal/state` 的主要缺口在 `Persist/Restore` 错误边界路径（空 path、目录冲突、apply nil/失败）。
+- `node/internal/sync` 的缺口集中在 `ParseAndValidateConfig` 的 BadRequest 分支，适合用表驱动快速补齐。
+- `sync` 的 context canceled 行为在不同环境可能不稳定，测试已做兼容（允许 `context.Canceled` 或 `BadRequestError`）。
+
+### 新增测试文件
+- `node/internal/state/state_extra_test.go`
+- `node/internal/sync/parse_extra_test.go`
+
+### 覆盖率结果
+- `node/internal/state`：`60.0% -> 74.3%`
+- `node/internal/sync`：`65.6% -> 93.8%`
+- Node 总覆盖率：`73.6% -> 77.0%`
+- Panel 总覆盖率：`69.0%`
+- 后端合并覆盖率：`69.5% -> 69.9%`
+
+## 2026-02-10 Findings: 后端覆盖率提升（P6）
+
+### 关键发现
+- `panel/internal/subscription` 低覆盖集中在 `v2ray` 多协议构建函数；补齐协议分支后提升明显。
+- `panel/internal/monitor` 的主要缺口是 `Run` 循环函数，新增最小可控的 interval/cancel 行为测试即可覆盖。
+- 本轮完成后，后端合并覆盖率已突破 `70%`。
+
+### 新增测试文件
+- `panel/internal/subscription/v2ray_extra_test.go`
+- `panel/internal/monitor/traffic_monitor_run_test.go`
+
+### 覆盖率结果
+- `panel/internal/subscription`：`57.0% -> 81.6%`
+- `panel/internal/monitor`：`63.6% -> 73.6%`
+- Panel 总覆盖率：`69.0% -> 70.1%`
+- Node 总覆盖率：`77.0%`
+- 后端合并覆盖率：`69.9% -> 70.9%`

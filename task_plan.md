@@ -727,3 +727,47 @@ Complete
 - [x] 复跑 `panel`/`node` 全量 Go 测试与覆盖率
 - [x] 更新 `findings.md` 与 `progress.md`
 - **Status:** complete
+
+## 2026-02-10 Session: 后端覆盖率提升（P5）
+
+### Goal
+提升 `node/internal/state` 与 `node/internal/sync` 覆盖率，补齐持久化与配置解析错误分支。
+
+### Phases
+
+#### Phase 1: 热点扫描
+- [x] 扫描 `state/sync` 低覆盖函数
+- **Status:** complete
+
+#### Phase 2: 补测实施
+- [x] 新增 `state` 边界与错误分支测试
+- [x] 新增 `sync parse` BadRequest 分支测试
+- [x] 补充 `sync parse` context canceled 兼容测试
+- **Status:** complete
+
+#### Phase 3: 全量复测与记录
+- [x] 复跑 `panel`/`node` 全量 Go 测试与覆盖率
+- [x] 更新 `findings.md` 与 `progress.md`
+- **Status:** complete
+
+## 2026-02-10 Session: 后端覆盖率提升（P6）
+
+### Goal
+把后端合并覆盖率推进到 `70%+`，优先补 `panel/internal/subscription` 与 `panel/internal/monitor` 的低覆盖函数。
+
+### Phases
+
+#### Phase 1: 热点扫描
+- [x] 扫描 `subscription/monitor` 的低覆盖函数
+- **Status:** complete
+
+#### Phase 2: 补测实施
+- [x] 新增 `v2ray` 多协议构建测试（vmess/trojan/ss）
+- [x] 新增 `v2ray` 校验与 unknown 协议跳过测试
+- [x] 新增 `traffic monitor Run` 行为测试（0 interval、cancel 停止）
+- **Status:** complete
+
+#### Phase 3: 全量复测与记录
+- [x] 复跑 `panel`/`node` 全量 Go 测试与覆盖率
+- [x] 更新 `findings.md` 与 `progress.md`
+- **Status:** complete

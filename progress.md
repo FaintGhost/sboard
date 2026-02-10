@@ -903,3 +903,47 @@
 - Panel：`69.0%`
 - Node：`73.6%`
 - Backend Combined：`69.5%`
+
+## 2026-02-10 Progress: 后端覆盖率提升（P5）
+
+### 已完成
+- 新增 `state` 测试：
+  - `Persist` 覆盖空 path、`MkdirAll` 失败、rename 到目录失败。
+  - `Restore` 覆盖空 path、`apply=nil`、`apply` 返回错误分支。
+- 新增 `sync parse` 测试：
+  - 覆盖 `invalid json / inbound invalid json / missing tag / missing type / invalid port / duplicated tag / ss2022 missing password / invalid config`。
+  - 补充 canceled context 的兼容测试。
+
+### 验证命令
+- `cd node && GOCACHE=/tmp/go-build GOMODCACHE=/tmp/go/pkg/mod go test ./internal/state ./internal/sync`
+- `cd panel && GOCACHE=/tmp/go-build GOMODCACHE=/tmp/go/pkg/mod go test ./... -coverprofile=/tmp/panel.cover.next5 -covermode=atomic`
+- `cd node && GOCACHE=/tmp/go-build GOMODCACHE=/tmp/go/pkg/mod go test ./... -coverprofile=/tmp/node.cover.next5 -covermode=atomic`
+- `{ head -n1 /tmp/panel.cover.next5; tail -n +2 /tmp/panel.cover.next5; tail -n +2 /tmp/node.cover.next5; } > /tmp/backend.cover.next5`
+- `GOCACHE=/tmp/go-build go tool cover -func=/tmp/backend.cover.next5 | tail -n1`
+
+### 结果
+- Panel：`69.0%`
+- Node：`77.0%`
+- Backend Combined：`69.9%`
+
+## 2026-02-10 Progress: 后端覆盖率提升（P6）
+
+### 已完成
+- 新增 `subscription` 测试：
+  - `BuildV2Ray` 覆盖 `vmess/trojan/shadowsocks` 协议分支。
+  - 覆盖 `missing user uuid / missing public address / invalid port / invalid settings / unknown protocol skip` 分支。
+- 新增 `monitor` 测试：
+  - `Run` 覆盖 `interval <= 0` 立即返回。
+  - `Run` 覆盖 context cancel 后退出。
+
+### 验证命令
+- `cd panel && GOCACHE=/tmp/go-build GOMODCACHE=/tmp/go/pkg/mod go test ./internal/subscription ./internal/monitor`
+- `cd panel && GOCACHE=/tmp/go-build GOMODCACHE=/tmp/go/pkg/mod go test ./... -coverprofile=/tmp/panel.cover.next6 -covermode=atomic`
+- `cd node && GOCACHE=/tmp/go-build GOMODCACHE=/tmp/go/pkg/mod go test ./... -coverprofile=/tmp/node.cover.next6 -covermode=atomic`
+- `{ head -n1 /tmp/panel.cover.next6; tail -n +2 /tmp/panel.cover.next6; tail -n +2 /tmp/node.cover.next6; } > /tmp/backend.cover.next6`
+- `GOCACHE=/tmp/go-build go tool cover -func=/tmp/backend.cover.next6 | tail -n1`
+
+### 结果
+- Panel：`70.1%`
+- Node：`77.0%`
+- Backend Combined：`70.9%`
