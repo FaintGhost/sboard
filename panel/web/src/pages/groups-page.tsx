@@ -149,16 +149,21 @@ export function GroupsPage() {
       name: string
       description: string
       userIDs: number[]
+      replaceMembers: boolean
     }) => {
       const userIDs = sortedUniqueIDs(input.userIDs)
       if (input.mode === "create") {
         const created = await createGroup({ name: input.name, description: input.description })
-        await replaceGroupUsers(created.id, { user_ids: userIDs })
+        if (input.replaceMembers && userIDs.length > 0) {
+          await replaceGroupUsers(created.id, { user_ids: userIDs })
+        }
         return
       }
 
       await updateGroup(input.groupID, { name: input.name, description: input.description })
-      await replaceGroupUsers(input.groupID, { user_ids: userIDs })
+      if (input.replaceMembers) {
+        await replaceGroupUsers(input.groupID, { user_ids: userIDs })
+      }
     },
     onSuccess: async () => {
       setUpserting(null)
@@ -570,6 +575,7 @@ export function GroupsPage() {
                     name,
                     description,
                     userIDs: upserting.memberIDs,
+                    replaceMembers: upserting.mode === "create" || hasMemberChanges,
                   })
                 }}
                 disabled={
