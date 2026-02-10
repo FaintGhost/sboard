@@ -3,6 +3,7 @@ import { useState, type ReactNode } from "react";
 
 import { ErrorBoundary } from "@/components/error-boundary";
 import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 type AppProvidersProps = {
   children: ReactNode;
@@ -24,8 +25,10 @@ export function AppProviders({ children }: AppProvidersProps) {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        {children}
-        <Toaster />
+        <TooltipProvider delayDuration={120}>
+          {children}
+          <Toaster />
+        </TooltipProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   );

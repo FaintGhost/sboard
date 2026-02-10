@@ -514,3 +514,198 @@
 - 回归验证结果：
   - `go test ./panel/internal/api ./panel/internal/db -count=1` 通过。
   - `go test ./panel/... ./node/... -count=1` 全绿。
+
+## Findings: 2026-02-10 Tooltip 与图例一致性打磨
+
+- 问题：页面中混用了原生 `title` 与 `Tooltip`，导致 hover 体验和视觉不一致。
+- 处理策略：
+  - 交互控件统一使用 `shadcn/ui Tooltip`（含键盘 focus 可达性）。
+  - 原生 `title` 仅保留非交互语义场景（本轮已清理主要可见交互点）。
+- 图表优化：
+  - 图例文案改为 i18n（避免 Upload/Download 英文残留）。
+  - 图例呈现改为 `Badge` + 色点，提高信息分组与可读性。
+  - `download` 曲线使用更高对比 token（`var(--chart-2)`）。
+
+## Session Findings (2026-02-10, Frontend Design 第二轮：语义色彩收口)
+- 背景：近期 UI 打磨后，各页仍残留 `slate/amber/red` 硬编码，导致不同卡片与表单在明暗主题下观感不一致。
+- 本轮策略：
+  - 统一到主题语义 token：`text-foreground`、`text-muted-foreground`、`text-destructive`、`hover:bg-accent`、`bg-muted`。
+  - 遵循“同类覆盖”原则，不做单页面补丁。
+- 覆盖范围：
+  - `panel/web/src/components/ui/field-hint.tsx`
+  - `panel/web/src/components/status-dot.tsx`
+  - `panel/web/src/pages/subscriptions-page.tsx`
+  - `panel/web/src/pages/groups-page.tsx`
+  - `panel/web/src/pages/nodes-page.tsx`
+  - `panel/web/src/pages/inbounds-page.tsx`
+  - `panel/web/src/pages/users/edit-user-dialog.tsx`
+  - `panel/web/src/pages/users/delete-user-dialog.tsx`
+  - `panel/web/src/pages/users/disable-user-dialog.tsx`
+  - `panel/web/src/pages/settings-page.tsx`
+- 结果：
+  - 表单标签、提示、错误反馈、说明文本的语义色统一。
+  - Tooltip 触发图标与状态点组件在暗色模式下对比更稳定。
+  - 清除了前端关键路径中的 `slate/amber/red` 文案级硬编码。
+- 验证：
+  - `cd panel/web && bun run format` ✅
+  - `cd panel/web && bun run lint` ✅
+  - `cd panel/web && bun run build` ✅
+
+## Session Findings (2026-02-10, 严格验证补充)
+- 全量测试中发现两个非功能代码路径问题：
+  - `groups-page` 在测试环境触发 `Tooltip` 缺少 provider。
+  - `nodes-page` 删除测试未覆盖“二次确认弹窗”新交互。
+- 修复动作：
+  - 在 `panel/web/src/providers/app-providers.tsx` 注入全局 `TooltipProvider`。
+  - 更新 `panel/web/src/pages/nodes-page.test.tsx`，按真实交互补齐“删除 -> 确认删除”路径。
+- 结果：
+  - `panel/web` 前端流水线全绿：format/lint/test/build 全通过。
+
+## Session Findings (2026-02-10, 后端覆盖率提升 P0 第一批)
+- 用户目标：先“写入 plan 再执行”，并实际提升后端测试覆盖率。
+- 执行策略：先补最薄弱且可快速验证的两块：
+  - `panel/internal/traffic`
+  - `node/internal/stats`
+
+### 新增测试
+- `panel/internal/traffic/traffic_test.go`
+  - `TestSQLiteProvider_Validation`
+  - `TestSQLiteProvider_Aggregations`
+  - `TestSQLiteProvider_InvalidQuery`
+- `node/internal/stats/inbound_tracker_test.go`
+  - `TestInboundTrafficTracker_NilSafety`
+  - `TestInboundTrafficTracker_CounterSnapshotAndReset`
+  - `TestInboundTrafficTracker_RoutedConnectionAndPacketConnection`
+- `node/internal/stats/traffic_test.go`
+  - `TestReadNetDev_ValidateInput`
+  - `TestCurrentSample_InvalidInterface`
+  - `TestDetectDefaultInterfaceAndCurrentSample`
+
+### 覆盖率变化（实测）
+- `panel` 总覆盖率：`44.6% -> 45.7%`
+- `node` 总覆盖率：`30.4% -> 55.6%`
+- 后端合并覆盖率（panel+node）：`43.1% -> 46.8%`
+
+### 包级变化（重点）
+- `sboard/panel/internal/traffic`: `0.0% -> 92.9%`
+- `sboard/node/internal/stats`: `0.0% -> 79.1%`
+
+### 仍待覆盖的低覆盖包（下一批）
+- `panel/internal/inbounds`（0.0%）
+- `panel/internal/password`（0.0%）
+- `panel/cmd/panel`（0.0%）
+- `node/internal/config`（0.0%）
+- `node/cmd/node`（0.0%）
+
+## Session Findings (2026-02-10, 后端覆盖率提升 P0 第二批)
+- 本轮继续补齐 `panel` 的 0% 包：`internal/inbounds` 与 `internal/password`。
+
+### 新增测试
+- `panel/internal/inbounds/validators_test.go`
+  - 覆盖 shadowsocks method 校验（缺失/不支持/支持）
+  - 覆盖 unknown protocol 与自定义 validator 注册逻辑
+- `panel/internal/password/password_test.go`
+  - 覆盖 hash 格式、参数解析、verify 正反例、malformed hash
+  - 覆盖 `pbkdf2SHA256` 长度与确定性
+
+### 覆盖率变化（panel）
+- 总覆盖率：`45.7% -> 47.5%`
+- `sboard/panel/internal/inbounds`: `0.0% -> 100.0%`
+- `sboard/panel/internal/password`: `0.0% -> 97.6%`
+
+### panel 当前主要低覆盖包
+- `sboard/panel/cmd/panel`: `0.0%`
+- `sboard/panel/internal/config`: `8.3%`
+- `sboard/panel/internal/singboxcli`: `33.9%`
+- `sboard/panel/internal/db`: `36.2%`
+- `sboard/panel/internal/node`: `38.2%`
+
+## Session Findings (2026-02-10, 后端覆盖率提升 P0 第三批)
+- 本轮补齐 `config` 相关低覆盖包：
+  - `panel/internal/config`
+  - `node/internal/config`
+
+### 新增测试
+- `panel/internal/config/config_test.go`
+  - 覆盖默认配置加载
+  - 覆盖环境变量覆盖
+  - 覆盖非法 bool/duration 回退与 `PANEL_TRAFFIC_MONITOR_INTERVAL` 最小值钳制
+  - 保留并增强 `Validate` 分支校验
+- `node/internal/config/config_test.go`
+  - 覆盖默认配置加载
+  - 覆盖环境变量覆盖
+
+### 覆盖率变化
+- Panel 总覆盖率：`47.5% -> 48.4%`
+- Node 总覆盖率：`55.6% -> 58.0%`
+- 后端合并覆盖率：`46.8% -> 49.4%`
+
+### 包级变化（重点）
+- `sboard/panel/internal/config`: `8.3% -> 97.2%`
+- `sboard/node/internal/config`: `0.0% -> 100.0%`
+
+### 当前剩余低覆盖主包
+- `sboard/panel/cmd/panel`: `0.0%`
+- `sboard/panel/internal/singboxcli`: `33.9%`
+- `sboard/panel/internal/db`: `36.2%`
+- `sboard/panel/internal/node`: `38.2%`
+- `sboard/node/cmd/node`: `0.0%`
+- `sboard/node/internal/api`: `45.9%`
+
+## Session Findings (2026-02-10, 后端覆盖率提升 P0 第四批)
+- 本轮目标：继续拉升 `panel/internal/node` 与 `panel/internal/singboxcli` 覆盖率。
+
+### 新增测试
+- `panel/internal/node/client_test.go`
+  - 覆盖 `NewClient` 默认 doer
+  - 覆盖 `buildURL` host/port/path 回退逻辑
+  - 覆盖 `Health/Traffic/InboundTraffic/InboundTrafficWithMeta/SyncConfig` 的
+    - 请求错误
+    - 非 2xx
+    - JSON 解码错误
+    - 成功路径
+    - 请求头与 query/body 断言
+- `panel/internal/singboxcli/service_extra_test.go`
+  - 覆盖 `Format` 空输入/非法 JSON 分支
+  - 覆盖 `Check` 空输入/非法 JSON/最小配置成功分支
+  - 覆盖 `Generate` 各主分支：`uuid/reality-keypair/wg-keypair/vapid-keypair/invalid`
+
+### 覆盖率变化
+- Panel 总覆盖率：`48.4% -> 51.7%`
+- Node 总覆盖率：`58.0%`（本轮未改 node 业务包）
+- 后端合并覆盖率：`49.4% -> 52.4%`
+
+### 包级变化（重点）
+- `sboard/panel/internal/node`: `38.2% -> 77.4%`
+- `sboard/panel/internal/singboxcli`: `33.9% -> 88.1%`
+
+### 当前剩余低覆盖主包
+- `sboard/panel/cmd/panel`: `0.0%`
+- `sboard/panel/internal/db`: `36.2%`
+- `sboard/panel/internal/api`: `52.6%`
+- `sboard/node/cmd/node`: `0.0%`
+- `sboard/node/internal/api`: `45.9%`
+
+## 2026-02-10 Findings: 后端覆盖率提升（P1）
+
+### 关键发现
+- `panel/internal/db` 的 `system_settings` 与 `traffic_*` 逻辑此前缺少直接单测，导致大量分支未被覆盖。
+- `node/internal/api` 缺少针对 handler 级错误分支（body 读取失败、provider nil、env fallback、bad request 映射）的用例。
+- 通过补齐 handler 边界与 DB 聚合语义测试，可在不改业务代码的前提下显著抬升覆盖率。
+
+### 新增测试文件
+- `panel/internal/db/system_settings_test.go`
+- `panel/internal/db/traffic_aggregate_test.go`
+- `node/internal/api/config_sync_test.go`
+- `node/internal/api/stats_inbounds_test.go`
+- `node/internal/api/stats_traffic_test.go`
+- `node/internal/api/config_sync_env_test.go`
+- `node/internal/api/test_helper_test.go`
+
+### 覆盖率结果
+- Panel 总覆盖率：`51.7% -> 55.7%`
+- Node 总覆盖率：`58.0% -> 70.3%`
+- 后端合并覆盖率：`52.4% -> 57.3%`
+- 包级（本批重点）：
+  - `panel/internal/db`: `50.0%`
+  - `node/internal/api`: `92.8%`

@@ -43,7 +43,7 @@ export function DeleteUserDialog({
         </DialogHeader>
 
         {isError ? (
-          <p className="text-sm text-red-600">
+          <p className="text-sm text-destructive">
             {error instanceof ApiError ? error.message : t("users.deleteFailed")}
           </p>
         ) : null}

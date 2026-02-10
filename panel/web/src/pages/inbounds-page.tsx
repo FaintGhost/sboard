@@ -425,7 +425,7 @@ export function InboundsPage() {
             {upserting ? (
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="space-y-1 md:col-span-2">
-                  <Label className="text-sm text-slate-700">{t("inbounds.node")}</Label>
+                  <Label className="text-sm text-foreground">{t("inbounds.node")}</Label>
                   <Select
                     value={String(upserting.nodeID)}
                     onValueChange={(value) =>
@@ -448,14 +448,14 @@ export function InboundsPage() {
                 <div className="space-y-2 md:col-span-2">
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-1">
-                      <Label className="text-sm text-slate-700">{t("inbounds.template")}</Label>
+                      <Label className="text-sm text-foreground">{t("inbounds.template")}</Label>
                       <FieldHint label={t("inbounds.template")}>
                         <p>{t("inbounds.templateHelp")}</p>
                         <p className="mt-1">{t("inbounds.usersManagedHint")}</p>
                       </FieldHint>
                     </div>
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                      <Label className="text-xs text-slate-500">
+                      <Label className="text-xs text-muted-foreground">
                         {t("inbounds.templatePreset")}
                       </Label>
                       <Select
@@ -665,7 +665,7 @@ export function InboundsPage() {
                   </div>
 
                   {currentTemplateHint ? (
-                    <p className="text-xs text-amber-700">{currentTemplateHint}</p>
+                    <p className="text-xs text-destructive">{currentTemplateHint}</p>
                   ) : null}
 
                   {toolMessage ? (
@@ -673,7 +673,7 @@ export function InboundsPage() {
                       className={
                         toolMessage.tone === "ok"
                           ? "text-xs text-emerald-700"
-                          : "text-xs text-amber-700"
+                          : "text-xs text-destructive"
                       }
                     >
                       {toolMessage.text}
@@ -682,15 +682,17 @@ export function InboundsPage() {
 
                   {generateOutput ? (
                     <div className="rounded-md border bg-muted/30 p-2">
-                      <p className="mb-1 text-xs text-slate-500">{t("inbounds.generateOutput")}</p>
-                      <pre className="whitespace-pre-wrap break-all text-xs text-slate-700">
+                      <p className="mb-1 text-xs text-muted-foreground">
+                        {t("inbounds.generateOutput")}
+                      </p>
+                      <pre className="whitespace-pre-wrap break-all text-xs text-foreground">
                         {generateOutput}
                       </pre>
                     </div>
                   ) : null}
                 </div>
 
-                <div className="text-sm text-amber-700 md:col-span-2">{mutationErrorText}</div>
+                <div className="text-sm text-destructive md:col-span-2">{mutationErrorText}</div>
               </div>
             ) : null}
 

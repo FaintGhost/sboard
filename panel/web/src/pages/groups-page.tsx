@@ -427,7 +427,7 @@ export function GroupsPage() {
                   <div className="space-y-4">
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                       <div className="space-y-1">
-                        <Label htmlFor="group-name" className="text-sm text-slate-700">
+                        <Label htmlFor="group-name" className="text-sm text-foreground">
                           {t("groups.name")}
                         </Label>
                         <Input
@@ -443,7 +443,7 @@ export function GroupsPage() {
                         />
                       </div>
                       <div className="space-y-1">
-                        <Label htmlFor="group-desc" className="text-sm text-slate-700">
+                        <Label htmlFor="group-desc" className="text-sm text-foreground">
                           {t("groups.description")}
                         </Label>
                         <Input
@@ -460,7 +460,7 @@ export function GroupsPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label className="text-sm text-slate-700">{t("groups.manageMembers")}</Label>
+                      <Label className="text-sm text-foreground">{t("groups.manageMembers")}</Label>
                       <div className="grid grid-cols-1 gap-4 rounded-md border p-3 lg:grid-cols-[1fr_auto_1fr]">
                         <div className="flex min-h-0 flex-col rounded-md border">
                           <div className="border-b p-3">
@@ -617,7 +617,7 @@ export function GroupsPage() {
                       </div>
                     </div>
 
-                    <div className="text-sm text-amber-700">
+                    <div className="text-sm text-destructive">
                       {saveMutation.isError
                         ? saveMutation.error instanceof ApiError
                           ? saveMutation.error.message

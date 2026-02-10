@@ -513,7 +513,7 @@ export function NodesPage() {
                 <div className="overflow-y-auto px-6 py-4">
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div className="space-y-1 md:col-span-2">
-                      <Label className="text-sm text-slate-700" htmlFor="node-name">
+                      <Label className="text-sm text-foreground" htmlFor="node-name">
                         {t("nodes.name")}
                       </Label>
                       <Input
@@ -528,7 +528,7 @@ export function NodesPage() {
                     </div>
 
                     <div className="space-y-1">
-                      <Label className="text-sm text-slate-700" htmlFor="node-api-addr">
+                      <Label className="text-sm text-foreground" htmlFor="node-api-addr">
                         {t("nodes.apiAddress")}
                       </Label>
                       <Input
@@ -549,7 +549,7 @@ export function NodesPage() {
                     </div>
 
                     <div className="space-y-1">
-                      <Label className="text-sm text-slate-700" htmlFor="node-api-port">
+                      <Label className="text-sm text-foreground" htmlFor="node-api-port">
                         {t("nodes.apiPort")}
                       </Label>
                       <Input
@@ -566,7 +566,7 @@ export function NodesPage() {
                     </div>
 
                     <div className="space-y-1 md:col-span-2">
-                      <Label className="text-sm text-slate-700" htmlFor="node-secret">
+                      <Label className="text-sm text-foreground" htmlFor="node-secret">
                         {t("nodes.secretKey")}
                       </Label>
                       <div className="flex gap-2">
@@ -633,7 +633,7 @@ export function NodesPage() {
 
                     <div className="space-y-1 md:col-span-2">
                       <div className="flex items-center justify-between gap-2">
-                        <Label className="text-sm text-slate-700" htmlFor="node-public">
+                        <Label className="text-sm text-foreground" htmlFor="node-public">
                           {t("nodes.publicAddress")}
                         </Label>
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -672,7 +672,7 @@ export function NodesPage() {
 
                     <div className="space-y-1 md:col-span-2">
                       <div className="flex items-center gap-1">
-                        <Label className="text-sm text-slate-700">{t("nodes.group")}</Label>
+                        <Label className="text-sm text-foreground">{t("nodes.group")}</Label>
                         <FieldHint label={t("nodes.group")}>
                           {t("nodes.groupRequiredHint")}
                         </FieldHint>
@@ -699,7 +699,7 @@ export function NodesPage() {
                       </Select>
                     </div>
 
-                    <div className="text-sm text-amber-700 md:col-span-2">
+                    <div className="text-sm text-destructive md:col-span-2">
                       {createMutation.isError || updateMutation.isError
                         ? createMutation.error instanceof ApiError
                           ? createMutation.error.message

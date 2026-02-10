@@ -15,9 +15,17 @@ export function StatusDot(props: StatusDotProps) {
 
   const label = isOnline ? props.labelOnline : isOffline ? props.labelOffline : props.labelUnknown;
 
-  const dot = isOnline ? "bg-emerald-500" : isOffline ? "bg-red-500" : "bg-slate-400";
-  const glow = isOnline ? "bg-emerald-400/70" : isOffline ? "bg-red-400/70" : "bg-slate-400/60";
-  const ripple = isOnline ? "bg-emerald-400/25" : isOffline ? "bg-red-400/25" : "bg-slate-400/20";
+  const dot = isOnline ? "bg-emerald-500" : isOffline ? "bg-destructive" : "bg-muted-foreground";
+  const glow = isOnline
+    ? "bg-emerald-400/70"
+    : isOffline
+      ? "bg-destructive/70"
+      : "bg-muted-foreground/60";
+  const ripple = isOnline
+    ? "bg-emerald-400/25"
+    : isOffline
+      ? "bg-destructive/25"
+      : "bg-muted-foreground/20";
 
   return (
     <span className={cn("inline-flex items-center gap-2", props.className)}>

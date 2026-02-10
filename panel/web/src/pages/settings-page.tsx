@@ -463,8 +463,8 @@ export function SettingsPage() {
   return (
     <div className="px-4 lg:px-6 space-y-6">
       <div className="space-y-2">
-        <h1 className="text-xl font-semibold text-slate-900">{t("settings.title")}</h1>
-        <p className="text-sm text-slate-500">{t("settings.subtitle")}</p>
+        <h1 className="text-xl font-semibold text-foreground">{t("settings.title")}</h1>
+        <p className="text-sm text-muted-foreground">{t("settings.subtitle")}</p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
@@ -529,7 +529,7 @@ export function SettingsPage() {
 
             <div className="space-y-2">
               <div className="flex items-center justify-between gap-3">
-                <div className="text-sm font-medium text-slate-700">
+                <div className="text-sm font-medium text-foreground">
                   {t("settings.subscriptionBaseUrlPreview")}
                 </div>
                 <Button
@@ -589,22 +589,22 @@ export function SettingsPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-slate-700">{t("settings.version")}</span>
+              <span className="text-sm text-foreground">{t("settings.version")}</span>
               <Badge variant="outline">{systemInfoQuery.data?.panel_version ?? "N/A"}</Badge>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-slate-700">{t("settings.panelCommitId")}</span>
+              <span className="text-sm text-foreground">{t("settings.panelCommitId")}</span>
               <Badge variant="outline">{systemInfoQuery.data?.panel_commit_id ?? "N/A"}</Badge>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-slate-700">{t("settings.singboxCoreVersion")}</span>
+              <span className="text-sm text-foreground">{t("settings.singboxCoreVersion")}</span>
               <Badge variant="outline">{systemInfoQuery.data?.sing_box_version ?? "N/A"}</Badge>
             </div>
             <div className="flex items-center justify-between gap-3">
-              <span className="text-sm text-slate-700">
+              <span className="text-sm text-foreground">
                 {t("settings.subscriptionBaseUrlLabel")}
               </span>
-              <code className="rounded bg-slate-100 px-2 py-1 text-xs font-mono">
+              <code className="rounded bg-muted px-2 py-1 text-xs font-mono">
                 {resolvedSubscriptionBaseURL}
               </code>
             </div>

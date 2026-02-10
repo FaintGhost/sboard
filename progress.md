@@ -667,3 +667,171 @@
   - `panel/web/src/pages/nodes-page.tsx`
   - `panel/web/src/i18n/locales/zh.json`
   - `panel/web/src/i18n/locales/en.json`
+
+## Session: 2026-02-10 (Tooltip 统一 + 图表图例 Badge)
+
+### Task: 使用 shadcn/ui 统一 hover 提示与图表图例
+- **Status:** complete
+- Actions taken:
+  - 将订阅页复制按钮与预览按钮 hover 提示统一改为 `Tooltip`。
+  - 将分组成员穿梭按钮（添加/移除）提示统一改为 `Tooltip`。
+  - 将同步任务 `payload_hash` 完整值展示改为 `Tooltip`。
+  - 清理 `status-dot` 与 `sidebar rail` 的原生 `title`，避免系统提示样式混入。
+  - 仪表盘图例改为 `Badge` 展示，并完成 i18n 文案接入与 download 颜色增强。
+- Files created/modified:
+  - `panel/web/src/pages/subscriptions-page.tsx`
+  - `panel/web/src/pages/groups-page.tsx`
+  - `panel/web/src/pages/sync-jobs-page.tsx`
+  - `panel/web/src/components/status-dot.tsx`
+  - `panel/web/src/components/ui/sidebar.tsx`
+  - `panel/web/src/components/chart-area-interactive.tsx`
+  - `panel/web/src/components/ui/chart.tsx`
+- Validation:
+  - `cd panel/web && bun run format` ✅
+  - `cd panel/web && bun run lint` ✅
+  - `cd panel/web && bun run build` ✅
+
+## Session: 2026-02-10 (Frontend Design 第二轮：语义色彩收口)
+
+### Phase 1: 硬编码颜色扫描与策略确定
+- **Status:** complete
+- Actions taken:
+  - 扫描关键页面 `slate/amber/red` 色彩硬编码。
+  - 制定统一替换规则：语义 token 优先。
+- Files created/modified:
+  - `panel/web/src/components/ui/field-hint.tsx`
+  - `panel/web/src/pages/subscriptions-page.tsx`
+  - `panel/web/src/pages/groups-page.tsx`
+  - `panel/web/src/pages/nodes-page.tsx`
+  - `panel/web/src/pages/inbounds-page.tsx`
+  - `panel/web/src/pages/users/edit-user-dialog.tsx`
+  - `panel/web/src/pages/users/delete-user-dialog.tsx`
+  - `panel/web/src/pages/users/disable-user-dialog.tsx`
+  - `panel/web/src/pages/settings-page.tsx`
+  - `panel/web/src/components/status-dot.tsx`
+
+### Phase 2: 严格验证
+- **Status:** complete
+- Actions taken:
+  - 运行前端格式化、lint、构建全链路验证。
+- Verification:
+  - `cd panel/web && bun run format` ✅
+  - `cd panel/web && bun run lint` ✅
+  - `cd panel/web && bun run build` ✅
+
+### Phase 3: 严格测试补齐（Tooltip Provider + 删除流程测试）
+- **Status:** complete
+- Actions taken:
+  - 全量测试发现 `TooltipProvider` 缺失，补齐全局 provider。
+  - 节点删除测试对齐当前“确认弹窗”交互，修复断言路径。
+- Files created/modified:
+  - `panel/web/src/providers/app-providers.tsx`
+  - `panel/web/src/pages/nodes-page.test.tsx`
+- Verification:
+  - `cd panel/web && bun run format` ✅
+  - `cd panel/web && bun run lint` ✅
+  - `cd panel/web && bun run test -- --run` ✅（18 files, 45 tests）
+  - `cd panel/web && bun run build` ✅
+
+## Session: 2026-02-10 (后端覆盖率提升 P0 第一批)
+
+### Phase 1: 计划落盘与基线复测
+- **Status:** complete
+- Actions taken:
+  - 将“覆盖率提升”写入 `task_plan.md` 并按阶段执行。
+  - 使用隔离缓存复跑覆盖率，避免环境缓存权限干扰。
+- Commands:
+  - `cd panel && GOCACHE=/tmp/go-build GOMODCACHE=/tmp/go/pkg/mod go test ./... -coverprofile=/tmp/panel.cover.new -covermode=atomic`
+  - `cd node && GOCACHE=/tmp/go-build GOMODCACHE=/tmp/go/pkg/mod go test ./... -coverprofile=/tmp/node.cover.new -covermode=atomic`
+
+### Phase 2: P0 测试实现
+- **Status:** complete
+- Files created/modified:
+  - `panel/internal/traffic/traffic_test.go` (created)
+  - `node/internal/stats/inbound_tracker_test.go` (created)
+  - `node/internal/stats/traffic_test.go` (created)
+- Actions taken:
+  - 覆盖 provider 参数校验、窗口过滤、总量与时序聚合。
+  - 覆盖 inbound tracker 的 snapshot/reset/meta/连接计数。
+  - 覆盖网卡采样逻辑的输入校验与系统路径（含可跳过分支）。
+
+### Phase 3: 验证与结果
+- **Status:** complete
+- Verification:
+  - `cd panel && ... go test ./internal/traffic -v -count=1` ✅
+  - `cd node && ... go test ./internal/stats -v -count=1` ✅
+  - `cd panel && ... go test ./... -cover ...` ✅
+  - `cd node && ... go test ./... -cover ...` ✅
+- Coverage summary:
+  - Panel: `44.6% -> 45.7%`
+  - Node: `30.4% -> 55.6%`
+  - Backend merged: `43.1% -> 46.8%`
+
+### Phase 4: P0 第二批（inbounds/password）
+- **Status:** complete
+- Actions taken:
+  - 新增 `panel/internal/inbounds/validators_test.go`。
+  - 新增 `panel/internal/password/password_test.go`。
+  - 通过 `go test ./internal/inbounds ./internal/password -v` 验证关键行为。
+  - 复跑 `panel` 全量覆盖率。
+- Verification:
+  - `cd panel && ... go test ./internal/inbounds ./internal/password -v -count=1` ✅
+  - `cd panel && ... go test ./... -coverprofile=/tmp/panel.cover.p0b -covermode=atomic` ✅
+- Coverage summary:
+  - Panel total: `45.7% -> 47.5%`
+  - `internal/inbounds`: `0.0% -> 100.0%`
+  - `internal/password`: `0.0% -> 97.6%`
+
+### Phase 5: P0 第三批（config）
+- **Status:** complete
+- Actions taken:
+  - 扩展 `panel/internal/config/config_test.go`，补齐默认值、env 覆盖、异常回退、interval clamp。
+  - 新增 `node/internal/config/config_test.go`，补齐默认值与 env 覆盖。
+- Verification:
+  - `cd panel && ... go test ./internal/config -v -count=1` ✅
+  - `cd node && ... go test ./internal/config -v -count=1` ✅
+  - `cd panel && ... go test ./... -coverprofile=/tmp/panel.cover.p0c -covermode=atomic` ✅
+  - `cd node && ... go test ./... -coverprofile=/tmp/node.cover.p0c -covermode=atomic` ✅
+- Coverage summary:
+  - Panel total: `47.5% -> 48.4%`
+  - Node total: `55.6% -> 58.0%`
+  - Backend merged: `46.8% -> 49.4%`
+
+### Phase 6: P0 第四批（node/singboxcli）
+- **Status:** complete
+- Actions taken:
+  - 新增 `panel/internal/node/client_test.go`，补齐客户端请求构造/错误处理/成功链路。
+  - 新增 `panel/internal/singboxcli/service_extra_test.go`，补齐 format/check/generate 主分支。
+- Verification:
+  - `cd panel && ... go test ./internal/node ./internal/singboxcli -v -count=1` ✅
+  - `cd panel && ... go test ./... -coverprofile=/tmp/panel.cover.p0d -covermode=atomic` ✅
+  - `cd node && ... go test ./... -coverprofile=/tmp/node.cover.p0d -covermode=atomic` ✅
+- Coverage summary:
+  - Panel total: `48.4% -> 51.7%`
+  - Node total: `58.0%`
+  - Backend merged: `49.4% -> 52.4%`
+
+## 2026-02-10 Progress: 后端覆盖率提升（P1）
+
+### 已完成
+- 新增 DB 测试：
+  - `system_settings` 的 get/upsert/delete 全流程。
+  - `traffic_aggregate` 的 node/global 聚合、since 过滤、bucket timeseries 与 invalid bucket。
+  - `traffic_stats` 的参数校验、样本插入、按节点查询、用户流量累计与 not found。
+- 新增 Node API 测试：
+  - `ConfigSync`：core nil、body 读取失败、`BadRequestError` 映射 400、普通错误映射 500、成功 200。
+  - `StatsInboundsGet`：鉴权、provider nil、reset 解析、meta 分支。
+  - `StatsTrafficGet`：鉴权、env fallback、query 覆盖 env、可用网卡成功分支。
+  - `shouldDebugNodeSyncPayload`：环境变量真假值判断。
+
+### 验证命令
+- `go test ./panel/internal/db ./node/internal/api`
+- `cd panel && GOCACHE=/tmp/go-build GOMODCACHE=/tmp/go/pkg/mod go test ./... -coverprofile=/tmp/panel.cover.next -covermode=atomic`
+- `cd node && GOCACHE=/tmp/go-build GOMODCACHE=/tmp/go/pkg/mod go test ./... -coverprofile=/tmp/node.cover.next -covermode=atomic`
+- `{ head -n1 /tmp/panel.cover.next; tail -n +2 /tmp/panel.cover.next; tail -n +2 /tmp/node.cover.next; } > /tmp/backend.cover.next`
+- `GOCACHE=/tmp/go-build go tool cover -func=/tmp/backend.cover.next | tail -n1`
+
+### 结果
+- Panel：`55.7%`
+- Node：`70.3%`
+- Backend Combined：`57.3%`

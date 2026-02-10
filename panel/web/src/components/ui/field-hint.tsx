@@ -22,7 +22,7 @@ export function FieldHint({ label, children, className, contentClassName }: Fiel
             variant="ghost"
             size="icon-xs"
             className={cn(
-              "rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-700",
+              "rounded-full text-muted-foreground hover:bg-accent hover:text-foreground",
               className,
             )}
             aria-label={`${label}说明`}

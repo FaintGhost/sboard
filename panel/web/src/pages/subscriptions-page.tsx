@@ -182,7 +182,7 @@ export function SubscriptionsPage() {
                   className="inline-flex items-center"
                   aria-label={t("subscriptions.behaviorTitle")}
                 >
-                  <Info className="h-4 w-4 text-slate-400" />
+                  <Info className="h-4 w-4 text-muted-foreground" />
                 </button>
               </TooltipTrigger>
               <TooltipContent className="max-w-xs">
@@ -198,25 +198,25 @@ export function SubscriptionsPage() {
               <Badge variant="outline" className="shrink-0 mt-0.5">
                 ?format=singbox
               </Badge>
-              <span className="text-slate-600">{t("subscriptions.ruleSingbox")}</span>
+              <span className="text-muted-foreground">{t("subscriptions.ruleSingbox")}</span>
             </div>
             <div className="flex items-start gap-2">
               <Badge variant="outline" className="shrink-0 mt-0.5">
                 ?format=v2ray
               </Badge>
-              <span className="text-slate-600">{t("subscriptions.ruleV2ray")}</span>
+              <span className="text-muted-foreground">{t("subscriptions.ruleV2ray")}</span>
             </div>
             <div className="flex items-start gap-2">
               <Badge variant="secondary" className="shrink-0 mt-0.5">
                 {t("subscriptions.uaMatchLabel")}
               </Badge>
-              <span className="text-slate-600">{t("subscriptions.ruleUaMatch")}</span>
+              <span className="text-muted-foreground">{t("subscriptions.ruleUaMatch")}</span>
             </div>
             <div className="flex items-start gap-2">
               <Badge variant="secondary" className="shrink-0 mt-0.5">
                 {t("subscriptions.uaOtherLabel")}
               </Badge>
-              <span className="text-slate-600">{t("subscriptions.ruleUaOther")}</span>
+              <span className="text-muted-foreground">{t("subscriptions.ruleUaOther")}</span>
             </div>
           </div>
         </CardContent>
@@ -311,7 +311,7 @@ function UserSubscriptionRow({
       </TableCell>
       <TableCell className={spacing.cellMiddle}>
         <div className="flex items-center gap-2 max-w-md">
-          <code className="flex-1 truncate text-xs bg-slate-100 px-2 py-1 rounded font-mono">
+          <code className="flex-1 truncate text-xs bg-muted/70 px-2 py-1 rounded font-mono">
             {subUrl}
           </code>
           <CopyButton text={subUrl} label={t("subscriptions.subscriptionUrl")} />

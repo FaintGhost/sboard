@@ -129,7 +129,7 @@ export function EditUserDialog({
         {editState ? (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="space-y-1 md:col-span-2">
-              <Label className="text-sm text-slate-700" htmlFor="edit-username">
+              <Label className="text-sm text-foreground" htmlFor="edit-username">
                 {t("users.username")}
               </Label>
               <Input
@@ -145,17 +145,17 @@ export function EditUserDialog({
 
             <div className="space-y-2 md:col-span-2">
               <div className="flex items-center gap-1">
-                <Label className="text-sm text-slate-700">{t("users.groups")}</Label>
+                <Label className="text-sm text-foreground">{t("users.groups")}</Label>
                 <FieldHint label={t("users.groups")}>{t("users.groupsHint")}</FieldHint>
               </div>
-              <div className="rounded-lg border border-slate-200 p-3">
+              <div className="rounded-lg border border-border p-3">
                 <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
                   {groupsQuery.data?.map((g) => {
                     const checked = editState.groupIDs.includes(g.id);
                     return (
                       <label
                         key={g.id}
-                        className="flex w-full cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm text-slate-800 transition-colors hover:bg-slate-50"
+                        className="flex w-full cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm text-foreground transition-colors hover:bg-accent/50"
                       >
                         <Checkbox
                           checked={checked}
@@ -174,12 +174,12 @@ export function EditUserDialog({
                           }}
                         />
                         <span className="font-medium">{g.name}</span>
-                        <span className="text-xs text-slate-500">{g.description}</span>
+                        <span className="text-xs text-muted-foreground">{g.description}</span>
                       </label>
                     );
                   })}
                   {groupsQuery.data && groupsQuery.data.length === 0 ? (
-                    <div className="text-sm text-slate-500 md:col-span-2">
+                    <div className="text-sm text-muted-foreground md:col-span-2">
                       {t("users.noGroups")}
                     </div>
                   ) : null}
@@ -189,7 +189,7 @@ export function EditUserDialog({
 
             <>
               <div className="space-y-1">
-                <Label className="text-sm text-slate-700">{t("common.status")}</Label>
+                <Label className="text-sm text-foreground">{t("common.status")}</Label>
                 <Select
                   value={editState.status}
                   onValueChange={(value) =>
@@ -211,7 +211,7 @@ export function EditUserDialog({
 
               <div className="space-y-1">
                 <div className="flex items-center gap-1">
-                  <Label className="text-sm text-slate-700" htmlFor="edit-traffic-limit">
+                  <Label className="text-sm text-foreground" htmlFor="edit-traffic-limit">
                     {t("users.trafficLimit")}
                   </Label>
                   <FieldHint label={t("users.trafficLimit")}>
@@ -231,7 +231,7 @@ export function EditUserDialog({
                     className="pr-12"
                     aria-label={t("users.trafficLimit")}
                   />
-                  <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">
+                  <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
                     GB
                   </span>
                 </div>
@@ -239,7 +239,7 @@ export function EditUserDialog({
 
               <div className="space-y-1">
                 <div className="flex items-center gap-1">
-                  <Label className="text-sm text-slate-700" htmlFor="edit-traffic-reset-day">
+                  <Label className="text-sm text-foreground" htmlFor="edit-traffic-reset-day">
                     {t("users.trafficResetDay")}
                   </Label>
                   <FieldHint label={t("users.trafficResetDay")}>
@@ -278,7 +278,7 @@ export function EditUserDialog({
               </div>
 
               <div className="space-y-1 md:col-span-2">
-                <Label className="text-sm text-slate-700" htmlFor="edit-expire">
+                <Label className="text-sm text-foreground" htmlFor="edit-expire">
                   {t("users.expireDate")}
                 </Label>
                 <div className="flex flex-col gap-2 md:flex-row md:items-center">
@@ -292,7 +292,7 @@ export function EditUserDialog({
                         {editState.expireDate ? (
                           format(editState.expireDate, "yyyy-MM-dd")
                         ) : (
-                          <span className="text-slate-500">{t("users.selectDate")}</span>
+                          <span className="text-muted-foreground">{t("users.selectDate")}</span>
                         )}
                       </Button>
                     </PopoverTrigger>
@@ -336,13 +336,13 @@ export function EditUserDialog({
         ) : null}
 
         {editState?.mode === "create" && hasSaveError ? (
-          <p className="text-sm text-red-600">
+          <p className="text-sm text-destructive">
             {saveError instanceof ApiError ? saveError.message : t("users.createFailed")}
           </p>
         ) : null}
 
         {editState?.mode === "edit" && hasSaveError ? (
-          <p className="text-sm text-red-600">
+          <p className="text-sm text-destructive">
             {saveError instanceof ApiError ? saveError.message : t("users.saveFailed")}
           </p>
         ) : null}

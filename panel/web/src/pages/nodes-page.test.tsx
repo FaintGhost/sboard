@@ -85,11 +85,11 @@ describe("NodesPage", () => {
     const actionButtons = await screen.findAllByRole("button", { name: "操作" });
     await userEvent.click(actionButtons[0]);
     await userEvent.click(await screen.findByRole("menuitem", { name: "删除节点" }));
+    await userEvent.click(await screen.findByRole("button", { name: /确认删除|Delete/i }));
 
     await waitFor(() => {
-      expect(screen.queryByText("node-a")).not.toBeInTheDocument();
+      expect(deletedIDs).toEqual([1]);
+      expect(screen.queryAllByText("node-a")).toHaveLength(0);
     });
-
-    expect(deletedIDs).toEqual([1]);
   });
 });

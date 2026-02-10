@@ -515,3 +515,146 @@ Complete
 - [x] 前端构建通过
 - [x] 更新 `findings.md` / `progress.md`
 - **Status:** complete
+
+---
+
+# Session Plan: Tooltip 统一为 shadcn/ui + 图表图例 Badge 化（2026-02-10）
+
+## Goal
+统一 hover 提示交互为 `shadcn/ui Tooltip`，并提升图表图例视觉一致性（使用 `shadcn/ui Badge`）。
+
+## Current Phase
+Complete
+
+## Phases
+
+### Phase 1: 提示交互收口
+- [x] 排查页面与组件中原生 `title` 提示
+- [x] 优先替换可见交互点为 `Tooltip`
+- [x] 清理重复/冲突的 `title` 属性
+- **Status:** complete
+
+### Phase 2: 图表图例统一
+- [x] 图例文案切换到 i18n
+- [x] download 曲线颜色提升对比
+- [x] 图例改用 `Badge` + 色点表达
+- **Status:** complete
+
+### Phase 3: 验证与记录
+- [x] `bun run format`
+- [x] `bun run lint`
+- [x] `bun run build`
+- [x] 更新计划与进度文件
+- **Status:** complete
+
+---
+
+# Session Plan: Frontend Design 第二轮（语义色彩收口）（2026-02-10）
+
+## Goal
+统一关键页面的颜色表达为主题语义 token，减少硬编码颜色导致的视觉不一致，提升暗色模式与后续主题演进稳定性。
+
+## Current Phase
+Complete
+
+## Phases
+
+### Phase 1: 设计基线确认
+- [x] 识别关键页面硬编码颜色（`slate/amber/red`）
+- [x] 明确替换策略：优先 `foreground/muted/destructive/accent`
+- **Status:** complete
+
+### Phase 2: 批量落地
+- [x] 统一 `FieldHint` 触发器色彩语义
+- [x] 覆盖 `subscriptions/groups/nodes/inbounds/users/settings`
+- [x] 状态点组件移除 `red/slate` 硬编码为语义 token
+- **Status:** complete
+
+### Phase 3: 验证与记录
+- [x] `bun run format`
+- [x] `bun run lint`
+- [x] `bun run build`
+- [x] 更新 `findings.md` / `progress.md`
+- **Status:** complete
+
+### Phase 3（补充）: 严格测试闭环
+- [x] 补跑前端全量测试（45 tests）
+- [x] 修复测试暴露的 provider/交互断言问题
+- **Status:** complete
+
+---
+
+# Session Plan: 后端测试覆盖率提升（P0 第一批）（2026-02-10）
+
+## Goal
+针对后端低覆盖包先做第一批高收益补测，优先覆盖 `panel/internal/traffic` 与 `node/internal/stats`，建立可持续提升基线。
+
+## Current Phase
+Complete
+
+## Phases
+
+### Phase 1: 覆盖率基线复测
+- [x] 复跑 panel/node 包级覆盖率
+- [x] 识别 P0 包与可快速落地场景
+- **Status:** complete
+
+### Phase 2: P0 补测落地
+- [x] 新增 `panel/internal/traffic` provider 行为测试
+- [x] 新增 `node/internal/stats` tracker 与系统采样测试
+- [x] 覆盖参数校验、聚合逻辑、reset 行为、连接计数
+- **Status:** complete
+
+### Phase 3: 覆盖率回归验证
+- [x] 定向测试通过（traffic/stats）
+- [x] 全量 `go test ./... -cover` 通过（panel/node）
+- [x] 输出覆盖率提升结果
+- **Status:** complete
+
+### Phase 4: P0 第二批扩展（inbounds/password）
+- [x] 新增 `panel/internal/inbounds` 测试并覆盖协议校验分支
+- [x] 新增 `panel/internal/password` 测试并覆盖 hash/verify 分支
+- [x] 复跑 panel 覆盖率并确认提升
+- **Status:** complete
+
+### Phase 5: P0 第三批（config）
+- [x] 新增 `panel/internal/config` 测试（默认值/环境覆盖/异常回退）
+- [x] 新增 `node/internal/config` 测试（默认值/环境覆盖）
+- [x] 复跑 panel/node 覆盖率并确认提升
+- **Status:** complete
+
+### Phase 6: P0 第四批（node/singboxcli）
+- [x] 新增 `panel/internal/node/client` 测试并覆盖 HTTP 客户端关键分支
+- [x] 新增 `panel/internal/singboxcli` 额外测试并覆盖 Check/Generate 分支
+- [x] 复跑 panel/node 及后端合并覆盖率
+- **Status:** complete
+
+## 2026-02-10 Session: 后端覆盖率提升（P1）
+
+### Goal
+围绕 `panel/internal/db` 与 `node/internal/api` 的低覆盖分支补齐测试，提升后端总覆盖率并沉淀可回归用例。
+
+### Phases
+
+#### Phase 1: 热点确认
+- [x] 确认 `panel/internal/db` 低覆盖热点（`system_settings/traffic_aggregate/traffic_stats`）
+- [x] 确认 `node/internal/api` 低覆盖热点（`ConfigSync/StatsInboundsGet/StatsTrafficGet/shouldDebugNodeSyncPayload`）
+- **Status:** complete
+
+#### Phase 2: Panel DB 补测
+- [x] 新增 `system_settings` CRUD 测试
+- [x] 新增 `traffic_aggregate` 聚合/过滤/timeseries 测试
+- [x] 新增 `traffic_stats` 校验/插入/查询/用户流量累计测试
+- **Status:** complete
+
+#### Phase 3: Node API 补测
+- [x] 新增 `ConfigSync` 全分支测试（400/500/200）
+- [x] 新增 `StatsInboundsGet` 鉴权/reset/meta 分支测试
+- [x] 新增 `StatsTrafficGet` 鉴权/env fallback/query override/success 分支测试
+- [x] 新增 `shouldDebugNodeSyncPayload` 环境变量判定测试
+- **Status:** complete
+
+#### Phase 4: 覆盖率复测与回写
+- [x] 复跑 `panel`/`node` 全量 Go 测试与覆盖率
+- [x] 合并后端覆盖率并记录到计划文件
+- **Status:** complete
