@@ -1,14 +1,14 @@
 # syntax=docker/dockerfile:1.7
 
-FROM node:22-alpine AS web
+FROM oven/bun:1.3.9-alpine AS web
 
 WORKDIR /web
-COPY web/package.json web/package-lock.json ./
-RUN --mount=type=cache,target=/root/.npm \
-  npm ci
+COPY web/package.json web/bun.lock ./
+RUN --mount=type=cache,target=/root/.bun/install/cache \
+  bun install --frozen-lockfile
 COPY web ./
-RUN --mount=type=cache,target=/root/.npm \
-  npm run build
+RUN --mount=type=cache,target=/root/.bun/install/cache \
+  bun run build
 
 FROM golang:1.25 AS builder
 

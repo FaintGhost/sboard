@@ -72,8 +72,10 @@ echo "[1/2] 构建并推送 Node: ${NODE_IMAGE}"
 (
   cd "${ROOT_DIR}/node"
   export SBOARD_NODE_IMAGE="${NODE_IMAGE}"
-  docker compose -f docker-compose.yml -f docker-compose.build.yml build
-  docker push "${SBOARD_NODE_IMAGE}"
+  docker compose -f docker-compose.yml -f docker-compose.build.yml build \
+    --push \
+    --provenance=false \
+    --sbom=false
 )
 
 echo "[2/2] 构建并推送 Panel: ${PANEL_IMAGE}"
@@ -81,10 +83,12 @@ echo "[2/2] 构建并推送 Panel: ${PANEL_IMAGE}"
   cd "${ROOT_DIR}/panel"
   export SBOARD_PANEL_IMAGE="${PANEL_IMAGE}"
   docker compose -f docker-compose.yml -f docker-compose.build.yml build \
+    --push \
+    --provenance=false \
+    --sbom=false \
     --build-arg PANEL_VERSION="${TAG}" \
     --build-arg PANEL_COMMIT_ID="${PANEL_COMMIT_ID}" \
     --build-arg SING_BOX_VERSION="${SING_BOX_VERSION}"
-  docker push "${SBOARD_PANEL_IMAGE}"
 )
 
 echo "完成:"
