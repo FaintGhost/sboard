@@ -430,3 +430,22 @@
 - 验证结果：
   - `npm test -- --run` ✅（13 files, 30 tests）
   - `npm run build` ✅
+
+## Session Findings (2026-02-10, Settings 超级管理员凭证管理)
+- 需求确认：修改超级管理员账号/密码时，必须输入旧密码。
+- 后端新增能力：
+  - `GET /api/admin/profile`：返回当前超级管理员用户名。
+  - `PUT /api/admin/profile`：更新管理员用户名与密码。
+- 后端安全约束：
+  - `old_password` 必填且必须校验通过，否则返回 401。
+  - 允许仅改用户名；改密码时要求 `new_password == confirm_password` 且最小长度 8。
+  - 无变更提交直接拦截（400）。
+- 前端接入：
+  - 设置页新增“超级管理员账号与密码”卡片，包含账号、旧密码、新密码、确认新密码。
+  - 旧密码缺失、两次新密码不一致、密码过短、无变更均前端即时校验。
+- 同类覆盖说明：
+  - 已覆盖后端路由、DB 层更新逻辑、设置页 API 与 UI、前端测试与后端测试，不是单点修补。
+- 严格验证：
+  - `cd panel && GOCACHE=/tmp/go-build GOMODCACHE=/tmp/go/pkg/mod go test ./...` ✅
+  - `cd panel/web && npm test -- --run` ✅（13 files, 31 tests）
+  - `cd panel/web && npm run build` ✅

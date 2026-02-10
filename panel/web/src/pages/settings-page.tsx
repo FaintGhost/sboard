@@ -22,11 +22,18 @@ import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { AsyncButton } from "@/components/ui/async-button"
 import { ApiError } from "@/lib/api/client"
-import { getSystemInfo, getSystemSettings, updateSystemSettings } from "@/lib/api/system"
+import {
+  getAdminProfile,
+  getSystemInfo,
+  getSystemSettings,
+  updateAdminProfile,
+  updateSystemSettings,
+} from "@/lib/api/system"
 
 type SubscriptionScheme = "http" | "https"
 type HostPortValidationCode = "format" | "ip" | "port" | null
 type UpdateSystemSettingsPayload = Parameters<typeof updateSystemSettings>[0]
+type UpdateAdminProfilePayload = Parameters<typeof updateAdminProfile>[0]
 
 const languages = [
   { code: "zh", nameKey: "settings.langZh" },
@@ -151,6 +158,13 @@ export function SettingsPage() {
   const [validationError, setValidationError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
 
+  const [adminUsername, setAdminUsername] = useState("")
+  const [adminOldPassword, setAdminOldPassword] = useState("")
+  const [adminNewPassword, setAdminNewPassword] = useState("")
+  const [adminConfirmPassword, setAdminConfirmPassword] = useState("")
+  const [adminMessage, setAdminMessage] = useState<string | null>(null)
+  const [adminValidationError, setAdminValidationError] = useState<string | null>(null)
+
   const systemInfoQuery = useQuery({
     queryKey: ["system-info"],
     queryFn: getSystemInfo,
@@ -159,6 +173,11 @@ export function SettingsPage() {
   const systemSettingsQuery = useQuery({
     queryKey: ["system-settings"],
     queryFn: getSystemSettings,
+  })
+
+  const adminProfileQuery = useQuery({
+    queryKey: ["admin-profile"],
+    queryFn: getAdminProfile,
   })
 
   useEffect(() => {
@@ -170,6 +189,11 @@ export function SettingsPage() {
     setSubscriptionScheme(parsed.scheme)
     setSubscriptionHostPort(parsed.hostPort)
   }, [systemSettingsQuery.data, apiBaseUrl])
+
+  useEffect(() => {
+    if (!adminProfileQuery.data) return
+    setAdminUsername((prev) => (prev.trim() ? prev : adminProfileQuery.data.username))
+  }, [adminProfileQuery.data])
 
   const updateSettingsMutation = useMutation({
     mutationFn: (payload: UpdateSystemSettingsPayload) => updateSystemSettings(payload),
@@ -183,6 +207,19 @@ export function SettingsPage() {
       setValidationError(null)
       setSettingsMessage(t("settings.saveSuccess"))
       await qc.invalidateQueries({ queryKey: ["system-settings"] })
+    },
+  })
+
+  const updateAdminProfileMutation = useMutation({
+    mutationFn: (payload: UpdateAdminProfilePayload) => updateAdminProfile(payload),
+    onSuccess: async (data) => {
+      setAdminUsername(data.username)
+      setAdminOldPassword("")
+      setAdminNewPassword("")
+      setAdminConfirmPassword("")
+      setAdminValidationError(null)
+      setAdminMessage(t("settings.adminUpdateSuccess"))
+      await qc.invalidateQueries({ queryKey: ["admin-profile"] })
     },
   })
 
@@ -256,6 +293,47 @@ export function SettingsPage() {
 
     updateSettingsMutation.mutate({
       subscription_base_url: `${subscriptionScheme}://${hostPort}`,
+    })
+  }
+
+  function handleSaveAdminProfile() {
+    setAdminMessage(null)
+    setAdminValidationError(null)
+
+    const newUsername = adminUsername.trim()
+    if (!newUsername) {
+      setAdminValidationError(t("settings.adminUsernameRequired"))
+      return
+    }
+
+    if (!adminOldPassword.trim()) {
+      setAdminValidationError(t("settings.adminOldPasswordRequired"))
+      return
+    }
+
+    const wantsPasswordChange = adminNewPassword.trim() !== "" || adminConfirmPassword.trim() !== ""
+
+    if (wantsPasswordChange) {
+      if (adminNewPassword !== adminConfirmPassword) {
+        setAdminValidationError(t("settings.adminPasswordsNotMatch"))
+        return
+      }
+      if (adminNewPassword.length < 8) {
+        setAdminValidationError(t("settings.adminPasswordTooShort"))
+        return
+      }
+    }
+
+    if (!wantsPasswordChange && adminProfileQuery.data && newUsername === adminProfileQuery.data.username) {
+      setAdminValidationError(t("settings.adminNoChanges"))
+      return
+    }
+
+    updateAdminProfileMutation.mutate({
+      new_username: newUsername,
+      old_password: adminOldPassword,
+      new_password: adminNewPassword,
+      confirm_password: adminConfirmPassword,
     })
   }
 
@@ -389,6 +467,97 @@ export function SettingsPage() {
               <code className="rounded bg-slate-100 px-2 py-1 text-xs font-mono">
                 {resolvedSubscriptionBaseURL}
               </code>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>{t("settings.adminCredentials")}</CardTitle>
+            <CardDescription>{t("settings.adminCredentialsHint")}</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="admin-username">{t("settings.adminUsername")}</Label>
+              <Input
+                id="admin-username"
+                autoComplete="username"
+                value={adminUsername}
+                onChange={(e) => {
+                  setAdminUsername(e.target.value)
+                  setAdminMessage(null)
+                  setAdminValidationError(null)
+                }}
+                placeholder={t("settings.adminUsernamePlaceholder")}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="admin-old-password">{t("settings.adminOldPassword")}</Label>
+              <Input
+                id="admin-old-password"
+                type="password"
+                autoComplete="current-password"
+                value={adminOldPassword}
+                onChange={(e) => {
+                  setAdminOldPassword(e.target.value)
+                  setAdminMessage(null)
+                  setAdminValidationError(null)
+                }}
+                placeholder={t("settings.adminOldPasswordPlaceholder")}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="admin-new-password">{t("settings.adminNewPassword")}</Label>
+              <Input
+                id="admin-new-password"
+                type="password"
+                autoComplete="new-password"
+                value={adminNewPassword}
+                onChange={(e) => {
+                  setAdminNewPassword(e.target.value)
+                  setAdminMessage(null)
+                  setAdminValidationError(null)
+                }}
+                placeholder={t("settings.adminNewPasswordPlaceholder")}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="admin-confirm-password">{t("settings.adminConfirmPassword")}</Label>
+              <Input
+                id="admin-confirm-password"
+                type="password"
+                autoComplete="new-password"
+                value={adminConfirmPassword}
+                onChange={(e) => {
+                  setAdminConfirmPassword(e.target.value)
+                  setAdminMessage(null)
+                  setAdminValidationError(null)
+                }}
+                placeholder={t("settings.adminConfirmPasswordPlaceholder")}
+              />
+            </div>
+
+            <div className="min-h-5 space-y-1" aria-live="polite">
+              {adminMessage ? <p className="text-sm text-emerald-700">{adminMessage}</p> : null}
+              {adminValidationError ? <p role="alert" className="text-sm text-destructive">{adminValidationError}</p> : null}
+              {updateAdminProfileMutation.error instanceof ApiError ? (
+                <p role="alert" className="text-sm text-destructive">{updateAdminProfileMutation.error.message}</p>
+              ) : null}
+            </div>
+
+            <div className="flex justify-end">
+              <AsyncButton
+                type="button"
+                onClick={handleSaveAdminProfile}
+                disabled={updateAdminProfileMutation.isPending || adminProfileQuery.isLoading}
+                pending={updateAdminProfileMutation.isPending}
+                pendingText={t("common.saving")}
+              >
+                {t("common.save")}
+              </AsyncButton>
             </div>
           </CardContent>
         </Card>

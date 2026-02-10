@@ -397,3 +397,34 @@ Complete
 - [x] 前端构建通过
 - [x] 更新 `findings.md` / `progress.md`
 - **Status:** complete
+
+---
+
+# Session Plan: Settings 增加超级管理员凭证管理（2026-02-10）
+
+## Goal
+在设置页支持“修改超级管理员账号与密码”，并强制要求输入旧密码校验。
+
+## Current Phase
+Complete
+
+## Phases
+
+### Phase 1: 后端能力补齐
+- [x] 新增管理员资料查询接口
+- [x] 新增管理员凭证更新接口（旧密码必填）
+- [x] 增加后端测试覆盖
+- **Status:** complete
+
+### Phase 2: 前端设置页接入
+- [x] 新增管理员凭证卡片与表单
+- [x] 接入管理员 profile 查询与更新 API
+- [x] 增加前端测试覆盖
+- **Status:** complete
+
+### Phase 3: 严格验证与记录
+- [x] `panel` 后端全量测试通过
+- [x] `panel/web` 前端全量测试通过
+- [x] `panel/web` 构建通过
+- [x] 更新 `findings.md` / `progress.md`
+- **Status:** complete

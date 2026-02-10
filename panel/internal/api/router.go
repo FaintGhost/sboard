@@ -21,6 +21,8 @@ func NewRouter(cfg config.Config, store *db.Store) *gin.Engine {
 
 	auth := r.Group("/api")
 	auth.Use(AuthMiddleware(cfg.JWTSecret))
+	auth.GET("/admin/profile", AdminProfileGet(store))
+	auth.PUT("/admin/profile", AdminProfilePut(store))
 	auth.GET("/users", UsersList(store))
 	auth.POST("/users", UsersCreate(store))
 	auth.GET("/users/:id", UsersGet(store))

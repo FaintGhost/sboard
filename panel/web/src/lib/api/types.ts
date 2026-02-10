@@ -35,6 +35,17 @@ export type SystemSettings = {
   subscription_base_url: string
 }
 
+export type AdminProfile = {
+  username: string
+}
+
+export type UpdateAdminProfilePayload = {
+  new_username: string
+  old_password: string
+  new_password: string
+  confirm_password: string
+}
+
 export type User = {
   id: number
   uuid: string

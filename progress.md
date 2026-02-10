@@ -556,3 +556,26 @@
 - 严格验证：
   - `npm test -- --run` ✅（13 files, 30 tests）
   - `npm run build` ✅
+
+## 2026-02-10 Session: Settings 超级管理员凭证管理（已完成）
+- 新增后端接口：
+  - `panel/internal/api/admin_profile.go`
+  - `panel/internal/api/router.go`（新增 `/api/admin/profile` GET/PUT）
+- 新增/扩展 DB 能力：
+  - `panel/internal/db/admins.go`
+    - `AdminGetByID`
+    - `AdminGetFirst`
+    - `AdminUpdateCredentials`
+- 测试覆盖：
+  - `panel/internal/api/auth_test.go`（新增 profile 获取与更新、旧密码校验测试）
+  - `panel/web/src/pages/settings-page.test.tsx`（新增管理员凭证更新测试）
+- 前端接入：
+  - `panel/web/src/lib/api/types.ts`
+  - `panel/web/src/lib/api/system.ts`
+  - `panel/web/src/pages/settings-page.tsx`
+  - `panel/web/src/i18n/locales/zh.json`
+  - `panel/web/src/i18n/locales/en.json`
+- 严格验证：
+  - `panel` 后端全量测试 ✅
+  - `panel/web` 前端全量测试 ✅
+  - `panel/web` 构建 ✅
