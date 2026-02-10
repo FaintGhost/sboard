@@ -357,7 +357,7 @@ func toUserDTO(u db.User) userDTO {
 		TrafficLimit:    u.TrafficLimit,
 		TrafficUsed:     u.TrafficUsed,
 		TrafficResetDay: u.TrafficResetDay,
-		ExpireAt:        u.ExpireAt,
+		ExpireAt:        timeInSystemTimezonePtr(u.ExpireAt),
 		Status:          effectiveUserStatus(u),
 	}
 }

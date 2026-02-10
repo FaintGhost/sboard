@@ -1,12 +1,17 @@
 package api
 
 import (
+	"context"
+
 	"github.com/gin-gonic/gin"
 	"sboard/panel/internal/config"
 	"sboard/panel/internal/db"
 )
 
 func NewRouter(cfg config.Config, store *db.Store) *gin.Engine {
+	if store != nil {
+		_ = InitSystemTimezone(context.Background(), store)
+	}
 	r := gin.New()
 	r.Use(RequestLogger(cfg.LogRequests))
 	r.Use(gin.Recovery())

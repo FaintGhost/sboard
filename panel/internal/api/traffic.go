@@ -3,7 +3,6 @@ package api
 import (
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"sboard/panel/internal/db"
@@ -59,11 +58,4 @@ func NodeTrafficList(store *db.Store) gin.HandlerFunc {
 		}
 		c.JSON(http.StatusOK, gin.H{"data": out})
 	}
-}
-
-func timeRFC3339OrEmpty(t time.Time) string {
-	if t.IsZero() {
-		return ""
-	}
-	return t.UTC().Format(time.RFC3339)
 }

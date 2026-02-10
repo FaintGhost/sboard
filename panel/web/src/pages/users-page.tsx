@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { format } from "date-fns"
 import { MoreHorizontal, Pencil, Ban, Search, Trash2 } from "lucide-react"
 import { useSearchParams } from "react-router-dom"
 
@@ -43,6 +42,8 @@ import { useTableQueryTransition } from "@/lib/table-query-transition"
 import { bytesToGBString } from "@/lib/units"
 import { buildUserListSearchParams, parseUserListSearchParams } from "@/lib/user-list-filters"
 import { tableToolbarClass } from "@/lib/table-toolbar"
+import { formatDateYMDByTimezone } from "@/lib/datetime"
+import { useSystemStore } from "@/store/system"
 
 import {
   DisableUserDialog,
@@ -75,15 +76,16 @@ function formatTraffic(used: number, limit: number, t: (key: string, options?: R
   return t("users.trafficFormat", { used: usedGB, limit: limitGB })
 }
 
-function formatExpireDate(expireAt: string | null, t: (key: string) => string): string {
+function formatExpireDate(expireAt: string | null, t: (key: string) => string, timezone: string): string {
   if (!expireAt) return t("common.permanent")
-  const date = new Date(expireAt)
-  if (Number.isNaN(date.getTime())) return t("common.permanent")
-  return format(date, "yyyy-MM-dd")
+  const formatted = formatDateYMDByTimezone(expireAt, timezone, "")
+  if (!formatted) return t("common.permanent")
+  return formatted
 }
 
 export function UsersPage() {
   const { t } = useTranslation()
+  const timezone = useSystemStore((state) => state.timezone)
   const [searchParams, setSearchParams] = useSearchParams()
   const filters = useMemo(() => parseUserListSearchParams(searchParams, "all"), [searchParams])
   const status = filters.statusFilter
@@ -323,7 +325,7 @@ export function UsersPage() {
                       {formatTraffic(u.traffic_used, u.traffic_limit, t)}
                     </TableCell>
                     <TableCell className={`${spacing.cellMiddle} hidden sm:table-cell text-muted-foreground`}>
-                      {formatExpireDate(u.expire_at, t)}
+                      {formatExpireDate(u.expire_at, t, timezone)}
                     </TableCell>
                     <TableCell className={spacing.cellLast}>
                       <DropdownMenu>

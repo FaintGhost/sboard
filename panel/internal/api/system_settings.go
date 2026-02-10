@@ -16,10 +16,12 @@ const subscriptionBaseURLKey = "subscription_base_url"
 
 type systemSettingsDTO struct {
 	SubscriptionBaseURL string `json:"subscription_base_url"`
+	Timezone            string `json:"timezone"`
 }
 
 type updateSystemSettingsReq struct {
 	SubscriptionBaseURL string `json:"subscription_base_url"`
+	Timezone            string `json:"timezone"`
 }
 
 func SystemSettingsGet(store *db.Store) gin.HandlerFunc {
@@ -28,14 +30,29 @@ func SystemSettingsGet(store *db.Store) gin.HandlerFunc {
 			return
 		}
 
-		value, err := store.GetSystemSetting(c.Request.Context(), subscriptionBaseURLKey)
+		subscriptionBaseURL, err := store.GetSystemSetting(c.Request.Context(), subscriptionBaseURLKey)
 		if err != nil && !errors.Is(err, db.ErrNotFound) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "load settings failed"})
 			return
 		}
 
+		timezone := currentSystemTimezoneName()
+		savedTimezone, err := store.GetSystemSetting(c.Request.Context(), systemTimezoneKey)
+		if err != nil && !errors.Is(err, db.ErrNotFound) {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "load settings failed"})
+			return
+		}
+		if err == nil {
+			if normalized, _, tzErr := normalizeSystemTimezone(savedTimezone); tzErr == nil {
+				timezone = normalized
+			}
+		}
+
 		c.JSON(http.StatusOK, gin.H{
-			"data": systemSettingsDTO{SubscriptionBaseURL: value},
+			"data": systemSettingsDTO{
+				SubscriptionBaseURL: subscriptionBaseURL,
+				Timezone:            timezone,
+			},
 		})
 	}
 }
@@ -52,26 +69,45 @@ func SystemSettingsPut(store *db.Store) gin.HandlerFunc {
 			return
 		}
 
-		normalized, err := normalizeSubscriptionBaseURL(req.SubscriptionBaseURL)
+		normalizedSubscriptionBaseURL, err := normalizeSubscriptionBaseURL(req.SubscriptionBaseURL)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 
-		if normalized == "" {
+		normalizedTimezone, _, err := normalizeSystemTimezone(req.Timezone)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		if normalizedSubscriptionBaseURL == "" {
 			if err := store.DeleteSystemSetting(c.Request.Context(), subscriptionBaseURLKey); err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "save settings failed"})
 				return
 			}
 		} else {
-			if err := store.UpsertSystemSetting(c.Request.Context(), subscriptionBaseURLKey, normalized); err != nil {
+			if err := store.UpsertSystemSetting(c.Request.Context(), subscriptionBaseURLKey, normalizedSubscriptionBaseURL); err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "save settings failed"})
 				return
 			}
 		}
 
+		if err := store.UpsertSystemSetting(c.Request.Context(), systemTimezoneKey, normalizedTimezone); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "save settings failed"})
+			return
+		}
+
+		if _, err := setSystemTimezone(normalizedTimezone); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "apply timezone failed"})
+			return
+		}
+
 		c.JSON(http.StatusOK, gin.H{
-			"data": systemSettingsDTO{SubscriptionBaseURL: normalized},
+			"data": systemSettingsDTO{
+				SubscriptionBaseURL: normalizedSubscriptionBaseURL,
+				Timezone:            normalizedTimezone,
+			},
 		})
 	}
 }

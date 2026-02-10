@@ -616,3 +616,22 @@
 - 严格验证：
   - `cd panel/web && npm test -- --run` ✅（15 files, 39 tests）
   - `cd panel/web && npm run build` ✅
+
+## 2026-02-10 Session: Settings 通用设置卡 + 时区输入匹配（已完成）
+- 完成内容：
+  - 将时区从“订阅访问地址”卡移出，合并到“通用设置”卡（语言 + 时区）。
+  - 引入成熟时区库 `@vvo/tzdb`，支持时区输入联想匹配（datalist）与手动输入。
+  - 保存时区时做 IANA 校验，非法值前端即时报错并阻断提交。
+  - 订阅设置与通用设置拆分为独立保存反馈，减少状态串扰。
+- 修改文件：
+  - panel/web/src/pages/settings-page.tsx
+  - panel/web/src/i18n/locales/zh.json
+  - panel/web/src/i18n/locales/en.json
+  - panel/web/src/pages/settings-page.test.tsx
+  - panel/web/src/pages/settings-timezone.test.tsx
+  - panel/web/package.json
+  - panel/web/package-lock.json
+- 严格验证：
+  - cd panel/web && npm test -- --run src/pages/settings-page.test.tsx src/pages/settings-timezone.test.tsx ✅
+  - cd panel/web && npm test -- --run ✅（17 files, 44 tests）
+  - cd panel/web && npm run build ✅

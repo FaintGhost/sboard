@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useTranslation } from "react-i18next"
 import { Check, Copy } from "lucide-react"
+import { getTimeZones } from "@vvo/tzdb"
 import {
   Card,
   CardContent,
@@ -29,11 +30,17 @@ import {
   updateAdminProfile,
   updateSystemSettings,
 } from "@/lib/api/system"
+import { useSystemStore } from "@/store/system"
 
 type SubscriptionScheme = "http" | "https"
 type HostPortValidationCode = "format" | "ip" | "port" | null
 type UpdateSystemSettingsPayload = Parameters<typeof updateSystemSettings>[0]
 type UpdateAdminProfilePayload = Parameters<typeof updateAdminProfile>[0]
+type TimezoneOption = {
+  name: string
+  label: string
+  searchText: string
+}
 
 const languages = [
   { code: "zh", nameKey: "settings.langZh" },
@@ -151,12 +158,18 @@ export function SettingsPage() {
   const qc = useQueryClient()
   const apiBaseUrl = window.location.origin
   const hostPortInputRef = useRef<HTMLInputElement>(null)
+  const timezoneInputRef = useRef<HTMLInputElement>(null)
+  const setGlobalTimezone = useSystemStore((state) => state.setTimezone)
 
   const [subscriptionScheme, setSubscriptionScheme] = useState<SubscriptionScheme>("http")
   const [subscriptionHostPort, setSubscriptionHostPort] = useState("")
-  const [settingsMessage, setSettingsMessage] = useState<string | null>(null)
+  const [subscriptionMessage, setSubscriptionMessage] = useState<string | null>(null)
+  const [generalMessage, setGeneralMessage] = useState<string | null>(null)
   const [validationError, setValidationError] = useState<string | null>(null)
+  const [timezoneValidationError, setTimezoneValidationError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  const [timezone, setTimezone] = useState("UTC")
+  const [timezoneTouched, setTimezoneTouched] = useState(false)
 
   const [adminUsername, setAdminUsername] = useState("")
   const [adminOldPassword, setAdminOldPassword] = useState("")
@@ -164,6 +177,35 @@ export function SettingsPage() {
   const [adminConfirmPassword, setAdminConfirmPassword] = useState("")
   const [adminMessage, setAdminMessage] = useState<string | null>(null)
   const [adminValidationError, setAdminValidationError] = useState<string | null>(null)
+
+  const timezoneOptions = useMemo<TimezoneOption[]>(() => {
+    return getTimeZones({ includeUtc: true }).map((item) => {
+      const offset = item.currentTimeFormat.startsWith("GMT")
+        ? item.currentTimeFormat.replace("GMT", "UTC")
+        : item.currentTimeFormat
+      const searchableMainCities = item.mainCities.join(" ")
+
+      return {
+        name: item.name,
+        label: `(${offset}) ${item.name}`,
+        searchText: `${item.name} ${item.alternativeName} ${item.countryName} ${searchableMainCities}`.toLowerCase(),
+      }
+    })
+  }, [])
+
+  const timezoneNameMap = useMemo(() => {
+    const map = new Map<string, string>()
+    timezoneOptions.forEach((item) => {
+      map.set(item.name.toLowerCase(), item.name)
+    })
+    return map
+  }, [timezoneOptions])
+
+  const filteredTimezoneOptions = useMemo(() => {
+    const query = timezone.trim().toLowerCase()
+    if (!query) return timezoneOptions
+    return timezoneOptions.filter((item) => item.searchText.includes(query))
+  }, [timezone, timezoneOptions])
 
   const systemInfoQuery = useQuery({
     queryKey: ["system-info"],
@@ -188,25 +230,47 @@ export function SettingsPage() {
     )
     setSubscriptionScheme(parsed.scheme)
     setSubscriptionHostPort(parsed.hostPort)
-  }, [systemSettingsQuery.data, apiBaseUrl])
+    if (!timezoneTouched) {
+      setTimezone(systemSettingsQuery.data.timezone ?? "UTC")
+    }
+    setGlobalTimezone(systemSettingsQuery.data.timezone ?? "UTC")
+  }, [systemSettingsQuery.data, apiBaseUrl, setGlobalTimezone, timezoneTouched])
 
   useEffect(() => {
     if (!adminProfileQuery.data) return
     setAdminUsername((prev) => (prev.trim() ? prev : adminProfileQuery.data.username))
   }, [adminProfileQuery.data])
 
-  const updateSettingsMutation = useMutation({
+  async function onSystemSettingsSaved(data: { subscription_base_url: string; timezone: string }) {
+    const parsed = parseConfiguredSubscriptionBaseURL(
+      data.subscription_base_url ?? "",
+      apiBaseUrl,
+    )
+    setSubscriptionScheme(parsed.scheme)
+    setSubscriptionHostPort(parsed.hostPort)
+    setTimezone(data.timezone ?? "UTC")
+    setTimezoneTouched(false)
+    setGlobalTimezone(data.timezone ?? "UTC")
+    setValidationError(null)
+    setTimezoneValidationError(null)
+    await qc.invalidateQueries({ queryKey: ["system-settings"] })
+  }
+
+  const updateSubscriptionMutation = useMutation({
     mutationFn: (payload: UpdateSystemSettingsPayload) => updateSystemSettings(payload),
     onSuccess: async (data) => {
-      const parsed = parseConfiguredSubscriptionBaseURL(
-        data.subscription_base_url ?? "",
-        apiBaseUrl,
-      )
-      setSubscriptionScheme(parsed.scheme)
-      setSubscriptionHostPort(parsed.hostPort)
-      setValidationError(null)
-      setSettingsMessage(t("settings.saveSuccess"))
-      await qc.invalidateQueries({ queryKey: ["system-settings"] })
+      await onSystemSettingsSaved(data)
+      setSubscriptionMessage(t("settings.saveSuccess"))
+      setGeneralMessage(null)
+    },
+  })
+
+  const updateGeneralMutation = useMutation({
+    mutationFn: (payload: UpdateSystemSettingsPayload) => updateSystemSettings(payload),
+    onSuccess: async (data) => {
+      await onSystemSettingsSaved(data)
+      setGeneralMessage(t("settings.saveSuccess"))
+      setSubscriptionMessage(null)
     },
   })
 
@@ -235,6 +299,28 @@ export function SettingsPage() {
 
   const handleLanguageChange = (lang: string) => {
     i18n.changeLanguage(lang)
+    setGeneralMessage(null)
+  }
+
+  const resolveTimezoneForSave = (): string | null => {
+    const raw = timezone.trim()
+    if (!raw) {
+      setTimezone("UTC")
+      setTimezoneValidationError(null)
+      return "UTC"
+    }
+
+    const canonical = timezoneNameMap.get(raw.toLowerCase()) ?? raw
+    try {
+      new Intl.DateTimeFormat(undefined, { timeZone: canonical })
+      setTimezone(canonical)
+      setTimezoneValidationError(null)
+      return canonical
+    } catch {
+      setTimezoneValidationError(t("settings.timezoneInvalid"))
+      timezoneInputRef.current?.focus()
+      return null
+    }
   }
 
   const resolvedSubscriptionBaseURL = useMemo(() => {
@@ -267,20 +353,28 @@ export function SettingsPage() {
     try {
       await navigator.clipboard.writeText(resolvedSubscriptionBaseURL)
       setCopied(true)
-      setSettingsMessage(t("common.copiedToClipboard"))
+      setSubscriptionMessage(t("common.copiedToClipboard"))
     } catch {
-      setSettingsMessage(t("common.copyFailed"))
+      setSubscriptionMessage(t("common.copyFailed"))
     }
   }
 
   function handleSaveSubscriptionAccess() {
-    setSettingsMessage(null)
+    setSubscriptionMessage(null)
+    setGeneralMessage(null)
     setValidationError(null)
+    setTimezoneValidationError(null)
     setCopied(false)
+
+    const timezoneValue = resolveTimezoneForSave()
+    if (!timezoneValue) return
 
     const hostPort = subscriptionHostPort.trim()
     if (!hostPort) {
-      updateSettingsMutation.mutate({ subscription_base_url: "" })
+      updateSubscriptionMutation.mutate({
+        subscription_base_url: "",
+        timezone: timezoneValue,
+      })
       return
     }
 
@@ -291,8 +385,33 @@ export function SettingsPage() {
       return
     }
 
-    updateSettingsMutation.mutate({
+    updateSubscriptionMutation.mutate({
       subscription_base_url: `${subscriptionScheme}://${hostPort}`,
+      timezone: timezoneValue,
+    })
+  }
+
+  function handleSaveGeneralSettings() {
+    setGeneralMessage(null)
+    setSubscriptionMessage(null)
+    setTimezoneValidationError(null)
+
+    const timezoneValue = resolveTimezoneForSave()
+    if (!timezoneValue) return
+
+    const hostPort = subscriptionHostPort.trim()
+    if (hostPort) {
+      const subscriptionValidationMessage = resolveValidationError(hostPort)
+      if (subscriptionValidationMessage) {
+        setValidationError(subscriptionValidationMessage)
+        hostPortInputRef.current?.focus()
+        return
+      }
+    }
+
+    updateGeneralMutation.mutate({
+      subscription_base_url: hostPort ? `${subscriptionScheme}://${hostPort}` : "",
+      timezone: timezoneValue,
     })
   }
 
@@ -362,7 +481,7 @@ export function SettingsPage() {
                     onValueChange={(value) => {
                       setSubscriptionScheme(value as SubscriptionScheme)
                       setValidationError(null)
-                      setSettingsMessage(null)
+                      setSubscriptionMessage(null)
                     }}
                   >
                     <SelectTrigger
@@ -388,7 +507,7 @@ export function SettingsPage() {
                     onChange={(e) => {
                       setSubscriptionHostPort(e.target.value)
                       setValidationError(null)
-                      setSettingsMessage(null)
+                      setSubscriptionMessage(null)
                     }}
                     onBlur={handleHostPortBlur}
                     placeholder={t("settings.subscriptionAddressPlaceholder")}
@@ -424,10 +543,10 @@ export function SettingsPage() {
             </div>
 
             <div className="min-h-5 space-y-1" aria-live="polite">
-              {settingsMessage ? <p className="text-sm text-emerald-700">{settingsMessage}</p> : null}
+              {subscriptionMessage ? <p className="text-sm text-emerald-700">{subscriptionMessage}</p> : null}
               {validationError ? <p role="alert" className="text-sm text-destructive">{validationError}</p> : null}
-              {updateSettingsMutation.error instanceof ApiError ? (
-                <p role="alert" className="text-sm text-destructive">{updateSettingsMutation.error.message}</p>
+              {updateSubscriptionMutation.error instanceof ApiError ? (
+                <p role="alert" className="text-sm text-destructive">{updateSubscriptionMutation.error.message}</p>
               ) : null}
             </div>
 
@@ -435,8 +554,8 @@ export function SettingsPage() {
               <AsyncButton
                 type="button"
                 onClick={handleSaveSubscriptionAccess}
-                disabled={updateSettingsMutation.isPending || systemSettingsQuery.isLoading}
-                pending={updateSettingsMutation.isPending}
+                disabled={updateSubscriptionMutation.isPending || systemSettingsQuery.isLoading}
+                pending={updateSubscriptionMutation.isPending}
                 pendingText={t("common.saving")}
               >
                 {t("common.save")}
@@ -564,22 +683,84 @@ export function SettingsPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>{t("settings.language")}</CardTitle>
-            <CardDescription>{t("settings.selectLanguage")}</CardDescription>
+            <CardTitle>{t("settings.generalSettings")}</CardTitle>
+            <CardDescription>{t("settings.generalSettingsHint")}</CardDescription>
           </CardHeader>
-          <CardContent>
-            <Select value={i18n.language} onValueChange={handleLanguageChange}>
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {languages.map((lang) => (
-                  <SelectItem key={lang.code} value={lang.code}>
-                    {t(lang.nameKey)}
-                  </SelectItem>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="settings-language">{t("settings.language")}</Label>
+              <Select value={i18n.language} onValueChange={handleLanguageChange}>
+                <SelectTrigger id="settings-language" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {languages.map((lang) => (
+                    <SelectItem key={lang.code} value={lang.code}>
+                      {t(lang.nameKey)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="system-timezone">{t("settings.timezone")}</Label>
+              <Input
+                id="system-timezone"
+                ref={timezoneInputRef}
+                list="system-timezone-options"
+                value={timezone}
+                onChange={(e) => {
+                  setTimezone(e.target.value)
+                  setTimezoneTouched(true)
+                  setGeneralMessage(null)
+                  setTimezoneValidationError(null)
+                }}
+                onBlur={() => {
+                  if (!timezone.trim()) {
+                    setTimezone("UTC")
+                    setTimezoneValidationError(null)
+                    return
+                  }
+                  const matched = timezoneNameMap.get(timezone.trim().toLowerCase())
+                  if (matched) {
+                    setTimezone(matched)
+                  }
+                }}
+                placeholder={t("settings.timezonePlaceholder")}
+                autoComplete="off"
+                aria-invalid={!!timezoneValidationError}
+                aria-describedby="system-timezone-help"
+              />
+              <datalist id="system-timezone-options">
+                {filteredTimezoneOptions.map((item) => (
+                  <option key={item.name} value={item.name} label={item.label} />
                 ))}
-              </SelectContent>
-            </Select>
+              </datalist>
+              <p id="system-timezone-help" className="text-xs text-muted-foreground">
+                {t("settings.timezoneHelp")}
+              </p>
+            </div>
+
+            <div className="min-h-5 space-y-1" aria-live="polite">
+              {generalMessage ? <p className="text-sm text-emerald-700">{generalMessage}</p> : null}
+              {timezoneValidationError ? <p role="alert" className="text-sm text-destructive">{timezoneValidationError}</p> : null}
+              {updateGeneralMutation.error instanceof ApiError ? (
+                <p role="alert" className="text-sm text-destructive">{updateGeneralMutation.error.message}</p>
+              ) : null}
+            </div>
+
+            <div className="flex justify-end">
+              <AsyncButton
+                type="button"
+                onClick={handleSaveGeneralSettings}
+                disabled={updateGeneralMutation.isPending || systemSettingsQuery.isLoading}
+                pending={updateGeneralMutation.isPending}
+                pendingText={t("common.saving")}
+              >
+                {t("common.save")}
+              </AsyncButton>
+            </div>
           </CardContent>
         </Card>
 

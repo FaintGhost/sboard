@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react"
+import { render, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
@@ -16,13 +16,15 @@ type AdminProfilePayload = {
 
 type SetupMockOptions = {
   initialSubscriptionBaseURL?: string
-  onPutSystemSettings?: (value: string) => void
+  initialTimezone?: string
+  onPutSystemSettings?: (payload: { subscription_base_url: string; timezone: string }) => void
   onPutAdminProfile?: (payload: AdminProfilePayload) => { username: string }
 }
 
 function setupSettingsFetchMock(options: SetupMockOptions = {}) {
   const {
     initialSubscriptionBaseURL = "",
+    initialTimezone = "UTC",
     onPutSystemSettings,
     onPutAdminProfile,
   } = options
@@ -52,6 +54,7 @@ function setupSettingsFetchMock(options: SetupMockOptions = {}) {
         JSON.stringify({
           data: {
             subscription_base_url: initialSubscriptionBaseURL,
+            timezone: initialTimezone,
           },
         }),
         {
@@ -76,12 +79,13 @@ function setupSettingsFetchMock(options: SetupMockOptions = {}) {
     }
 
     if (req.method === "PUT" && url.pathname === "/api/system/settings") {
-      const body = (await req.json()) as { subscription_base_url: string }
-      onPutSystemSettings?.(body.subscription_base_url)
+      const body = (await req.json()) as { subscription_base_url: string; timezone: string }
+      onPutSystemSettings?.(body)
       return new Response(
         JSON.stringify({
           data: {
             subscription_base_url: body.subscription_base_url,
+            timezone: body.timezone,
           },
         }),
         {
@@ -134,14 +138,17 @@ describe("SettingsPage", () => {
     expect(screen.getByText("abc1234")).toBeInTheDocument()
     expect(screen.getByText("1.12.19")).toBeInTheDocument()
     expect(await screen.findByDisplayValue("203.0.113.10:8443")).toBeInTheDocument()
+    expect(await screen.findByDisplayValue("UTC")).toBeInTheDocument()
     expect(await screen.findByDisplayValue("admin")).toBeInTheDocument()
   })
 
   it("saves subscription protocol and ip:port", async () => {
     let savedValue = ""
+    let savedTimezone = ""
     setupSettingsFetchMock({
-      onPutSystemSettings: (value) => {
-        savedValue = value
+      onPutSystemSettings: (payload) => {
+        savedValue = payload.subscription_base_url
+        savedTimezone = payload.timezone
       },
     })
 
@@ -163,7 +170,38 @@ describe("SettingsPage", () => {
     await userEvent.click(saveButtons[0])
 
     expect(savedValue).toBe("https://203.0.113.10:8443")
+    expect(savedTimezone).toBe("UTC")
     expect(await screen.findByText("设置已保存")).toBeInTheDocument()
+  })
+
+  it("saves timezone from general settings", async () => {
+    let savedTimezone = ""
+    setupSettingsFetchMock({
+      initialSubscriptionBaseURL: "https://203.0.113.10:8443",
+      onPutSystemSettings: (payload) => {
+        savedTimezone = payload.timezone
+      },
+    })
+
+    render(
+      <AppProviders>
+        <SettingsPage />
+      </AppProviders>,
+    )
+
+    const timezoneInput = await screen.findByLabelText("全局时区")
+    await userEvent.clear(timezoneInput)
+    await userEvent.type(timezoneInput, "Asia/Shanghai")
+
+    const generalCardTitle = await screen.findByText("通用设置")
+    const generalCard = generalCardTitle.closest('[data-slot="card"]')
+    expect(generalCard).toBeTruthy()
+    const generalSaveButton = within(generalCard as HTMLElement).getByRole("button", { name: "保存" })
+    await userEvent.click(generalSaveButton)
+
+    await waitFor(() => {
+      expect(savedTimezone).toBe("Asia/Shanghai")
+    })
   })
 
   it("shows validation error for invalid ip:port", async () => {

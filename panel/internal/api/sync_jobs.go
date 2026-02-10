@@ -219,14 +219,14 @@ func toSyncJobListItemDTO(item db.SyncJob) syncJobListItemDTO {
 		AttemptCount:  item.AttemptCount,
 		DurationMS:    item.DurationMS,
 		ErrorSummary:  item.ErrorSummary,
-		CreatedAt:     item.CreatedAt.UTC().Format(time.RFC3339),
+		CreatedAt:     formatTimeRFC3339OrEmpty(item.CreatedAt),
 	}
 	if item.StartedAt != nil {
-		startedAt := item.StartedAt.UTC().Format(time.RFC3339)
+		startedAt := formatTimeRFC3339OrEmpty(*item.StartedAt)
 		out.StartedAt = &startedAt
 	}
 	if item.FinishedAt != nil {
-		finishedAt := item.FinishedAt.UTC().Format(time.RFC3339)
+		finishedAt := formatTimeRFC3339OrEmpty(*item.FinishedAt)
 		out.FinishedAt = &finishedAt
 	}
 	return out
@@ -241,10 +241,10 @@ func toSyncAttemptDTO(item db.SyncAttempt) syncAttemptItemDTO {
 		DurationMS:   item.DurationMS,
 		ErrorSummary: item.ErrorSummary,
 		BackoffMS:    item.BackoffMS,
-		StartedAt:    item.StartedAt.UTC().Format(time.RFC3339),
+		StartedAt:    formatTimeRFC3339OrEmpty(item.StartedAt),
 	}
 	if item.FinishedAt != nil {
-		finishedAt := item.FinishedAt.UTC().Format(time.RFC3339)
+		finishedAt := formatTimeRFC3339OrEmpty(*item.FinishedAt)
 		out.FinishedAt = &finishedAt
 	}
 	return out

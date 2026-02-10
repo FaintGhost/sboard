@@ -24,6 +24,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { listTrafficTimeseries, type TrafficTimeseriesPoint } from "@/lib/api/traffic"
 import { resolveTrafficChartRows } from "@/lib/traffic-chart-data"
+import { useSystemStore } from "@/store/system"
 import { formatBytesWithUnit, pickByteUnit } from "@/lib/units"
 
 type RangeKey = "24h" | "7d" | "30d"
@@ -47,6 +48,7 @@ const chartConfig = {
 
 export function ChartAreaInteractive() {
   const { t, i18n } = useTranslation()
+  const timezone = useSystemStore((state) => state.timezone)
   const isMobile = useIsMobile()
   const [timeRange, setTimeRange] = React.useState<RangeKey>("24h")
   const [displayRows, setDisplayRows] = React.useState<TrafficTimeseriesPoint[]>([])
@@ -166,9 +168,9 @@ export function ChartAreaInteractive() {
               tickFormatter={(value) => {
                 const d = new Date(value)
                 if (timeRange === "24h") {
-                  return d.toLocaleTimeString(i18n.language, { hour: "2-digit", minute: "2-digit" })
+                  return d.toLocaleTimeString(i18n.language, { hour: "2-digit", minute: "2-digit", timeZone: timezone })
                 }
-                return d.toLocaleDateString(i18n.language, { month: "short", day: "numeric" })
+                return d.toLocaleDateString(i18n.language, { month: "short", day: "numeric", timeZone: timezone })
               }}
             />
 
@@ -178,7 +180,7 @@ export function ChartAreaInteractive() {
                 <ChartTooltipContent
                   labelFormatter={(label) => {
                     const d = new Date(label)
-                    return d.toLocaleString(i18n.language)
+                    return d.toLocaleString(i18n.language, { timeZone: timezone })
                   }}
                   formatter={(value, name) => {
                     const n = typeof value === "number" ? value : Number(value)

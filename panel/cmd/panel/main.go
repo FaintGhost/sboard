@@ -27,6 +27,10 @@ func main() {
 	}
 	store := db.NewStore(database)
 
+	if err := api.InitSystemTimezone(context.Background(), store); err != nil {
+		log.Fatalf("init timezone failed: %v", err)
+	}
+
 	// If the panel is not initialized yet, require a setup token for secure onboarding.
 	// If not provided via env, generate one and print it once at startup.
 	if n, err := db.AdminCount(store); err == nil && n == 0 {

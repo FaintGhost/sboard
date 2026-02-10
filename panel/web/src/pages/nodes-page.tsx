@@ -53,8 +53,10 @@ import type { Group, Node, NodeTrafficSample } from "@/lib/api/types"
 import { listTrafficNodesSummary, type TrafficNodeSummary } from "@/lib/api/traffic"
 import { buildNodeDockerCompose, generateNodeSecretKey } from "@/lib/node-compose"
 import { tableColumnSpacing } from "@/lib/table-spacing"
+import { formatDateTimeByTimezone } from "@/lib/datetime"
 import { bytesToGBString } from "@/lib/units"
 import { tableToolbarClass } from "@/lib/table-toolbar"
+import { useSystemStore } from "@/store/system"
 
 type EditState = {
   mode: "create" | "edit"
@@ -86,15 +88,13 @@ function groupName(groups: Group[] | undefined, id: number | null): string {
   return g ? g.name : String(id)
 }
 
-function formatDateTime(value?: string | null): string {
-  if (!value) return "-"
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return value
-  return date.toLocaleString()
+function formatDateTime(value: string | null | undefined, locale: string, timezone: string): string {
+  return formatDateTimeByTimezone(value, locale, timezone)
 }
 
 export function NodesPage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const timezone = useSystemStore((state) => state.timezone)
   const navigate = useNavigate()
   const qc = useQueryClient()
   const spacing = tableColumnSpacing.seven
@@ -241,6 +241,7 @@ export function NodesPage() {
             const s24 = trafficSummaryByNodeID.map24.get(n.id)
             const s1 = trafficSummaryByNodeID.map1.get(n.id)
             const last = s24?.last_recorded_at || s1?.last_recorded_at || n.last_seen_at || ""
+            const lastFormatted = formatDateTime(last, i18n.language, timezone)
             const up24 = s24?.upload ?? 0
             const down24 = s24?.download ?? 0
             const up1 = s1?.upload ?? 0
@@ -284,7 +285,7 @@ export function NodesPage() {
                   <div className="flex items-center justify-between gap-3">
                     <span className="text-muted-foreground">{t("nodes.lastUpdatedAt")}</span>
                     <span className="truncate">
-                      <FlashValue value={last || "-"} className="max-w-full" />
+                      <FlashValue value={lastFormatted} className="max-w-full" />
                     </span>
                   </div>
                   <div className="flex justify-end gap-2 pt-2">
@@ -391,7 +392,7 @@ export function NodesPage() {
                       />
                     </TableCell>
                     <TableCell className={`${spacing.cellMiddle} text-muted-foreground`}>
-                      {formatDateTime(n.last_seen_at)}
+                      {formatDateTime(n.last_seen_at, i18n.language, timezone)}
                     </TableCell>
                     <TableCell className={spacing.cellLast}>
                       <DropdownMenu>
@@ -749,7 +750,7 @@ export function NodesPage() {
                         {"  "}
                         ↓ {(r.download / (1024 ** 3)).toFixed(3)} GB
                       </TableCell>
-                      <TableCell className="text-muted-foreground">{r.last || "-"}</TableCell>
+                      <TableCell className="text-muted-foreground">{formatDateTime(r.last, i18n.language, timezone)}</TableCell>
                     </TableRow>
                   ))}
                   {!trafficQuery.isLoading && trafficByInbound.length === 0 ? (

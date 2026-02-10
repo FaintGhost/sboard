@@ -47,14 +47,13 @@ import { tableColumnSpacing } from "@/lib/table-spacing"
 import { tableTransitionClass } from "@/lib/table-motion"
 import { useTableQueryTransition } from "@/lib/table-query-transition"
 import { tableToolbarClass } from "@/lib/table-toolbar"
+import { formatDateTimeByTimezone } from "@/lib/datetime"
+import { useSystemStore } from "@/store/system"
 
 const pageSize = 20
 
-function formatDateTime(value?: string): string {
-  if (!value) return "-"
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return value
-  return date.toLocaleString()
+function formatDateTime(value: string | undefined, locale: string, timezone: string): string {
+  return formatDateTimeByTimezone(value, locale, timezone)
 }
 
 function formatDuration(ms: number): string {
@@ -115,7 +114,8 @@ function statusLabel(t: (key: string) => string, value: string): string {
 }
 
 export function SyncJobsPage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const timezone = useSystemStore((state) => state.timezone)
   const qc = useQueryClient()
   const spacing = tableColumnSpacing.seven
   const [searchParams, setSearchParams] = useSearchParams()
@@ -311,7 +311,7 @@ export function SyncJobsPage() {
               <TableBody className={tableTransitionClass(jobsTable.isTransitioning)}>
                 {visibleJobs.map((job) => (
                   <TableRow key={job.id}>
-                    <TableCell className={spacing.cellFirst}>{formatDateTime(job.created_at)}</TableCell>
+                    <TableCell className={spacing.cellFirst}>{formatDateTime(job.created_at, i18n.language, timezone)}</TableCell>
                     <TableCell className={`${spacing.cellMiddle} font-medium`}>{nodeName(job.node_id)}</TableCell>
                     <TableCell className={`${spacing.cellMiddle} text-muted-foreground`}>
                       {sourceLabel(t, job.trigger_source)}
@@ -383,7 +383,7 @@ export function SyncJobsPage() {
                 {detailJob
                   ? t("syncJobs.detailSubtitle", {
                       node: nodeName(detailJob.node_id),
-                      time: formatDateTime(detailJob.created_at),
+                      time: formatDateTime(detailJob.created_at, i18n.language, timezone),
                     })
                   : t("common.loading")}
               </DialogDescription>
@@ -413,9 +413,9 @@ export function SyncJobsPage() {
                         {statusLabel(t, detailJob.status)}
                       </Badge>
                     </p>
-                    <p><span className="text-muted-foreground">{t("syncJobs.createdAt")}: </span>{formatDateTime(detailJob.created_at)}</p>
-                    <p><span className="text-muted-foreground">{t("syncJobs.startedAt")}: </span>{formatDateTime(detailJob.started_at)}</p>
-                    <p><span className="text-muted-foreground">{t("syncJobs.finishedAt")}: </span>{formatDateTime(detailJob.finished_at)}</p>
+                    <p><span className="text-muted-foreground">{t("syncJobs.createdAt")}: </span>{formatDateTime(detailJob.created_at, i18n.language, timezone)}</p>
+                    <p><span className="text-muted-foreground">{t("syncJobs.startedAt")}: </span>{formatDateTime(detailJob.started_at, i18n.language, timezone)}</p>
+                    <p><span className="text-muted-foreground">{t("syncJobs.finishedAt")}: </span>{formatDateTime(detailJob.finished_at, i18n.language, timezone)}</p>
                     <p><span className="text-muted-foreground">{t("syncJobs.totalDuration")}: </span>{formatDuration(detailJob.duration_ms)}</p>
                     <p><span className="text-muted-foreground">{t("syncJobs.retryCount")}: </span>{detailJob.attempt_count}</p>
                     <p className="sm:col-span-2">
@@ -469,8 +469,8 @@ export function SyncJobsPage() {
                             </span>
                           </div>
                           <p className="mt-1 text-xs text-muted-foreground">
-                            {formatDateTime(attempt.started_at)}
-                            {attempt.finished_at ? ` → ${formatDateTime(attempt.finished_at)}` : ""}
+                            {formatDateTime(attempt.started_at, i18n.language, timezone)}
+                            {attempt.finished_at ? ` → ${formatDateTime(attempt.finished_at, i18n.language, timezone)}` : ""}
                           </p>
                           <p className="mt-1 text-xs text-muted-foreground">
                             {t("syncJobs.error")}: {attempt.error_summary || "-"}
