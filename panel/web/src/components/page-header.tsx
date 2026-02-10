@@ -18,7 +18,7 @@ export function PageHeader({
   return (
     <header
       className={cn(
-        "rounded-xl border border-border/70 bg-gradient-to-br from-primary/[0.08] via-card to-card px-4 py-4 shadow-sm md:px-5 md:py-5",
+        "rounded-xl border border-border/80 bg-card px-4 py-4 shadow-[0_1px_0_0_rgba(255,255,255,0.35)_inset,0_14px_34px_-28px_rgba(0,0,0,0.45)] dark:shadow-[0_1px_0_0_rgba(255,255,255,0.08)_inset,0_20px_40px_-32px_rgba(0,0,0,0.85)] md:px-5 md:py-5",
         className,
       )}
     >
@@ -32,4 +32,3 @@ export function PageHeader({
     </header>
   )
 }
-

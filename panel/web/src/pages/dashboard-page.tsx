@@ -118,7 +118,7 @@ export function DashboardPage() {
       />
 
       <div className="grid gap-4 px-4 lg:px-6">
-        <Card className="@container/card border-primary/25 bg-gradient-to-br from-primary/[0.08] via-card to-card shadow-sm">
+        <Card className="@container/card border-border/80 bg-card shadow-[0_1px_0_0_rgba(255,255,255,0.32)_inset,0_20px_36px_-30px_rgba(0,0,0,0.48)] dark:shadow-[0_1px_0_0_rgba(255,255,255,0.08)_inset,0_24px_44px_-34px_rgba(0,0,0,0.88)]">
           <CardHeader>
             <CardTitle>{t("dashboard.systemOverviewTitle")}</CardTitle>
             <CardDescription>{t("dashboard.systemOverviewSubtitle")}</CardDescription>
@@ -128,7 +128,7 @@ export function DashboardPage() {
               <Link
                 key={item.to}
                 to={item.to}
-                className="group rounded-lg border border-border/70 bg-background/70 p-3 transition-colors hover:border-primary/40 hover:bg-primary/[0.04]"
+                className="group rounded-lg border border-border/75 bg-background/85 p-3 transition-all hover:border-border hover:bg-background"
               >
                 <div className="mb-2 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2 text-sm font-medium text-foreground">

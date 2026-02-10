@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { MoreHorizontal, Pencil } from "lucide-react"
+import { MoreHorizontal, Pencil, Trash2 } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 
 import { AsyncButton } from "@/components/ui/async-button"
@@ -22,6 +22,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
@@ -47,7 +48,7 @@ import { StatusDot } from "@/components/status-dot"
 import { FlashValue } from "@/components/flash-value"
 import { ApiError } from "@/lib/api/client"
 import { listGroups } from "@/lib/api/groups"
-import { createNode, listNodeTraffic, listNodes, updateNode } from "@/lib/api/nodes"
+import { createNode, deleteNode, listNodeTraffic, listNodes, updateNode } from "@/lib/api/nodes"
 import type { Group, Node, NodeTrafficSample } from "@/lib/api/types"
 import { listTrafficNodesSummary, type TrafficNodeSummary } from "@/lib/api/traffic"
 import { buildNodeDockerCompose, generateNodeSecretKey } from "@/lib/node-compose"
@@ -150,6 +151,16 @@ export function NodesPage() {
     },
   })
 
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => deleteNode(id),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["nodes"] })
+    },
+    onError: (e) => {
+      setActionMessage(e instanceof ApiError ? e.message : t("nodes.deleteFailed"))
+    },
+  })
+
   const trafficQuery = useQuery({
     queryKey: ["nodes", "traffic", trafficNode?.id ?? 0],
     queryFn: async () => {
@@ -238,7 +249,7 @@ export function NodesPage() {
             return (
               <Card
                 key={n.id}
-                className="bg-gradient-to-t from-primary/5 to-card shadow-xs"
+                className="border-border/75 bg-card shadow-[0_1px_0_0_rgba(255,255,255,0.25)_inset,0_14px_30px_-30px_rgba(0,0,0,0.55)] dark:shadow-[0_1px_0_0_rgba(255,255,255,0.06)_inset,0_18px_34px_-28px_rgba(0,0,0,0.9)]"
               >
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between gap-3">
@@ -418,6 +429,18 @@ export function NodesPage() {
                             }}
                           >
                             {t("nodes.viewSyncJobs")}
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            variant="destructive"
+                            disabled={deleteMutation.isPending}
+                            onClick={() => {
+                              setActionMessage(null)
+                              deleteMutation.mutate(n.id)
+                            }}
+                          >
+                            <Trash2 className="mr-2 size-4" />
+                            {t("nodes.deleteNode")}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>

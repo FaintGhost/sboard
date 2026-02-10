@@ -528,3 +528,31 @@
 - 验证结果：
   - `npm test -- --run` ✅（12 files, 29 tests）
   - `npm run build` ✅
+
+## 2026-02-09 Session: 主题配色系统（已完成）
+- 修改文件：
+  - `panel/web/src/index.css`
+- 完成内容：
+  - 替换 light/dark 核心 token：`background/foreground/card/popover/primary/secondary/muted/accent/border/input/ring`
+  - 同步调整图表色：`chart-1..5`
+  - 同步调整侧栏色：`sidebar-*`
+- 验证结果：
+  - `npm test -- --run` ✅（12 files, 29 tests）
+  - `npm run build` ✅
+
+## 2026-02-09 Session: 节点删除功能回归修复（已完成）
+- 完成项：
+  - 恢复节点页删除 API 引入与 mutation：
+    - `panel/web/src/pages/nodes-page.tsx`
+  - 恢复节点行操作菜单的 destructive 删除项：
+    - `panel/web/src/pages/nodes-page.tsx`
+  - 新增节点删除回归测试：
+    - `panel/web/src/pages/nodes-page.test.tsx`
+  - 同类排查删除能力：
+    - `panel/web/src/pages/users-page.tsx`
+    - `panel/web/src/pages/groups-page.tsx`
+    - `panel/web/src/pages/inbounds-page.tsx`
+    - `panel/web/src/pages/nodes-page.tsx`
+- 严格验证：
+  - `npm test -- --run` ✅（13 files, 30 tests）
+  - `npm run build` ✅

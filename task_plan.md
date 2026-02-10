@@ -339,3 +339,61 @@ Complete
 - [x] 前端构建通过
 - [x] 更新 `findings.md` / `progress.md`
 - **Status:** complete
+
+---
+
+# Session Plan: Theme 配色升级（2026-02-09）
+
+## Goal
+为 shadcn/ui 面板建立更有辨识度的主题色系统，摆脱黑白单调感，同时保持可读性与一致性。
+
+## Current Phase
+Complete
+
+## Phases
+
+### Phase 1: 主题定义
+- [x] 确定方向：Cobalt Operations
+- [x] 定义 light/dark 主轴与语义色
+- **Status:** complete
+
+### Phase 2: Token 替换
+- [x] 更新全局 color tokens（含 chart/sidebar）
+- [x] 保持组件逻辑不变，仅升级视觉系统
+- **Status:** complete
+
+### Phase 3: 验证与记录
+- [x] 前端测试全绿
+- [x] 前端构建通过
+- [x] 更新 `findings.md` / `progress.md`
+- **Status:** complete
+
+---
+
+# Session Plan: 节点删除功能回归修复（2026-02-09）
+
+## Goal
+恢复“节点管理”页删除节点能力，并补充回归测试，防止再次遗漏。
+
+## Current Phase
+Complete
+
+## Phases
+
+### Phase 1: 根因定位
+- [x] 定位节点删除入口缺失位置
+- [x] 确认历史提交中误删 delete 逻辑
+- **Status:** complete
+
+### Phase 2: TDD 修复
+- [x] 新增节点删除失败用例
+- [x] 恢复删除 mutation 与菜单入口
+- [x] 补齐错误反馈
+- **Status:** complete
+
+### Phase 3: 同类排查与验证
+- [x] 排查 users/groups/inbounds/nodes 删除能力一致性
+- [x] 前端测试全绿（13 files, 30 tests）
+- [x] 前端构建通过
+- [x] 更新 `findings.md` / `progress.md`
+- **Status:** complete

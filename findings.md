@@ -403,3 +403,30 @@
   - 各管理页页面头风格统一，主操作按钮位置一致；
   - 表格空态从“仅 no data 文本”升级为“文案 + 快捷 CTA”；
   - 过滤器布局统一，减少不同页面切换的认知负担。
+
+## Session Findings (2026-02-09, Theme Color System)
+- 诉求：默认黑白主题过于单调，需要一套更有识别度的 shadcn/ui 配色。
+- 主题方向：`Cobalt Operations`（冷静蓝青主轴 + 清晰语义色），适配运维控制台场景。
+- 改动策略：
+  - 仅替换 `index.css` 的设计 token（OKLCH），不改业务组件逻辑。
+  - 同时覆盖 light/dark、chart、sidebar 变量，避免“只改主色，其它割裂”。
+- 结果：
+  - 整体从黑白过渡为蓝青科技感，保留高可读对比；
+  - 卡片、侧栏、图表统一语义；
+  - 现有组件无回归。
+
+## Session Findings (2026-02-09, 节点删除功能回归修复)
+- 问题现象：节点管理列表操作菜单缺少“删除节点”，导致节点只能新增/编辑，无法删除。
+- 根因定位：历史提交 `chore(ui): simplify nodes actions` 在简化菜单时误移除了 `deleteNode` API 引用、`deleteMutation` 和 destructive 菜单项。
+- 修复方案（最小闭环）：
+  - 恢复 `deleteNode` API 调用与 `deleteMutation`。
+  - 在节点行菜单恢复 destructive 的“删除节点”入口。
+  - 删除失败时统一通过 `actionMessage` 显示错误（复用 `nodes.deleteFailed` / `ApiError`）。
+- TDD 回归保护：
+  - 新增 `panel/web/src/pages/nodes-page.test.tsx`。
+  - 覆盖“从行操作删除节点并触发 DELETE 请求”的关键路径。
+- 同类排查：
+  - 已核查 `users/groups/inbounds/nodes` 页面删除入口，当前均具备删除能力。
+- 验证结果：
+  - `npm test -- --run` ✅（13 files, 30 tests）
+  - `npm run build` ✅

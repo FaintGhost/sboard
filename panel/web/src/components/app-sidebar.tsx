@@ -35,8 +35,6 @@ export function AppSidebar({
   const data = {
     user: {
       name: "admin",
-      email: "admin",
-      avatar: "/avatars/shadcn.jpg",
     },
     navMain: [
       {
@@ -89,10 +87,10 @@ export function AppSidebar({
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-              <SidebarMenuButton
-                asChild
-                className="data-[slot=sidebar-menu-button]:!p-1.5"
-              >
+            <SidebarMenuButton
+              asChild
+              className="data-[slot=sidebar-menu-button]:!p-1.5"
+            >
               <Link to="/">
                 <IconInnerShadowTop className="!size-5" />
                 <span className="text-base font-semibold">SBoard</span>
