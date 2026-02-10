@@ -1,24 +1,24 @@
-import { render, screen } from "@testing-library/react"
-import { beforeEach, describe, expect, it, vi } from "vitest"
+import { render, screen } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { AppProviders } from "@/providers/app-providers"
-import { TooltipProvider } from "@/components/ui/tooltip"
-import { resetAuthStore, useAuthStore } from "@/store/auth"
-import { MemoryRouter } from "react-router-dom"
+import { AppProviders } from "@/providers/app-providers";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { resetAuthStore, useAuthStore } from "@/store/auth";
+import { MemoryRouter } from "react-router-dom";
 
-import { SubscriptionsPage } from "./subscriptions-page"
+import { SubscriptionsPage } from "./subscriptions-page";
 
 describe("SubscriptionsPage", () => {
   beforeEach(() => {
-    localStorage.clear()
-    resetAuthStore()
-    useAuthStore.getState().setToken("token-123")
-  })
+    localStorage.clear();
+    resetAuthStore();
+    useAuthStore.getState().setToken("token-123");
+  });
 
   it("uses configured subscription base URL", async () => {
     vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
-      const req = input as Request
-      const url = new URL(req.url)
+      const req = input as Request;
+      const url = new URL(req.url);
 
       if (req.method === "GET" && url.pathname === "/api/users") {
         return new Response(
@@ -38,7 +38,7 @@ describe("SubscriptionsPage", () => {
             ],
           }),
           { status: 200, headers: { "Content-Type": "application/json" } },
-        )
+        );
       }
 
       if (req.method === "GET" && url.pathname === "/api/system/settings") {
@@ -49,14 +49,14 @@ describe("SubscriptionsPage", () => {
             },
           }),
           { status: 200, headers: { "Content-Type": "application/json" } },
-        )
+        );
       }
 
       return new Response(JSON.stringify({ error: "not found" }), {
         status: 404,
         headers: { "Content-Type": "application/json" },
-      })
-    })
+      });
+    });
 
     render(
       <MemoryRouter>
@@ -66,11 +66,11 @@ describe("SubscriptionsPage", () => {
           </TooltipProvider>
         </AppProviders>
       </MemoryRouter>,
-    )
+    );
 
-    expect(await screen.findByText("alice")).toBeInTheDocument()
+    expect(await screen.findByText("alice")).toBeInTheDocument();
     expect(
       screen.getByText("https://sub.example.com/api/sub/67e59f3f-412e-4f46-92cd-495aed76ee35"),
-    ).toBeInTheDocument()
-  })
-})
+    ).toBeInTheDocument();
+  });
+});

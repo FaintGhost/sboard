@@ -1,5 +1,5 @@
-import * as React from "react"
-import { useTranslation } from "react-i18next"
+import * as React from "react";
+import { useTranslation } from "react-i18next";
 import {
   IconInnerShadowTop,
   IconSettings,
@@ -9,12 +9,12 @@ import {
   IconListCheck,
   IconRefresh,
   IconCloud,
-} from "@tabler/icons-react"
-import { Link, useLocation } from "react-router-dom"
+} from "@tabler/icons-react";
+import { Link, useLocation } from "react-router-dom";
 
-import { NavMain } from "@/components/nav-main"
-import { NavSecondary } from "@/components/nav-secondary"
-import { NavUser } from "@/components/nav-user"
+import { NavMain } from "@/components/nav-main";
+import { NavSecondary } from "@/components/nav-secondary";
+import { NavUser } from "@/components/nav-user";
 import {
   Sidebar,
   SidebarContent,
@@ -23,14 +23,14 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@/components/ui/sidebar"
+} from "@/components/ui/sidebar";
 
 export function AppSidebar({
   onLogout,
   ...props
 }: React.ComponentProps<typeof Sidebar> & { onLogout: () => void }) {
-  const { t } = useTranslation()
-  const location = useLocation()
+  const { t } = useTranslation();
+  const location = useLocation();
 
   const data = {
     user: {
@@ -80,17 +80,14 @@ export function AppSidebar({
         icon: IconSettings,
       },
     ],
-  }
+  };
 
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton
-              asChild
-              className="data-[slot=sidebar-menu-button]:!p-1.5"
-            >
+            <SidebarMenuButton asChild className="data-[slot=sidebar-menu-button]:!p-1.5">
               <Link to="/">
                 <IconInnerShadowTop className="!size-5" />
                 <span className="text-base font-semibold">SBoard</span>
@@ -104,9 +101,7 @@ export function AppSidebar({
           items={data.navMain.map((item) => ({
             ...item,
             isActive:
-              item.url === "/"
-                ? location.pathname === "/"
-                : location.pathname.startsWith(item.url),
+              item.url === "/" ? location.pathname === "/" : location.pathname.startsWith(item.url),
           }))}
         />
         <NavSecondary items={data.navSecondary} className="mt-auto" />
@@ -115,5 +110,5 @@ export function AppSidebar({
         <NavUser user={data.user} onLogout={onLogout} />
       </SidebarFooter>
     </Sidebar>
-  )
+  );
 }

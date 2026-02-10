@@ -1,47 +1,47 @@
-import { useMutation, useQuery } from "@tanstack/react-query"
-import { Navigate, useLocation, useNavigate } from "react-router-dom"
-import { useTranslation } from "react-i18next"
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
-import { BootstrapForm } from "@/components/bootstrap-form"
-import { LoginForm } from "@/components/login-form"
-import { bootstrapAdmin, getBootstrapStatus, loginAdmin } from "@/lib/api/auth"
-import { ApiError } from "@/lib/api/client"
-import { useAuthStore } from "@/store/auth"
+import { BootstrapForm } from "@/components/bootstrap-form";
+import { LoginForm } from "@/components/login-form";
+import { bootstrapAdmin, getBootstrapStatus, loginAdmin } from "@/lib/api/auth";
+import { ApiError } from "@/lib/api/client";
+import { useAuthStore } from "@/store/auth";
 
 export function LoginPage() {
-  const { t } = useTranslation()
-  const token = useAuthStore((state) => state.token)
-  const setToken = useAuthStore((state) => state.setToken)
-  const navigate = useNavigate()
-  const location = useLocation()
-  const from = (location.state as { from?: string } | null)?.from ?? "/"
+  const { t } = useTranslation();
+  const token = useAuthStore((state) => state.token);
+  const setToken = useAuthStore((state) => state.setToken);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const from = (location.state as { from?: string } | null)?.from ?? "/";
 
   const statusQuery = useQuery({
     queryKey: ["admin-bootstrap-status"],
     queryFn: getBootstrapStatus,
     retry: false,
-  })
+  });
 
-  const needsSetup = statusQuery.data?.needs_setup ?? false
+  const needsSetup = statusQuery.data?.needs_setup ?? false;
 
   const loginMutation = useMutation({
     mutationFn: loginAdmin,
     onSuccess: (data) => {
-      setToken(data.token)
-      navigate(from, { replace: true })
+      setToken(data.token);
+      navigate(from, { replace: true });
     },
-  })
+  });
 
   const bootstrapMutation = useMutation({
     mutationFn: bootstrapAdmin,
     onSuccess: async (_data, vars) => {
       // Auto-login after successful bootstrap.
-      loginMutation.mutate({ username: vars.username, password: vars.password })
+      loginMutation.mutate({ username: vars.username, password: vars.password });
     },
-  })
+  });
 
   if (token) {
-    return <Navigate to={from} replace />
+    return <Navigate to={from} replace />;
   }
 
   return (
@@ -86,5 +86,5 @@ export function LoginPage() {
         )}
       </div>
     </div>
-  )
+  );
 }

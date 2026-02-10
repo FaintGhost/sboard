@@ -1,8 +1,8 @@
-import { IconArrowDown, IconArrowUp } from "@tabler/icons-react"
-import { useTranslation } from "react-i18next"
+import { IconArrowDown, IconArrowUp } from "@tabler/icons-react";
+import { useTranslation } from "react-i18next";
 
-import { Badge } from "@/components/ui/badge"
-import { FlashValue } from "@/components/flash-value"
+import { Badge } from "@/components/ui/badge";
+import { FlashValue } from "@/components/flash-value";
 import {
   Card,
   CardAction,
@@ -10,25 +10,25 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
-import type { TrafficTotalSummary } from "@/lib/api/traffic"
-import { bytesToGBString } from "@/lib/units"
+} from "@/components/ui/card";
+import type { TrafficTotalSummary } from "@/lib/api/traffic";
+import { bytesToGBString } from "@/lib/units";
 
 type SectionCardsProps = {
-  total1h?: TrafficTotalSummary
-  total24h?: TrafficTotalSummary
-  totalAll?: TrafficTotalSummary
-  isLoading?: boolean
-}
+  total1h?: TrafficTotalSummary;
+  total24h?: TrafficTotalSummary;
+  totalAll?: TrafficTotalSummary;
+  isLoading?: boolean;
+};
 
 export function SectionCards(props: SectionCardsProps) {
-  const { t } = useTranslation()
-  const up1 = props.total1h?.upload ?? 0
-  const down1 = props.total1h?.download ?? 0
-  const up24 = props.total24h?.upload ?? 0
-  const down24 = props.total24h?.download ?? 0
-  const upAll = props.totalAll?.upload ?? 0
-  const downAll = props.totalAll?.download ?? 0
+  const { t } = useTranslation();
+  const up1 = props.total1h?.upload ?? 0;
+  const down1 = props.total1h?.download ?? 0;
+  const up24 = props.total24h?.upload ?? 0;
+  const down24 = props.total24h?.download ?? 0;
+  const upAll = props.totalAll?.upload ?? 0;
+  const downAll = props.totalAll?.download ?? 0;
 
   return (
     <div className="grid grid-cols-1 gap-4 px-4 lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
@@ -99,5 +99,5 @@ export function SectionCards(props: SectionCardsProps) {
         </CardHeader>
       </Card>
     </div>
-  )
+  );
 }

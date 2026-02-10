@@ -1,26 +1,26 @@
-import { render, screen, waitFor } from "@testing-library/react"
-import userEvent from "@testing-library/user-event"
-import { beforeEach, describe, expect, it, vi } from "vitest"
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { AppProviders } from "@/providers/app-providers"
-import { resetAuthStore, useAuthStore } from "@/store/auth"
+import { AppProviders } from "@/providers/app-providers";
+import { resetAuthStore, useAuthStore } from "@/store/auth";
 
-import { GroupsPage } from "./groups-page"
+import { GroupsPage } from "./groups-page";
 
 describe("GroupsPage", () => {
   beforeEach(() => {
-    localStorage.clear()
-    resetAuthStore()
-    useAuthStore.getState().setToken("token-123")
-  })
+    localStorage.clear();
+    resetAuthStore();
+    useAuthStore.getState().setToken("token-123");
+  });
 
   it("does not call replace-group-users when only group name/description changed", async () => {
-    let updateCalls = 0
-    let replaceCalls = 0
+    let updateCalls = 0;
+    let replaceCalls = 0;
 
     vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
-      const req = input as Request
-      const url = new URL(req.url)
+      const req = input as Request;
+      const url = new URL(req.url);
 
       if (req.method === "GET" && url.pathname === "/api/groups") {
         return new Response(
@@ -35,7 +35,7 @@ describe("GroupsPage", () => {
             ],
           }),
           { status: 200, headers: { "Content-Type": "application/json" } },
-        )
+        );
       }
 
       if (req.method === "GET" && url.pathname === "/api/users") {
@@ -56,7 +56,7 @@ describe("GroupsPage", () => {
             ],
           }),
           { status: 200, headers: { "Content-Type": "application/json" } },
-        )
+        );
       }
 
       if (req.method === "GET" && url.pathname === "/api/groups/1/users") {
@@ -74,12 +74,12 @@ describe("GroupsPage", () => {
             ],
           }),
           { status: 200, headers: { "Content-Type": "application/json" } },
-        )
+        );
       }
 
       if (req.method === "PUT" && url.pathname === "/api/groups/1") {
-        updateCalls += 1
-        const body = (await req.json()) as { name?: string; description?: string }
+        updateCalls += 1;
+        const body = (await req.json()) as { name?: string; description?: string };
         return new Response(
           JSON.stringify({
             data: {
@@ -90,55 +90,55 @@ describe("GroupsPage", () => {
             },
           }),
           { status: 200, headers: { "Content-Type": "application/json" } },
-        )
+        );
       }
 
       if (req.method === "PUT" && url.pathname === "/api/groups/1/users") {
-        replaceCalls += 1
+        replaceCalls += 1;
         return new Promise<Response>(() => {
           // keep pending to expose bug: unnecessary membership replace causes endless saving
-        })
+        });
       }
 
       return new Response(JSON.stringify({ error: "not found" }), {
         status: 404,
         headers: { "Content-Type": "application/json" },
-      })
-    })
+      });
+    });
 
     render(
       <AppProviders>
         <GroupsPage />
       </AppProviders>,
-    )
+    );
 
-    await screen.findByText("miot")
+    await screen.findByText("miot");
 
-    const actionsButton = screen.getByRole("button", { name: /操作|actions/i })
-    await userEvent.click(actionsButton)
-    await userEvent.click(await screen.findByRole("menuitem", { name: /编辑|edit/i }))
+    const actionsButton = screen.getByRole("button", { name: /操作|actions/i });
+    await userEvent.click(actionsButton);
+    await userEvent.click(await screen.findByRole("menuitem", { name: /编辑|edit/i }));
 
-    const nameInput = await screen.findByLabelText(/分组名称|group name/i)
-    await userEvent.clear(nameInput)
-    await userEvent.type(nameInput, "miot-new")
+    const nameInput = await screen.findByLabelText(/分组名称|group name/i);
+    await userEvent.clear(nameInput);
+    await userEvent.type(nameInput, "miot-new");
 
-    const saveButton = screen.getByRole("button", { name: /保存|save/i })
+    const saveButton = screen.getByRole("button", { name: /保存|save/i });
     await waitFor(() => {
-      expect(saveButton).not.toBeDisabled()
-    })
-    await userEvent.click(saveButton)
+      expect(saveButton).not.toBeDisabled();
+    });
+    await userEvent.click(saveButton);
 
     await waitFor(() => {
-      expect(updateCalls).toBe(1)
-    })
+      expect(updateCalls).toBe(1);
+    });
 
     await waitFor(
       () => {
-        expect(screen.queryByLabelText(/分组名称|group name/i)).not.toBeInTheDocument()
+        expect(screen.queryByLabelText(/分组名称|group name/i)).not.toBeInTheDocument();
       },
       { timeout: 500 },
-    )
+    );
 
-    expect(replaceCalls).toBe(0)
-  })
-})
+    expect(replaceCalls).toBe(0);
+  });
+});

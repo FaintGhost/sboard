@@ -148,11 +148,11 @@ body {
   }
   70% {
     transform: scale(1.9);
-    opacity: 0.0;
+    opacity: 0;
   }
   100% {
     transform: scale(1.9);
-    opacity: 0.0;
+    opacity: 0;
   }
 }
 

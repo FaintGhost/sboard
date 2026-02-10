@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest"
+import { describe, expect, it } from "vitest";
 
-import { buildNodeDockerCompose } from "./node-compose"
+import { buildNodeDockerCompose } from "./node-compose";
 
 describe("buildNodeDockerCompose", () => {
   it("renders docker-compose.yml for node", () => {
@@ -22,6 +22,6 @@ describe("buildNodeDockerCompose", () => {
       NODE_HTTP_ADDR: ":3003"
       NODE_SECRET_KEY: "69186918"
       NODE_LOG_LEVEL: "info"
-`)
-  })
-})
+`);
+  });
+});

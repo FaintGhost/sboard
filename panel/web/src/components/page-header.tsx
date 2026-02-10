@@ -1,20 +1,15 @@
-import type { ReactNode } from "react"
+import type { ReactNode } from "react";
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
 
 type PageHeaderProps = {
-  title: string
-  description?: string
-  action?: ReactNode
-  className?: string
-}
+  title: string;
+  description?: string;
+  action?: ReactNode;
+  className?: string;
+};
 
-export function PageHeader({
-  title,
-  description,
-  action,
-  className,
-}: PageHeaderProps) {
+export function PageHeader({ title, description, action, className }: PageHeaderProps) {
   return (
     <header
       className={cn(
@@ -30,5 +25,5 @@ export function PageHeader({
         {action ? <div className="shrink-0">{action}</div> : null}
       </div>
     </header>
-  )
+  );
 }

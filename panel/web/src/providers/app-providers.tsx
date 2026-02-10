@@ -1,12 +1,12 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { useState, type ReactNode } from "react"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useState, type ReactNode } from "react";
 
-import { ErrorBoundary } from "@/components/error-boundary"
-import { Toaster } from "@/components/ui/sonner"
+import { ErrorBoundary } from "@/components/error-boundary";
+import { Toaster } from "@/components/ui/sonner";
 
 type AppProvidersProps = {
-  children: ReactNode
-}
+  children: ReactNode;
+};
 
 export function AppProviders({ children }: AppProvidersProps) {
   const [queryClient] = useState(
@@ -19,7 +19,7 @@ export function AppProviders({ children }: AppProvidersProps) {
           },
         },
       }),
-  )
+  );
 
   return (
     <ErrorBoundary>
@@ -28,5 +28,5 @@ export function AppProviders({ children }: AppProvidersProps) {
         <Toaster />
       </QueryClientProvider>
     </ErrorBoundary>
-  )
+  );
 }

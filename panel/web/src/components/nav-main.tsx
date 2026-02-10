@@ -1,5 +1,5 @@
-import type { Icon } from "@tabler/icons-react"
-import { Link } from "react-router-dom"
+import type { Icon } from "@tabler/icons-react";
+import { Link } from "react-router-dom";
 
 import {
   SidebarGroup,
@@ -7,17 +7,17 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@/components/ui/sidebar"
+} from "@/components/ui/sidebar";
 
 export function NavMain({
   items,
 }: {
   items: {
-    title: string
-    url: string
-    icon?: Icon
-    isActive?: boolean
-  }[]
+    title: string;
+    url: string;
+    icon?: Icon;
+    isActive?: boolean;
+  }[];
 }) {
   return (
     <SidebarGroup>
@@ -25,11 +25,7 @@ export function NavMain({
         <SidebarMenu>
           {items.map((item) => (
             <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton
-                asChild
-                tooltip={item.title}
-                isActive={!!item.isActive}
-              >
+              <SidebarMenuButton asChild tooltip={item.title} isActive={!!item.isActive}>
                 <Link to={item.url}>
                   {item.icon && <item.icon />}
                   <span>{item.title}</span>
@@ -40,5 +36,5 @@ export function NavMain({
         </SidebarMenu>
       </SidebarGroupContent>
     </SidebarGroup>
-  )
+  );
 }

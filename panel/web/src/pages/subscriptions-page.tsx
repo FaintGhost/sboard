@@ -1,29 +1,23 @@
-import { useQuery } from "@tanstack/react-query"
-import { useState, useMemo } from "react"
-import { useTranslation } from "react-i18next"
-import { useSearchParams } from "react-router-dom"
-import { toast } from "sonner"
-import { Copy, Check, ExternalLink, Info } from "lucide-react"
+import { useQuery } from "@tanstack/react-query";
+import { useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
+import { useSearchParams } from "react-router-dom";
+import { toast } from "sonner";
+import { Copy, Check, ExternalLink, Info } from "lucide-react";
 
-import { Button } from "@/components/ui/button"
-import { PageHeader } from "@/components/page-header"
-import { TableEmptyState } from "@/components/table-empty-state"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/page-header";
+import { TableEmptyState } from "@/components/table-empty-state";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -31,55 +25,51 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
-import { Badge } from "@/components/ui/badge"
-import { listUsers } from "@/lib/api/users"
-import { getSystemSettings } from "@/lib/api/system"
-import type { User, UserStatus } from "@/lib/api/types"
-import { tableColumnSpacing } from "@/lib/table-spacing"
-import { tableTransitionClass } from "@/lib/table-motion"
-import { useTableQueryTransition } from "@/lib/table-query-transition"
-import { buildUserListSearchParams, parseUserListSearchParams } from "@/lib/user-list-filters"
-import { tableToolbarClass } from "@/lib/table-toolbar"
+} from "@/components/ui/table";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Badge } from "@/components/ui/badge";
+import { listUsers } from "@/lib/api/users";
+import { getSystemSettings } from "@/lib/api/system";
+import type { User, UserStatus } from "@/lib/api/types";
+import { tableColumnSpacing } from "@/lib/table-spacing";
+import { tableTransitionClass } from "@/lib/table-motion";
+import { useTableQueryTransition } from "@/lib/table-query-transition";
+import { buildUserListSearchParams, parseUserListSearchParams } from "@/lib/user-list-filters";
+import { tableToolbarClass } from "@/lib/table-toolbar";
 
-type StatusFilter = UserStatus | "all"
+type StatusFilter = UserStatus | "all";
 
 function resolveSubscriptionBaseURL(configured?: string): string {
-  const value = configured?.trim() ?? ""
-  if (value) return value
-  return window.location.origin
+  const value = configured?.trim() ?? "";
+  if (value) return value;
+  return window.location.origin;
 }
 
 function getSubscriptionUrl(userUuid: string, format?: string, configuredBaseURL?: string): string {
-  const baseURL = resolveSubscriptionBaseURL(configuredBaseURL)
-  const normalizedBase = baseURL.endsWith("/") ? baseURL : `${baseURL}/`
-  const url = new URL(`api/sub/${userUuid}`, normalizedBase)
+  const baseURL = resolveSubscriptionBaseURL(configuredBaseURL);
+  const normalizedBase = baseURL.endsWith("/") ? baseURL : `${baseURL}/`;
+  const url = new URL(`api/sub/${userUuid}`, normalizedBase);
   if (format) {
-    url.searchParams.set("format", format)
+    url.searchParams.set("format", format);
   }
-  return url.toString()
+  return url.toString();
 }
 
 function CopyButton({ text, label }: { text: string; label?: string }) {
-  const { t } = useTranslation()
-  const [copied, setCopied] = useState(false)
-  const accessibleLabel = label ? `${label} ${t("common.copy")}` : t("common.copy")
+  const { t } = useTranslation();
+  const [copied, setCopied] = useState(false);
+  const accessibleLabel = label ? `${label} ${t("common.copy")}` : t("common.copy");
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(text)
-      setCopied(true)
-      toast.success(label ? `${label} ${t("common.copied")}` : t("common.copiedToClipboard"))
-      setTimeout(() => setCopied(false), 2000)
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      toast.success(label ? `${label} ${t("common.copied")}` : t("common.copiedToClipboard"));
+      setTimeout(() => setCopied(false), 2000);
     } catch {
-      toast.error(t("common.copyFailed"))
+      toast.error(t("common.copyFailed"));
     }
-  }
+  };
 
   return (
     <Button
@@ -91,46 +81,41 @@ function CopyButton({ text, label }: { text: string; label?: string }) {
       aria-label={accessibleLabel}
       title={accessibleLabel}
     >
-      {copied ? (
-        <Check className="h-4 w-4 text-green-600" />
-      ) : (
-        <Copy className="h-4 w-4" />
-      )}
+      {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
     </Button>
-  )
+  );
 }
 
 function StatusBadge({ status }: { status: UserStatus }) {
-  const { t } = useTranslation()
+  const { t } = useTranslation();
   const variants: Record<UserStatus, "default" | "destructive" | "secondary" | "outline"> = {
     active: "default",
     disabled: "secondary",
     expired: "destructive",
     traffic_exceeded: "outline",
-  }
+  };
 
-  const label = status === "traffic_exceeded"
-    ? t("users.status.trafficExceeded")
-    : t(`users.status.${status}`)
+  const label =
+    status === "traffic_exceeded" ? t("users.status.trafficExceeded") : t(`users.status.${status}`);
 
-  return <Badge variant={variants[status]}>{label}</Badge>
+  return <Badge variant={variants[status]}>{label}</Badge>;
 }
 
 export function SubscriptionsPage() {
-  const { t } = useTranslation()
-  const spacing = tableColumnSpacing.four
-  const [searchParams, setSearchParams] = useSearchParams()
-  const filters = useMemo(() => parseUserListSearchParams(searchParams, "active"), [searchParams])
-  const statusFilter = filters.statusFilter as StatusFilter
-  const search = filters.search
+  const { t } = useTranslation();
+  const spacing = tableColumnSpacing.four;
+  const [searchParams, setSearchParams] = useSearchParams();
+  const filters = useMemo(() => parseUserListSearchParams(searchParams, "active"), [searchParams]);
+  const statusFilter = filters.statusFilter as StatusFilter;
+  const search = filters.search;
 
   const updateFilters = (patch: Partial<{ statusFilter: StatusFilter; search: string }>) => {
     const next = {
       statusFilter: (patch.statusFilter ?? statusFilter) as StatusFilter,
       search: patch.search ?? search,
-    }
-    setSearchParams(buildUserListSearchParams(next, "active"), { replace: true })
-  }
+    };
+    setSearchParams(buildUserListSearchParams(next, "active"), { replace: true });
+  };
 
   const statusOptions: Array<{ value: StatusFilter; label: string }> = [
     { value: "all", label: t("common.all") },
@@ -138,7 +123,7 @@ export function SubscriptionsPage() {
     { value: "disabled", label: t("users.status.disabled") },
     { value: "expired", label: t("users.status.expired") },
     { value: "traffic_exceeded", label: t("users.status.trafficExceeded") },
-  ]
+  ];
 
   const queryParams = useMemo(
     () => ({
@@ -147,18 +132,17 @@ export function SubscriptionsPage() {
       status: statusFilter === "all" ? undefined : statusFilter,
     }),
     [statusFilter],
-  )
+  );
 
   const usersQuery = useQuery({
     queryKey: ["users", queryParams],
     queryFn: () => listUsers(queryParams),
-  })
+  });
 
   const systemSettingsQuery = useQuery({
     queryKey: ["system-settings"],
     queryFn: getSystemSettings,
-  })
-
+  });
 
   const usersTable = useTableQueryTransition({
     filterKey: statusFilter,
@@ -166,25 +150,22 @@ export function SubscriptionsPage() {
     isLoading: usersQuery.isLoading,
     isFetching: usersQuery.isFetching,
     isError: usersQuery.isError,
-  })
+  });
 
   const filteredUsers = useMemo(() => {
-    const users = usersTable.visibleRows
-    if (!search.trim()) return users
-    const lowerSearch = search.toLowerCase()
+    const users = usersTable.visibleRows;
+    if (!search.trim()) return users;
+    const lowerSearch = search.toLowerCase();
     return users.filter(
       (u) =>
         u.username.toLowerCase().includes(lowerSearch) ||
         u.uuid.toLowerCase().includes(lowerSearch),
-    )
-  }, [usersTable.visibleRows, search])
+    );
+  }, [usersTable.visibleRows, search]);
 
   return (
     <div className="px-4 lg:px-6 space-y-6">
-      <PageHeader
-        title={t("subscriptions.title")}
-        description={t("subscriptions.subtitle")}
-      />
+      <PageHeader title={t("subscriptions.title")} description={t("subscriptions.subtitle")} />
 
       <Card>
         <CardHeader>
@@ -205,9 +186,7 @@ export function SubscriptionsPage() {
               </TooltipContent>
             </Tooltip>
           </CardTitle>
-          <CardDescription>
-            {t("subscriptions.behaviorDescription")}
-          </CardDescription>
+          <CardDescription>{t("subscriptions.behaviorDescription")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3 text-sm">
           <div className="grid gap-2">
@@ -215,33 +194,25 @@ export function SubscriptionsPage() {
               <Badge variant="outline" className="shrink-0 mt-0.5">
                 ?format=singbox
               </Badge>
-              <span className="text-slate-600">
-                {t("subscriptions.ruleSingbox")}
-              </span>
+              <span className="text-slate-600">{t("subscriptions.ruleSingbox")}</span>
             </div>
             <div className="flex items-start gap-2">
               <Badge variant="outline" className="shrink-0 mt-0.5">
                 ?format=v2ray
               </Badge>
-              <span className="text-slate-600">
-                {t("subscriptions.ruleV2ray")}
-              </span>
+              <span className="text-slate-600">{t("subscriptions.ruleV2ray")}</span>
             </div>
             <div className="flex items-start gap-2">
               <Badge variant="secondary" className="shrink-0 mt-0.5">
                 {t("subscriptions.uaMatchLabel")}
               </Badge>
-              <span className="text-slate-600">
-                {t("subscriptions.ruleUaMatch")}
-              </span>
+              <span className="text-slate-600">{t("subscriptions.ruleUaMatch")}</span>
             </div>
             <div className="flex items-start gap-2">
               <Badge variant="secondary" className="shrink-0 mt-0.5">
                 {t("subscriptions.uaOtherLabel")}
               </Badge>
-              <span className="text-slate-600">
-                {t("subscriptions.ruleUaOther")}
-              </span>
+              <span className="text-slate-600">{t("subscriptions.ruleUaOther")}</span>
             </div>
           </div>
         </CardContent>
@@ -283,8 +254,12 @@ export function SubscriptionsPage() {
             <TableRow>
               <TableHead className={spacing.headFirst}>{t("users.username")}</TableHead>
               <TableHead className={spacing.headMiddle}>{t("common.status")}</TableHead>
-              <TableHead className={spacing.headMiddle}>{t("subscriptions.subscriptionUrl")}</TableHead>
-              <TableHead className={`${spacing.headLast} w-[140px] text-right`}>{t("common.actions")}</TableHead>
+              <TableHead className={spacing.headMiddle}>
+                {t("subscriptions.subscriptionUrl")}
+              </TableHead>
+              <TableHead className={`${spacing.headLast} w-[140px] text-right`}>
+                {t("common.actions")}
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody className={tableTransitionClass(usersTable.isTransitioning)}>
@@ -298,21 +273,31 @@ export function SubscriptionsPage() {
               />
             ) : (
               filteredUsers.map((user) => (
-                <UserSubscriptionRow key={user.id} user={user} subscriptionBaseURL={systemSettingsQuery.data?.subscription_base_url} />
+                <UserSubscriptionRow
+                  key={user.id}
+                  user={user}
+                  subscriptionBaseURL={systemSettingsQuery.data?.subscription_base_url}
+                />
               ))
             )}
           </TableBody>
         </Table>
       </div>
     </div>
-  )
+  );
 }
 
-function UserSubscriptionRow({ user, subscriptionBaseURL }: { user: User; subscriptionBaseURL?: string }) {
-  const { t } = useTranslation()
-  const spacing = tableColumnSpacing.four
-  const subUrl = getSubscriptionUrl(user.uuid, undefined, subscriptionBaseURL)
-  const singboxUrl = getSubscriptionUrl(user.uuid, "singbox", subscriptionBaseURL)
+function UserSubscriptionRow({
+  user,
+  subscriptionBaseURL,
+}: {
+  user: User;
+  subscriptionBaseURL?: string;
+}) {
+  const { t } = useTranslation();
+  const spacing = tableColumnSpacing.four;
+  const subUrl = getSubscriptionUrl(user.uuid, undefined, subscriptionBaseURL);
+  const singboxUrl = getSubscriptionUrl(user.uuid, "singbox", subscriptionBaseURL);
 
   return (
     <TableRow>
@@ -350,5 +335,5 @@ function UserSubscriptionRow({ user, subscriptionBaseURL }: { user: User; subscr
         </div>
       </TableCell>
     </TableRow>
-  )
+  );
 }

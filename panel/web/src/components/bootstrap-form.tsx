@@ -1,32 +1,32 @@
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import { useTranslation } from "react-i18next"
-import { z } from "zod"
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { useTranslation } from "react-i18next";
+import { z } from "zod";
 
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { AsyncButton } from "@/components/ui/async-button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { FieldHint } from "@/components/ui/field-hint"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AsyncButton } from "@/components/ui/async-button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { FieldHint } from "@/components/ui/field-hint";
 
 type BootstrapValues = {
-  setup_token: string
-  username: string
-  password: string
-  confirm_password: string
-}
+  setup_token: string;
+  username: string;
+  password: string;
+  confirm_password: string;
+};
 
 export function BootstrapForm({
   isPending,
   errorMessage,
   onBootstrap,
 }: {
-  isPending: boolean
-  errorMessage: string | null
-  onBootstrap: (values: BootstrapValues) => void
+  isPending: boolean;
+  errorMessage: string | null;
+  onBootstrap: (values: BootstrapValues) => void;
 }) {
-  const { t } = useTranslation()
+  const { t } = useTranslation();
 
   const schema = z
     .object({
@@ -38,7 +38,7 @@ export function BootstrapForm({
     .refine((v) => v.password === v.confirm_password, {
       message: t("auth.passwordsDoNotMatch"),
       path: ["confirm_password"],
-    })
+    });
 
   const form = useForm<BootstrapValues>({
     resolver: zodResolver(schema),
@@ -48,7 +48,7 @@ export function BootstrapForm({
       password: "",
       confirm_password: "",
     },
-  })
+  });
 
   return (
     <Card>
@@ -77,7 +77,9 @@ export function BootstrapForm({
               {...form.register("setup_token")}
             />
             {form.formState.errors.setup_token ? (
-              <p className="text-destructive text-sm">{form.formState.errors.setup_token.message}</p>
+              <p className="text-destructive text-sm">
+                {form.formState.errors.setup_token.message}
+              </p>
             ) : null}
           </div>
 
@@ -91,7 +93,12 @@ export function BootstrapForm({
 
           <div className="grid gap-2">
             <Label htmlFor="password">{t("auth.password")}</Label>
-            <Input id="password" type="password" autoComplete="new-password" {...form.register("password")} />
+            <Input
+              id="password"
+              type="password"
+              autoComplete="new-password"
+              {...form.register("password")}
+            />
             {form.formState.errors.password ? (
               <p className="text-destructive text-sm">{form.formState.errors.password.message}</p>
             ) : null}
@@ -106,7 +113,9 @@ export function BootstrapForm({
               {...form.register("confirm_password")}
             />
             {form.formState.errors.confirm_password ? (
-              <p className="text-destructive text-sm">{form.formState.errors.confirm_password.message}</p>
+              <p className="text-destructive text-sm">
+                {form.formState.errors.confirm_password.message}
+              </p>
             ) : null}
           </div>
 
@@ -122,5 +131,5 @@ export function BootstrapForm({
         </form>
       </CardContent>
     </Card>
-  )
+  );
 }

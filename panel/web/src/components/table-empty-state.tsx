@@ -1,15 +1,15 @@
-import { Link } from "react-router-dom"
+import { Link } from "react-router-dom";
 
-import { Button } from "@/components/ui/button"
-import { TableCell, TableRow } from "@/components/ui/table"
+import { Button } from "@/components/ui/button";
+import { TableCell, TableRow } from "@/components/ui/table";
 
 type TableEmptyStateProps = {
-  colSpan: number
-  message: string
-  actionLabel?: string
-  actionTo?: string
-  className?: string
-}
+  colSpan: number;
+  message: string;
+  actionLabel?: string;
+  actionTo?: string;
+  className?: string;
+};
 
 export function TableEmptyState({
   colSpan,
@@ -31,5 +31,5 @@ export function TableEmptyState({
         </div>
       </TableCell>
     </TableRow>
-  )
+  );
 }

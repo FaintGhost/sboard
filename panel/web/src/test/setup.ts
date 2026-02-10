@@ -1,24 +1,27 @@
-import "@testing-library/jest-dom/vitest"
-import "@/i18n"
+import "@testing-library/jest-dom/vitest";
+import "@/i18n";
 
 // Make React act() warnings behave correctly in tests.
-;(globalThis as any).IS_REACT_ACT_ENVIRONMENT = true
+(globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
 
 // Radix UI (Select/Dialog) uses Pointer Events APIs that jsdom doesn't fully implement.
 // Minimal polyfill to keep unit tests stable.
 if (!HTMLElement.prototype.hasPointerCapture) {
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
-  HTMLElement.prototype.setPointerCapture = function () {}
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
-  HTMLElement.prototype.releasePointerCapture = function () {}
+  HTMLElement.prototype.setPointerCapture = function () {
+    return undefined;
+  };
+  HTMLElement.prototype.releasePointerCapture = function () {
+    return undefined;
+  };
   HTMLElement.prototype.hasPointerCapture = function () {
-    return false
-  }
+    return false;
+  };
 }
 
 if (!HTMLElement.prototype.scrollIntoView) {
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
-  HTMLElement.prototype.scrollIntoView = function () {}
+  HTMLElement.prototype.scrollIntoView = function () {
+    return undefined;
+  };
 }
 
 // sonner (Toaster) relies on matchMedia.
@@ -33,5 +36,5 @@ if (!window.matchMedia) {
       dispatchEvent: () => false,
       addListener: () => {},
       removeListener: () => {},
-    }) as any
+    }) as any;
 }

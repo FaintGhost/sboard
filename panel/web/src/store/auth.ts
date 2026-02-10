@@ -1,33 +1,33 @@
-import { create } from "zustand"
+import { create } from "zustand";
 
-const TOKEN_KEY = "sboard_token"
+const TOKEN_KEY = "sboard_token";
 
 type AuthState = {
-  token: string | null
-  setToken: (token: string) => void
-  clearToken: () => void
-}
+  token: string | null;
+  setToken: (token: string) => void;
+  clearToken: () => void;
+};
 
 function readTokenFromStorage(): string | null {
   try {
-    return localStorage.getItem(TOKEN_KEY)
+    return localStorage.getItem(TOKEN_KEY);
   } catch {
-    return null
+    return null;
   }
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
   token: readTokenFromStorage(),
   setToken: (token) => {
-    localStorage.setItem(TOKEN_KEY, token)
-    set({ token })
+    localStorage.setItem(TOKEN_KEY, token);
+    set({ token });
   },
   clearToken: () => {
-    localStorage.removeItem(TOKEN_KEY)
-    set({ token: null })
+    localStorage.removeItem(TOKEN_KEY);
+    set({ token: null });
   },
-}))
+}));
 
 export function resetAuthStore() {
-  useAuthStore.setState({ token: readTokenFromStorage() })
+  useAuthStore.setState({ token: readTokenFromStorage() });
 }

@@ -1,13 +1,13 @@
-import { describe, expect, it } from "vitest"
+import { describe, expect, it } from "vitest";
 
-import type { Inbound } from "@/lib/api/types"
+import type { Inbound } from "@/lib/api/types";
 
 import {
   buildInboundTemplateText,
   buildPresetInboundTemplateText,
   parseInboundTemplateToPayload,
   readTemplateProtocol,
-} from "./inbound-template"
+} from "./inbound-template";
 
 describe("inbound template", () => {
   it("parses full config template and strips users", () => {
@@ -27,16 +27,16 @@ describe("inbound template", () => {
   ],
   "outbounds": [],
   "route": {}
-}`
+}`;
 
-    const out = parseInboundTemplateToPayload(input)
-    expect(out.ok).toBe(true)
-    if (!out.ok) return
+    const out = parseInboundTemplateToPayload(input);
+    expect(out.ok).toBe(true);
+    if (!out.ok) return;
 
-    expect(out.payload.protocol).toBe("shadowsocks")
-    expect(out.payload.tag).toBe("ss-in")
-    expect(out.payload.listen_port).toBe(8388)
-    expect(out.payload.public_port).toBe(0)
+    expect(out.payload.protocol).toBe("shadowsocks");
+    expect(out.payload.tag).toBe("ss-in");
+    expect(out.payload.listen_port).toBe(8388);
+    expect(out.payload.public_port).toBe(0);
     expect(out.payload.settings).toMatchObject({
       method: "2022-blake3-aes-128-gcm",
       password: "8JCsPssfgS8tiRwiMlhARg==",
@@ -47,8 +47,8 @@ describe("inbound template", () => {
         outbounds: [],
         route: {},
       },
-    })
-  })
+    });
+  });
 
   it("supports legacy single inbound object template", () => {
     const input = `{
@@ -59,19 +59,19 @@ describe("inbound template", () => {
   "tls": { "enabled": true },
   "transport": { "type": "ws" },
   "users": []
-}`
+}`;
 
-    const out = parseInboundTemplateToPayload(input)
-    expect(out.ok).toBe(true)
-    if (!out.ok) return
+    const out = parseInboundTemplateToPayload(input);
+    expect(out.ok).toBe(true);
+    if (!out.ok) return;
 
-    expect(out.payload.protocol).toBe("vless")
-    expect(out.payload.tag).toBe("vless-in")
-    expect(out.payload.listen_port).toBe(443)
-    expect(out.payload.settings).toEqual({ flow: "xtls-rprx-vision" })
-    expect(out.payload.tls_settings).toEqual({ enabled: true })
-    expect(out.payload.transport_settings).toEqual({ type: "ws" })
-  })
+    expect(out.payload.protocol).toBe("vless");
+    expect(out.payload.tag).toBe("vless-in");
+    expect(out.payload.listen_port).toBe(443);
+    expect(out.payload.settings).toEqual({ flow: "xtls-rprx-vision" });
+    expect(out.payload.tls_settings).toEqual({ enabled: true });
+    expect(out.payload.transport_settings).toEqual({ type: "ws" });
+  });
 
   it("returns error when multiple inbounds are provided", () => {
     const input = `{
@@ -79,13 +79,13 @@ describe("inbound template", () => {
     {"type":"vless","tag":"a","listen_port":443},
     {"type":"vmess","tag":"b","listen_port":8443}
   ]
-}`
+}`;
 
-    const out = parseInboundTemplateToPayload(input)
-    expect(out.ok).toBe(false)
-    if (out.ok) return
-    expect(out.error).toContain("only one inbound")
-  })
+    const out = parseInboundTemplateToPayload(input);
+    expect(out.ok).toBe(false);
+    if (out.ok) return;
+    expect(out.error).toContain("only one inbound");
+  });
 
   it("builds editable full config template from inbound", () => {
     const inbound: Inbound = {
@@ -107,36 +107,36 @@ describe("inbound template", () => {
       },
       tls_settings: null,
       transport_settings: null,
-    }
+    };
 
-    const text = buildInboundTemplateText(inbound)
-    const parsed = JSON.parse(text) as Record<string, unknown>
+    const text = buildInboundTemplateText(inbound);
+    const parsed = JSON.parse(text) as Record<string, unknown>;
 
-    expect(Array.isArray(parsed.inbounds)).toBe(true)
-    const inbounds = parsed.inbounds as Array<Record<string, unknown>>
-    expect(inbounds).toHaveLength(1)
-    expect(inbounds[0].type).toBe("shadowsocks")
-    expect(inbounds[0].tag).toBe("ss-in")
-    expect(inbounds[0].listen_port).toBe(8388)
-    expect(inbounds[0].users).toEqual([])
-    expect(inbounds[0].method).toBe("2022-blake3-aes-128-gcm")
-    expect(parsed.$schema).toBe("https://sing-box.sagernet.org/schema/config.json")
-    expect(parsed.route).toEqual({ final: "direct" })
-  })
+    expect(Array.isArray(parsed.inbounds)).toBe(true);
+    const inbounds = parsed.inbounds as Array<Record<string, unknown>>;
+    expect(inbounds).toHaveLength(1);
+    expect(inbounds[0].type).toBe("shadowsocks");
+    expect(inbounds[0].tag).toBe("ss-in");
+    expect(inbounds[0].listen_port).toBe(8388);
+    expect(inbounds[0].users).toEqual([]);
+    expect(inbounds[0].method).toBe("2022-blake3-aes-128-gcm");
+    expect(parsed.$schema).toBe("https://sing-box.sagernet.org/schema/config.json");
+    expect(parsed.route).toEqual({ final: "direct" });
+  });
 
   it("reads protocol from preset template", () => {
-    const text = buildPresetInboundTemplateText("trojan")
-    const parsed = JSON.parse(text) as Record<string, unknown>
+    const text = buildPresetInboundTemplateText("trojan");
+    const parsed = JSON.parse(text) as Record<string, unknown>;
 
-    expect(Object.keys(parsed)).toEqual(["inbounds"])
-    expect(Array.isArray(parsed.inbounds)).toBe(true)
-    expect(readTemplateProtocol(text)).toBe("trojan")
-  })
+    expect(Object.keys(parsed)).toEqual(["inbounds"]);
+    expect(Array.isArray(parsed.inbounds)).toBe(true);
+    expect(readTemplateProtocol(text)).toBe("trojan");
+  });
 
   it("returns error when required fields missing", () => {
-    const out = parseInboundTemplateToPayload(`{"inbounds":[{"tag":"x"}]}`)
-    expect(out.ok).toBe(false)
-    if (out.ok) return
-    expect(out.error).toContain("type")
-  })
-})
+    const out = parseInboundTemplateToPayload(`{"inbounds":[{"tag":"x"}]}`);
+    expect(out.ok).toBe(false);
+    if (out.ok) return;
+    expect(out.error).toContain("type");
+  });
+});

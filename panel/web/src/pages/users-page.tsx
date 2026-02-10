@@ -1,30 +1,30 @@
-import { useQuery } from "@tanstack/react-query"
-import { useMemo, useState } from "react"
-import { useTranslation } from "react-i18next"
-import { MoreHorizontal, Pencil, Ban, Search, Trash2 } from "lucide-react"
-import { useSearchParams } from "react-router-dom"
+import { useQuery } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { MoreHorizontal, Pencil, Ban, Search, Trash2 } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { PageHeader } from "@/components/page-header"
-import { TableEmptyState } from "@/components/table-empty-state"
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { PageHeader } from "@/components/page-header";
+import { TableEmptyState } from "@/components/table-empty-state";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -32,18 +32,18 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { listUsers } from "@/lib/api/users"
-import { listGroups } from "@/lib/api/groups"
-import type { User, UserStatus } from "@/lib/api/types"
-import { tableColumnSpacing } from "@/lib/table-spacing"
-import { tableTransitionClass } from "@/lib/table-motion"
-import { useTableQueryTransition } from "@/lib/table-query-transition"
-import { bytesToGBString } from "@/lib/units"
-import { buildUserListSearchParams, parseUserListSearchParams } from "@/lib/user-list-filters"
-import { tableToolbarClass } from "@/lib/table-toolbar"
-import { formatDateYMDByTimezone } from "@/lib/datetime"
-import { useSystemStore } from "@/store/system"
+} from "@/components/ui/table";
+import { listUsers } from "@/lib/api/users";
+import { listGroups } from "@/lib/api/groups";
+import type { User, UserStatus } from "@/lib/api/types";
+import { tableColumnSpacing } from "@/lib/table-spacing";
+import { tableTransitionClass } from "@/lib/table-motion";
+import { useTableQueryTransition } from "@/lib/table-query-transition";
+import { bytesToGBString } from "@/lib/units";
+import { buildUserListSearchParams, parseUserListSearchParams } from "@/lib/user-list-filters";
+import { tableToolbarClass } from "@/lib/table-toolbar";
+import { formatDateYMDByTimezone } from "@/lib/datetime";
+import { useSystemStore } from "@/store/system";
 
 import {
   DisableUserDialog,
@@ -54,62 +54,61 @@ import {
   defaultNewUser,
   type EditState,
   type StatusFilter,
-} from "./users"
+} from "./users";
 
 function StatusBadge({ status }: { status: UserStatus }) {
-  const { t } = useTranslation()
-  const variant = status === "active"
-    ? "default"
-    : status === "disabled"
-      ? "secondary"
-      : "destructive"
-  const label = status === "traffic_exceeded"
-    ? t("users.status.trafficExceeded")
-    : t(`users.status.${status}`)
-  return <Badge variant={variant}>{label}</Badge>
+  const { t } = useTranslation();
+  const variant =
+    status === "active" ? "default" : status === "disabled" ? "secondary" : "destructive";
+  const label =
+    status === "traffic_exceeded" ? t("users.status.trafficExceeded") : t(`users.status.${status}`);
+  return <Badge variant={variant}>{label}</Badge>;
 }
 
-function formatTraffic(used: number, limit: number, t: (key: string, options?: Record<string, unknown>) => string): string {
-  const usedGB = bytesToGBString(used)
-  if (limit === 0) return t("users.trafficUnlimited", { used: usedGB })
-  const limitGB = bytesToGBString(limit)
-  return t("users.trafficFormat", { used: usedGB, limit: limitGB })
+function formatTraffic(
+  used: number,
+  limit: number,
+  t: (key: string, options?: Record<string, unknown>) => string,
+): string {
+  const usedGB = bytesToGBString(used);
+  if (limit === 0) return t("users.trafficUnlimited", { used: usedGB });
+  const limitGB = bytesToGBString(limit);
+  return t("users.trafficFormat", { used: usedGB, limit: limitGB });
 }
 
-function formatExpireDate(expireAt: string | null, t: (key: string) => string, timezone: string): string {
-  if (!expireAt) return t("common.permanent")
-  const formatted = formatDateYMDByTimezone(expireAt, timezone, "")
-  if (!formatted) return t("common.permanent")
-  return formatted
+function formatExpireDate(
+  expireAt: string | null,
+  t: (key: string) => string,
+  timezone: string,
+): string {
+  if (!expireAt) return t("common.permanent");
+  const formatted = formatDateYMDByTimezone(expireAt, timezone, "");
+  if (!formatted) return t("common.permanent");
+  return formatted;
 }
 
 export function UsersPage() {
-  const { t } = useTranslation()
-  const timezone = useSystemStore((state) => state.timezone)
-  const [searchParams, setSearchParams] = useSearchParams()
-  const filters = useMemo(() => parseUserListSearchParams(searchParams, "all"), [searchParams])
-  const status = filters.statusFilter
-  const search = filters.search
-  const [upserting, setUpserting] = useState<EditState | null>(null)
-  const [disablingUser, setDisablingUser] = useState<User | null>(null)
-  const [deletingUser, setDeletingUser] = useState<User | null>(null)
-  const spacing = tableColumnSpacing.five
+  const { t } = useTranslation();
+  const timezone = useSystemStore((state) => state.timezone);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const filters = useMemo(() => parseUserListSearchParams(searchParams, "all"), [searchParams]);
+  const status = filters.statusFilter;
+  const search = filters.search;
+  const [upserting, setUpserting] = useState<EditState | null>(null);
+  const [disablingUser, setDisablingUser] = useState<User | null>(null);
+  const [deletingUser, setDeletingUser] = useState<User | null>(null);
+  const spacing = tableColumnSpacing.five;
 
   const updateFilters = (patch: Partial<{ statusFilter: StatusFilter; search: string }>) => {
     const next = {
       statusFilter: (patch.statusFilter ?? status) as StatusFilter,
       search: patch.search ?? search,
-    }
-    setSearchParams(buildUserListSearchParams(next, "all"), { replace: true })
-  }
+    };
+    setSearchParams(buildUserListSearchParams(next, "all"), { replace: true });
+  };
 
-  const {
-    createMutation,
-    updateMutation,
-    saveGroupsMutation,
-    disableMutation,
-    deleteMutation,
-  } = useUserMutations()
+  const { createMutation, updateMutation, saveGroupsMutation, disableMutation, deleteMutation } =
+    useUserMutations();
 
   const statusOptions: Array<{ value: StatusFilter; label: string }> = [
     { value: "all", label: t("common.all") },
@@ -117,7 +116,7 @@ export function UsersPage() {
     { value: "disabled", label: t("users.status.disabled") },
     { value: "expired", label: t("users.status.expired") },
     { value: "traffic_exceeded", label: t("users.status.trafficExceeded") },
-  ]
+  ];
 
   const queryParams = useMemo(
     () => ({
@@ -126,12 +125,12 @@ export function UsersPage() {
       status: status === "all" ? undefined : status,
     }),
     [status],
-  )
+  );
 
   const usersQuery = useQuery({
     queryKey: ["users", queryParams],
     queryFn: () => listUsers(queryParams),
-  })
+  });
 
   const usersTable = useTableQueryTransition({
     filterKey: status,
@@ -139,33 +138,33 @@ export function UsersPage() {
     isLoading: usersQuery.isLoading,
     isFetching: usersQuery.isFetching,
     isError: usersQuery.isError,
-  })
+  });
 
   const groupsQuery = useQuery({
     queryKey: ["groups", { limit: 200, offset: 0 }],
     queryFn: () => listGroups({ limit: 200, offset: 0 }),
-  })
+  });
 
   // Filter users by search keyword
   const filteredUsers = useMemo(() => {
-    const users = usersTable.visibleRows
-    if (!search.trim()) return users
-    const keyword = search.trim().toLowerCase()
-    return users.filter((u) => u.username.toLowerCase().includes(keyword))
-  }, [usersTable.visibleRows, search])
+    const users = usersTable.visibleRows;
+    if (!search.trim()) return users;
+    const keyword = search.trim().toLowerCase();
+    return users.filter((u) => u.username.toLowerCase().includes(keyword));
+  }, [usersTable.visibleRows, search]);
 
   const groupNameByID = useMemo(() => {
-    const map = new Map<number, string>()
+    const map = new Map<number, string>();
     for (const group of groupsQuery.data ?? []) {
-      map.set(group.id, group.name)
+      map.set(group.id, group.name);
     }
-    return map
-  }, [groupsQuery.data])
+    return map;
+  }, [groupsQuery.data]);
 
   const openCreateDialog = () => {
-    createMutation.reset()
-    updateMutation.reset()
-    saveGroupsMutation.reset()
+    createMutation.reset();
+    updateMutation.reset();
+    saveGroupsMutation.reset();
     setUpserting({
       mode: "create",
       user: defaultNewUser,
@@ -177,17 +176,15 @@ export function UsersPage() {
       clearExpireAt: false,
       groupIDs: [],
       groupsLoadedFromServer: true,
-    })
-  }
+    });
+  };
 
   const openEditDialog = (u: User) => {
     const parsedExpire =
-      u.expire_at && !Number.isNaN(Date.parse(u.expire_at))
-        ? new Date(u.expire_at)
-        : null
-    createMutation.reset()
-    updateMutation.reset()
-    saveGroupsMutation.reset()
+      u.expire_at && !Number.isNaN(Date.parse(u.expire_at)) ? new Date(u.expire_at) : null;
+    createMutation.reset();
+    updateMutation.reset();
+    saveGroupsMutation.reset();
     setUpserting({
       mode: "edit",
       user: u,
@@ -199,46 +196,46 @@ export function UsersPage() {
       clearExpireAt: false,
       groupIDs: [],
       groupsLoadedFromServer: false,
-    })
-  }
+    });
+  };
 
   const handleSave = async (state: EditState) => {
     if (state.mode === "create") {
       const created = await createMutation.mutateAsync({
         username: state.username.trim(),
-      })
+      });
       const payload = buildUpdatePayload({
         ...state,
         mode: "edit",
         user: created,
-      })
+      });
       await Promise.all([
         updateMutation.mutateAsync({ id: created.id, payload }),
         saveGroupsMutation.mutateAsync({ userId: created.id, groupIDs: state.groupIDs }),
-      ])
-      setUpserting(null)
-      return
+      ]);
+      setUpserting(null);
+      return;
     }
 
-    const payload = buildUpdatePayload(state)
+    const payload = buildUpdatePayload(state);
     await Promise.all([
       updateMutation.mutateAsync({ id: state.user.id, payload }),
       saveGroupsMutation.mutateAsync({ userId: state.user.id, groupIDs: state.groupIDs }),
-    ])
-    setUpserting(null)
-  }
+    ]);
+    setUpserting(null);
+  };
 
   const handleDisable = (userId: number) => {
     disableMutation.mutate(userId, {
       onSuccess: () => setDisablingUser(null),
-    })
-  }
+    });
+  };
 
   const handleDelete = (userId: number) => {
     deleteMutation.mutate(userId, {
       onSuccess: () => setDeletingUser(null),
-    })
-  }
+    });
+  };
 
   return (
     <div className="px-4 lg:px-6">
@@ -257,7 +254,9 @@ export function UsersPage() {
                 <CardDescription>
                   {usersTable.showLoadingHint ? t("common.loading") : null}
                   {usersQuery.isError ? t("common.loadFailed") : null}
-                  {!usersTable.showLoadingHint && usersQuery.data ? t("users.count", { count: filteredUsers.length }) : null}
+                  {!usersTable.showLoadingHint && usersQuery.data
+                    ? t("users.count", { count: filteredUsers.length })
+                    : null}
                 </CardDescription>
               </div>
               <div className={tableToolbarClass.filters}>
@@ -299,8 +298,12 @@ export function UsersPage() {
                   <TableHead className={spacing.headFirst}>{t("users.username")}</TableHead>
                   <TableHead className={spacing.headMiddle}>{t("users.groups")}</TableHead>
                   <TableHead className={spacing.headMiddle}>{t("common.status")}</TableHead>
-                  <TableHead className={`${spacing.headMiddle} hidden md:table-cell`}>{t("users.traffic")}</TableHead>
-                  <TableHead className={`${spacing.headMiddle} hidden sm:table-cell`}>{t("users.expireDate")}</TableHead>
+                  <TableHead className={`${spacing.headMiddle} hidden md:table-cell`}>
+                    {t("users.traffic")}
+                  </TableHead>
+                  <TableHead className={`${spacing.headMiddle} hidden sm:table-cell`}>
+                    {t("users.expireDate")}
+                  </TableHead>
                   <TableHead className={`${spacing.headLast} w-12`}>
                     <span className="sr-only">{t("common.actions")}</span>
                   </TableHead>
@@ -308,74 +311,85 @@ export function UsersPage() {
               </TableHeader>
               <TableBody className={tableTransitionClass(usersTable.isTransitioning)}>
                 {filteredUsers.map((u) => {
-                  const visibleGroupIDs = (u.group_ids ?? []).filter((groupID) => groupNameByID.has(groupID))
+                  const visibleGroupIDs = (u.group_ids ?? []).filter((groupID) =>
+                    groupNameByID.has(groupID),
+                  );
                   return (
-                  <TableRow key={u.id}>
-                    <TableCell className={`${spacing.cellFirst} font-medium`}>{u.username}</TableCell>
-                    <TableCell className={spacing.cellMiddle}>
-                      {visibleGroupIDs.length > 0 ? (
-                        <div className="flex flex-wrap gap-1">
-                          {visibleGroupIDs.map((groupID) => {
-                            const groupName = groupNameByID.get(groupID)
-                            return (
-                              <Badge key={`${u.id}-${groupID}`} variant="secondary">
-                                {groupName}
-                              </Badge>
-                            )
-                          })}
-                        </div>
-                      ) : (
-                        <span className="text-muted-foreground">-</span>
-                      )}
-                    </TableCell>
-                    <TableCell className={spacing.cellMiddle}><StatusBadge status={u.status} /></TableCell>
-                    <TableCell className={`${spacing.cellMiddle} hidden md:table-cell text-muted-foreground`}>
-                      {formatTraffic(u.traffic_used, u.traffic_limit, t)}
-                    </TableCell>
-                    <TableCell className={`${spacing.cellMiddle} hidden sm:table-cell text-muted-foreground`}>
-                      {formatExpireDate(u.expire_at, t, timezone)}
-                    </TableCell>
-                    <TableCell className={spacing.cellLast}>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="size-8">
-                            <MoreHorizontal className="size-4" />
-                            <span className="sr-only">{t("common.actions")}</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => openEditDialog(u)}>
-                            <Pencil className="mr-2 size-4" />
-                            {t("common.edit")}
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            variant="destructive"
-                            disabled={u.status === "disabled"}
-                            onClick={() => {
-                              disableMutation.reset()
-                              setDisablingUser(u)
-                            }}
-                          >
-                            <Ban className="mr-2 size-4" />
-                            {t("common.disable")}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            variant="destructive"
-                            onClick={() => {
-                              deleteMutation.reset()
-                              setDeletingUser(u)
-                            }}
-                          >
-                            <Trash2 className="mr-2 size-4" />
-                            {t("common.delete")}
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                )})}
-                {(usersTable.showNoData || filteredUsers.length === 0) ? (
+                    <TableRow key={u.id}>
+                      <TableCell className={`${spacing.cellFirst} font-medium`}>
+                        {u.username}
+                      </TableCell>
+                      <TableCell className={spacing.cellMiddle}>
+                        {visibleGroupIDs.length > 0 ? (
+                          <div className="flex flex-wrap gap-1">
+                            {visibleGroupIDs.map((groupID) => {
+                              const groupName = groupNameByID.get(groupID);
+                              return (
+                                <Badge key={`${u.id}-${groupID}`} variant="secondary">
+                                  {groupName}
+                                </Badge>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell className={spacing.cellMiddle}>
+                        <StatusBadge status={u.status} />
+                      </TableCell>
+                      <TableCell
+                        className={`${spacing.cellMiddle} hidden md:table-cell text-muted-foreground`}
+                      >
+                        {formatTraffic(u.traffic_used, u.traffic_limit, t)}
+                      </TableCell>
+                      <TableCell
+                        className={`${spacing.cellMiddle} hidden sm:table-cell text-muted-foreground`}
+                      >
+                        {formatExpireDate(u.expire_at, t, timezone)}
+                      </TableCell>
+                      <TableCell className={spacing.cellLast}>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="size-8">
+                              <MoreHorizontal className="size-4" />
+                              <span className="sr-only">{t("common.actions")}</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => openEditDialog(u)}>
+                              <Pencil className="mr-2 size-4" />
+                              {t("common.edit")}
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              variant="destructive"
+                              disabled={u.status === "disabled"}
+                              onClick={() => {
+                                disableMutation.reset();
+                                setDisablingUser(u);
+                              }}
+                            >
+                              <Ban className="mr-2 size-4" />
+                              {t("common.disable")}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              variant="destructive"
+                              onClick={() => {
+                                deleteMutation.reset();
+                                setDeletingUser(u);
+                              }}
+                            >
+                              <Trash2 className="mr-2 size-4" />
+                              {t("common.delete")}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+                {usersTable.showNoData || filteredUsers.length === 0 ? (
                   <TableEmptyState
                     colSpan={6}
                     message={t("common.noData")}
@@ -416,5 +430,5 @@ export function UsersPage() {
         />
       </section>
     </div>
-  )
+  );
 }

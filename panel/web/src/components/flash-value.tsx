@@ -1,26 +1,26 @@
-import * as React from "react"
+import * as React from "react";
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
 
 type FlashValueProps = {
-  value: string
-  className?: string
-}
+  value: string;
+  className?: string;
+};
 
 // FlashValue re-triggers a small "fade in" transition whenever `value` changes.
 // This avoids hard UI jumps without pulling in heavy animation libs.
 export function FlashValue(props: FlashValueProps) {
-  const [flash, setFlash] = React.useState(false)
+  const [flash, setFlash] = React.useState(false);
 
   React.useEffect(() => {
-    setFlash(false)
-    const raf = requestAnimationFrame(() => setFlash(true))
-    const t = window.setTimeout(() => setFlash(false), 320)
+    setFlash(false);
+    const raf = requestAnimationFrame(() => setFlash(true));
+    const t = window.setTimeout(() => setFlash(false), 320);
     return () => {
-      cancelAnimationFrame(raf)
-      window.clearTimeout(t)
-    }
-  }, [props.value])
+      cancelAnimationFrame(raf);
+      window.clearTimeout(t);
+    };
+  }, [props.value]);
 
   return (
     <span
@@ -32,6 +32,5 @@ export function FlashValue(props: FlashValueProps) {
     >
       {props.value}
     </span>
-  )
+  );
 }
-

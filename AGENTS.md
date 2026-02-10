@@ -4,6 +4,14 @@
 - 统一用中文沟通
 - 代码/文档里的列表缩进使用 2 个空格
 
+
+## 前端代码质量工具（Oxc）
+- `panel/web` 已从 ESLint 迁移到 Oxc（`oxlint` + `oxfmt`），默认不再使用 ESLint。
+- 优先使用 `bun` 执行前端质量命令（也兼容 `npm run`）：
+  - `bun run lint` / `bun run lint:fix`
+  - `bun run format` / `bun run format:check`
+- 对前端代码风格和格式的改动，优先走 `oxfmt`；不要再引入新的 ESLint 配置或 ESLint 指令注释。
+
 ## GitHub 操作
 - 当前环境已配置 GitHub CLI（`gh`）
 - 如需 GitHub 仓库相关操作，优先使用 `gh`（例如 PR、release、issue 等）

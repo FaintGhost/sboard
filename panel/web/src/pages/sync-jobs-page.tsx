@@ -1,13 +1,13 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { useMemo, useState } from "react"
-import { useTranslation } from "react-i18next"
-import { useSearchParams } from "react-router-dom"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { useSearchParams } from "react-router-dom";
 
-import { AsyncButton } from "@/components/ui/async-button"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { PageHeader } from "@/components/page-header"
-import { TableEmptyState } from "@/components/table-empty-state"
+import { AsyncButton } from "@/components/ui/async-button";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/page-header";
+import { TableEmptyState } from "@/components/table-empty-state";
 import {
   Dialog,
   DialogContent,
@@ -15,15 +15,15 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { Badge } from "@/components/ui/badge"
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -31,10 +31,10 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { ApiError } from "@/lib/api/client"
-import { listNodes } from "@/lib/api/nodes"
-import { getSyncJob, listSyncJobs, retrySyncJob } from "@/lib/api/sync-jobs"
+} from "@/components/ui/table";
+import { ApiError } from "@/lib/api/client";
+import { listNodes } from "@/lib/api/nodes";
+import { getSyncJob, listSyncJobs, retrySyncJob } from "@/lib/api/sync-jobs";
 import {
   buildSyncJobsSearchParams,
   parseSyncJobsSearchParams,
@@ -42,111 +42,105 @@ import {
   syncJobStatusValues,
   type SyncJobsPageFilters,
   type SyncJobsTimeRange,
-} from "@/lib/sync-jobs-filters"
-import { tableColumnSpacing } from "@/lib/table-spacing"
-import { tableTransitionClass } from "@/lib/table-motion"
-import { useTableQueryTransition } from "@/lib/table-query-transition"
-import { tableToolbarClass } from "@/lib/table-toolbar"
-import { formatDateTimeByTimezone } from "@/lib/datetime"
-import { useSystemStore } from "@/store/system"
+} from "@/lib/sync-jobs-filters";
+import { tableColumnSpacing } from "@/lib/table-spacing";
+import { tableTransitionClass } from "@/lib/table-motion";
+import { useTableQueryTransition } from "@/lib/table-query-transition";
+import { tableToolbarClass } from "@/lib/table-toolbar";
+import { formatDateTimeByTimezone } from "@/lib/datetime";
+import { useSystemStore } from "@/store/system";
 
-const pageSize = 20
+const pageSize = 20;
 
 function formatDateTime(value: string | undefined, locale: string, timezone: string): string {
-  return formatDateTimeByTimezone(value, locale, timezone)
+  return formatDateTimeByTimezone(value, locale, timezone);
 }
 
 function formatDuration(ms: number): string {
-  if (!Number.isFinite(ms) || ms <= 0) return "-"
-  if (ms < 1000) return `${Math.round(ms)} ms`
+  if (!Number.isFinite(ms) || ms <= 0) return "-";
+  if (ms < 1000) return `${Math.round(ms)} ms`;
 
-  const seconds = ms / 1000
+  const seconds = ms / 1000;
   if (seconds < 60) {
-    const fixed = seconds >= 10 ? 1 : 2
-    return `${seconds.toFixed(fixed)} s`
+    const fixed = seconds >= 10 ? 1 : 2;
+    return `${seconds.toFixed(fixed)} s`;
   }
 
-  const mins = Math.floor(seconds / 60)
-  const secs = Math.round(seconds % 60)
-  return `${mins}m ${secs}s`
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.round(seconds % 60);
+  return `${mins}m ${secs}s`;
 }
 
 function shortHash(value: string): string {
-  if (!value) return "-"
-  if (value.length <= 20) return value
-  return `${value.slice(0, 10)}...${value.slice(-6)}`
+  if (!value) return "-";
+  if (value.length <= 20) return value;
+  return `${value.slice(0, 10)}...${value.slice(-6)}`;
 }
 
 function getStatusVariant(status: string): "default" | "secondary" | "destructive" | "outline" {
   switch (status) {
     case "success":
-      return "default"
+      return "default";
     case "failed":
-      return "destructive"
+      return "destructive";
     case "running":
-      return "secondary"
+      return "secondary";
     default:
-      return "outline"
+      return "outline";
   }
 }
 
 function fromISOByRange(range: SyncJobsTimeRange): string {
-  const now = Date.now()
+  const now = Date.now();
   const delta =
     range === "24h"
       ? 24 * 60 * 60 * 1000
       : range === "7d"
         ? 7 * 24 * 60 * 60 * 1000
-        : 30 * 24 * 60 * 60 * 1000
-  return new Date(now - delta).toISOString()
+        : 30 * 24 * 60 * 60 * 1000;
+  return new Date(now - delta).toISOString();
 }
 
 function sourceLabel(t: (key: string) => string, value: string): string {
-  const key = `syncJobs.source.${value}`
-  const text = t(key)
-  return text === key ? value : text
+  const key = `syncJobs.source.${value}`;
+  const text = t(key);
+  return text === key ? value : text;
 }
 
 function statusLabel(t: (key: string) => string, value: string): string {
-  const key = `syncJobs.status.${value}`
-  const text = t(key)
-  return text === key ? value : text
+  const key = `syncJobs.status.${value}`;
+  const text = t(key);
+  return text === key ? value : text;
 }
 
 export function SyncJobsPage() {
-  const { t, i18n } = useTranslation()
-  const timezone = useSystemStore((state) => state.timezone)
-  const qc = useQueryClient()
-  const spacing = tableColumnSpacing.seven
-  const [searchParams, setSearchParams] = useSearchParams()
+  const { t, i18n } = useTranslation();
+  const timezone = useSystemStore((state) => state.timezone);
+  const qc = useQueryClient();
+  const spacing = tableColumnSpacing.seven;
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  const filters = useMemo(
-    () => parseSyncJobsSearchParams(searchParams),
-    [searchParams],
-  )
-  const currentOffset = (filters.page - 1) * pageSize
-  const filtersKey = useMemo(
-    () => JSON.stringify(filters),
-    [filters],
-  )
+  const filters = useMemo(() => parseSyncJobsSearchParams(searchParams), [searchParams]);
+  const currentOffset = (filters.page - 1) * pageSize;
+  const filtersKey = useMemo(() => JSON.stringify(filters), [filters]);
 
-  const [selectedJobID, setSelectedJobID] = useState<number | null>(null)
+  const [selectedJobID, setSelectedJobID] = useState<number | null>(null);
 
   function updateFilters(patch: Partial<SyncJobsPageFilters>, resetPage = false) {
     const next: SyncJobsPageFilters = {
       ...filters,
       ...patch,
-    }
+    };
     if (resetPage) {
-      next.page = 1
+      next.page = 1;
     }
-    setSearchParams(buildSyncJobsSearchParams(next), { replace: true })
+    setSearchParams(buildSyncJobsSearchParams(next), { replace: true });
   }
 
   const nodesQuery = useQuery({
     queryKey: ["nodes", "sync-jobs", { limit: 100, offset: 0 }],
     queryFn: () => listNodes({ limit: 100, offset: 0 }),
-  })
+  });
 
   const jobsQuery = useQuery({
     queryKey: ["sync-jobs", filters],
@@ -161,7 +155,7 @@ export function SyncJobsPage() {
         to: new Date().toISOString(),
       }),
     refetchInterval: 15_000,
-  })
+  });
 
   const jobsTable = useTableQueryTransition({
     filterKey: filtersKey,
@@ -169,51 +163,48 @@ export function SyncJobsPage() {
     isLoading: jobsQuery.isLoading,
     isFetching: jobsQuery.isFetching,
     isError: jobsQuery.isError,
-  })
+  });
 
   const detailQuery = useQuery({
     queryKey: ["sync-job-detail", selectedJobID],
     queryFn: () => getSyncJob(selectedJobID ?? 0),
     enabled: selectedJobID != null,
-  })
+  });
 
   const nodeNameByID = useMemo(() => {
-    const map = new Map<number, string>()
+    const map = new Map<number, string>();
     for (const item of nodesQuery.data ?? []) {
-      map.set(item.id, item.name)
+      map.set(item.id, item.name);
     }
-    return map
-  }, [nodesQuery.data])
+    return map;
+  }, [nodesQuery.data]);
 
   const selectedFromList = useMemo(
     () => (jobsQuery.data ?? []).find((item) => item.id === selectedJobID) ?? null,
     [jobsQuery.data, selectedJobID],
-  )
+  );
 
   const retryMutation = useMutation({
     mutationFn: retrySyncJob,
     onSuccess: async (created) => {
-      setSelectedJobID(created.id)
-      await qc.invalidateQueries({ queryKey: ["sync-jobs"] })
-      await qc.invalidateQueries({ queryKey: ["sync-job-detail"] })
+      setSelectedJobID(created.id);
+      await qc.invalidateQueries({ queryKey: ["sync-jobs"] });
+      await qc.invalidateQueries({ queryKey: ["sync-job-detail"] });
     },
-  })
+  });
 
   function nodeName(nodeID: number): string {
-    return nodeNameByID.get(nodeID) ?? `#${nodeID}`
+    return nodeNameByID.get(nodeID) ?? `#${nodeID}`;
   }
 
-  const detailJob = detailQuery.data?.job ?? selectedFromList
-  const detailAttempts = detailQuery.data?.attempts ?? []
-  const visibleJobs = jobsTable.visibleRows
+  const detailJob = detailQuery.data?.job ?? selectedFromList;
+  const detailAttempts = detailQuery.data?.attempts ?? [];
+  const visibleJobs = jobsTable.visibleRows;
 
   return (
     <div className="px-4 lg:px-6">
       <section className="space-y-6">
-        <PageHeader
-          title={t("syncJobs.title")}
-          description={t("syncJobs.subtitle")}
-        />
+        <PageHeader title={t("syncJobs.title")} description={t("syncJobs.subtitle")} />
 
         <Card>
           <CardHeader className="pb-3">
@@ -223,7 +214,9 @@ export function SyncJobsPage() {
                 <CardDescription>
                   {jobsTable.showLoadingHint ? t("common.loading") : null}
                   {jobsQuery.isError ? t("common.loadFailed") : null}
-                  {!jobsTable.showLoadingHint && jobsQuery.data ? t("syncJobs.count", { count: visibleJobs.length }) : null}
+                  {!jobsTable.showLoadingHint && jobsQuery.data
+                    ? t("syncJobs.count", { count: visibleJobs.length })
+                    : null}
                 </CardDescription>
               </div>
               <div className={tableToolbarClass.filters}>
@@ -243,7 +236,9 @@ export function SyncJobsPage() {
 
                 <Select
                   value={filters.nodeFilter === "all" ? "all" : String(filters.nodeFilter)}
-                  onValueChange={(v) => updateFilters({ nodeFilter: v === "all" ? "all" : Number(v) }, true)}
+                  onValueChange={(v) =>
+                    updateFilters({ nodeFilter: v === "all" ? "all" : Number(v) }, true)
+                  }
                 >
                   <SelectTrigger className="w-full sm:w-52" aria-label={t("syncJobs.nodeFilter")}>
                     <SelectValue />
@@ -260,7 +255,9 @@ export function SyncJobsPage() {
 
                 <Select
                   value={filters.statusFilter}
-                  onValueChange={(v) => updateFilters({ statusFilter: v as SyncJobsPageFilters["statusFilter"] }, true)}
+                  onValueChange={(v) =>
+                    updateFilters({ statusFilter: v as SyncJobsPageFilters["statusFilter"] }, true)
+                  }
                 >
                   <SelectTrigger className="w-full sm:w-44" aria-label={t("syncJobs.statusFilter")}>
                     <SelectValue />
@@ -277,7 +274,9 @@ export function SyncJobsPage() {
 
                 <Select
                   value={filters.sourceFilter}
-                  onValueChange={(v) => updateFilters({ sourceFilter: v as SyncJobsPageFilters["sourceFilter"] }, true)}
+                  onValueChange={(v) =>
+                    updateFilters({ sourceFilter: v as SyncJobsPageFilters["sourceFilter"] }, true)
+                  }
                 >
                   <SelectTrigger className="w-full sm:w-52" aria-label={t("syncJobs.sourceFilter")}>
                     <SelectValue />
@@ -311,18 +310,26 @@ export function SyncJobsPage() {
               <TableBody className={tableTransitionClass(jobsTable.isTransitioning)}>
                 {visibleJobs.map((job) => (
                   <TableRow key={job.id}>
-                    <TableCell className={spacing.cellFirst}>{formatDateTime(job.created_at, i18n.language, timezone)}</TableCell>
-                    <TableCell className={`${spacing.cellMiddle} font-medium`}>{nodeName(job.node_id)}</TableCell>
+                    <TableCell className={spacing.cellFirst}>
+                      {formatDateTime(job.created_at, i18n.language, timezone)}
+                    </TableCell>
+                    <TableCell className={`${spacing.cellMiddle} font-medium`}>
+                      {nodeName(job.node_id)}
+                    </TableCell>
                     <TableCell className={`${spacing.cellMiddle} text-muted-foreground`}>
                       {sourceLabel(t, job.trigger_source)}
                     </TableCell>
                     <TableCell className={spacing.cellMiddle}>
-                      <Badge variant={getStatusVariant(job.status)}>{statusLabel(t, job.status)}</Badge>
+                      <Badge variant={getStatusVariant(job.status)}>
+                        {statusLabel(t, job.status)}
+                      </Badge>
                     </TableCell>
                     <TableCell className={`${spacing.cellMiddle} tabular-nums`}>
                       {formatDuration(job.duration_ms)}
                     </TableCell>
-                    <TableCell className={`${spacing.cellMiddle} tabular-nums`}>{job.attempt_count}</TableCell>
+                    <TableCell className={`${spacing.cellMiddle} tabular-nums`}>
+                      {job.attempt_count}
+                    </TableCell>
                     <TableCell className={spacing.cellLast}>
                       <Button
                         type="button"
@@ -350,7 +357,9 @@ export function SyncJobsPage() {
             </Table>
 
             <div className="flex items-center justify-between border-t px-6 py-3 text-sm">
-              <span className="text-muted-foreground">{t("syncJobs.pageLabel", { page: filters.page })}</span>
+              <span className="text-muted-foreground">
+                {t("syncJobs.pageLabel", { page: filters.page })}
+              </span>
               <div className="flex gap-2">
                 <Button
                   size="sm"
@@ -373,7 +382,10 @@ export function SyncJobsPage() {
           </CardContent>
         </Card>
 
-        <Dialog open={selectedJobID != null} onOpenChange={(open) => !open && setSelectedJobID(null)}>
+        <Dialog
+          open={selectedJobID != null}
+          onOpenChange={(open) => !open && setSelectedJobID(null)}
+        >
           <DialogContent className="max-w-4xl">
             <DialogHeader>
               <DialogTitle>
@@ -390,9 +402,7 @@ export function SyncJobsPage() {
             </DialogHeader>
 
             {detailQuery.isLoading ? (
-              <div className="py-8 text-center text-muted-foreground">
-                {t("common.loading")}
-              </div>
+              <div className="py-8 text-center text-muted-foreground">{t("common.loading")}</div>
             ) : null}
 
             {detailQuery.error instanceof ApiError ? (
@@ -404,20 +414,44 @@ export function SyncJobsPage() {
                 <div className="space-y-2">
                   <h3 className="text-sm font-semibold">{t("syncJobs.jobInfo")}</h3>
                   <div className="grid gap-2 text-sm sm:grid-cols-2">
-                    <p><span className="text-muted-foreground">{t("syncJobs.jobId")}: </span>{detailJob.id}</p>
-                    <p><span className="text-muted-foreground">{t("syncJobs.parentJobId")}: </span>{detailJob.parent_job_id ?? "-"}</p>
-                    <p><span className="text-muted-foreground">{t("syncJobs.triggerSource")}: </span>{sourceLabel(t, detailJob.trigger_source)}</p>
+                    <p>
+                      <span className="text-muted-foreground">{t("syncJobs.jobId")}: </span>
+                      {detailJob.id}
+                    </p>
+                    <p>
+                      <span className="text-muted-foreground">{t("syncJobs.parentJobId")}: </span>
+                      {detailJob.parent_job_id ?? "-"}
+                    </p>
+                    <p>
+                      <span className="text-muted-foreground">{t("syncJobs.triggerSource")}: </span>
+                      {sourceLabel(t, detailJob.trigger_source)}
+                    </p>
                     <p>
                       <span className="text-muted-foreground">{t("syncJobs.colStatus")}: </span>
                       <Badge className="ml-1" variant={getStatusVariant(detailJob.status)}>
                         {statusLabel(t, detailJob.status)}
                       </Badge>
                     </p>
-                    <p><span className="text-muted-foreground">{t("syncJobs.createdAt")}: </span>{formatDateTime(detailJob.created_at, i18n.language, timezone)}</p>
-                    <p><span className="text-muted-foreground">{t("syncJobs.startedAt")}: </span>{formatDateTime(detailJob.started_at, i18n.language, timezone)}</p>
-                    <p><span className="text-muted-foreground">{t("syncJobs.finishedAt")}: </span>{formatDateTime(detailJob.finished_at, i18n.language, timezone)}</p>
-                    <p><span className="text-muted-foreground">{t("syncJobs.totalDuration")}: </span>{formatDuration(detailJob.duration_ms)}</p>
-                    <p><span className="text-muted-foreground">{t("syncJobs.retryCount")}: </span>{detailJob.attempt_count}</p>
+                    <p>
+                      <span className="text-muted-foreground">{t("syncJobs.createdAt")}: </span>
+                      {formatDateTime(detailJob.created_at, i18n.language, timezone)}
+                    </p>
+                    <p>
+                      <span className="text-muted-foreground">{t("syncJobs.startedAt")}: </span>
+                      {formatDateTime(detailJob.started_at, i18n.language, timezone)}
+                    </p>
+                    <p>
+                      <span className="text-muted-foreground">{t("syncJobs.finishedAt")}: </span>
+                      {formatDateTime(detailJob.finished_at, i18n.language, timezone)}
+                    </p>
+                    <p>
+                      <span className="text-muted-foreground">{t("syncJobs.totalDuration")}: </span>
+                      {formatDuration(detailJob.duration_ms)}
+                    </p>
+                    <p>
+                      <span className="text-muted-foreground">{t("syncJobs.retryCount")}: </span>
+                      {detailJob.attempt_count}
+                    </p>
                     <p className="sm:col-span-2">
                       <span className="text-muted-foreground">{t("syncJobs.errorSummary")}: </span>
                       {detailJob.error_summary || "-"}
@@ -433,7 +467,9 @@ export function SyncJobsPage() {
                       <span className="tabular-nums">{detailJob.inbound_count ?? 0}</span>
                     </p>
                     <p>
-                      <span className="text-muted-foreground">{t("syncJobs.activeUserCount")}: </span>
+                      <span className="text-muted-foreground">
+                        {t("syncJobs.activeUserCount")}:{" "}
+                      </span>
                       <span className="tabular-nums">{detailJob.active_user_count ?? 0}</span>
                     </p>
                     <p title={detailJob.payload_hash || ""}>
@@ -454,7 +490,9 @@ export function SyncJobsPage() {
                       {detailAttempts.map((attempt) => (
                         <div key={attempt.id} className="rounded-md border p-3 text-sm">
                           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                            <span className="font-medium">{t("syncJobs.attemptNo", { no: attempt.attempt_no })}</span>
+                            <span className="font-medium">
+                              {t("syncJobs.attemptNo", { no: attempt.attempt_no })}
+                            </span>
                             <Badge variant={getStatusVariant(attempt.status)}>
                               {statusLabel(t, attempt.status)}
                             </Badge>
@@ -470,7 +508,9 @@ export function SyncJobsPage() {
                           </div>
                           <p className="mt-1 text-xs text-muted-foreground">
                             {formatDateTime(attempt.started_at, i18n.language, timezone)}
-                            {attempt.finished_at ? ` → ${formatDateTime(attempt.finished_at, i18n.language, timezone)}` : ""}
+                            {attempt.finished_at
+                              ? ` → ${formatDateTime(attempt.finished_at, i18n.language, timezone)}`
+                              : ""}
                           </p>
                           <p className="mt-1 text-xs text-muted-foreground">
                             {t("syncJobs.error")}: {attempt.error_summary || "-"}
@@ -501,12 +541,14 @@ export function SyncJobsPage() {
                     {t("syncJobs.retry")}
                   </AsyncButton>
                 ) : null}
-                <Button variant="ghost" onClick={() => setSelectedJobID(null)}>{t("common.cancel")}</Button>
+                <Button variant="ghost" onClick={() => setSelectedJobID(null)}>
+                  {t("common.cancel")}
+                </Button>
               </div>
             </DialogFooter>
           </DialogContent>
         </Dialog>
       </section>
     </div>
-  )
+  );
 }

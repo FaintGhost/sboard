@@ -1,452 +1,455 @@
-import { useEffect, useMemo, useRef, useState } from "react"
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { useTranslation } from "react-i18next"
-import { Check, Copy } from "lucide-react"
-import { getTimeZones } from "@vvo/tzdb"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
+import { Check, Copy } from "lucide-react";
+import { getTimeZones } from "@vvo/tzdb";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { FieldHint } from "@/components/ui/field-hint"
-import { Button } from "@/components/ui/button"
-import { AsyncButton } from "@/components/ui/async-button"
-import { ApiError } from "@/lib/api/client"
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { FieldHint } from "@/components/ui/field-hint";
+import { Button } from "@/components/ui/button";
+import { AsyncButton } from "@/components/ui/async-button";
+import { ApiError } from "@/lib/api/client";
 import {
   getAdminProfile,
   getSystemInfo,
   getSystemSettings,
   updateAdminProfile,
   updateSystemSettings,
-} from "@/lib/api/system"
-import { useSystemStore } from "@/store/system"
+} from "@/lib/api/system";
+import { useSystemStore } from "@/store/system";
 
-type SubscriptionScheme = "http" | "https"
-type HostPortValidationCode = "format" | "ip" | "port" | null
-type UpdateSystemSettingsPayload = Parameters<typeof updateSystemSettings>[0]
-type UpdateAdminProfilePayload = Parameters<typeof updateAdminProfile>[0]
+type SubscriptionScheme = "http" | "https";
+type HostPortValidationCode = "format" | "ip" | "port" | null;
+type UpdateSystemSettingsPayload = Parameters<typeof updateSystemSettings>[0];
+type UpdateAdminProfilePayload = Parameters<typeof updateAdminProfile>[0];
 type TimezoneOption = {
-  name: string
-  label: string
-  searchText: string
-}
+  name: string;
+  label: string;
+  searchText: string;
+};
 
 const languages = [
   { code: "zh", nameKey: "settings.langZh" },
   { code: "en", nameKey: "settings.langEn" },
-]
+];
 
 function isValidIPv4(host: string): boolean {
-  const parts = host.split(".")
-  if (parts.length !== 4) return false
+  const parts = host.split(".");
+  if (parts.length !== 4) return false;
   return parts.every((part) => {
-    if (!/^\d+$/.test(part)) return false
-    const num = Number(part)
-    return Number.isInteger(num) && num >= 0 && num <= 255
-  })
+    if (!/^\d+$/.test(part)) return false;
+    const num = Number(part);
+    return Number.isInteger(num) && num >= 0 && num <= 255;
+  });
 }
 
 function isValidIPv6(host: string): boolean {
-  if (!host.includes(":")) return false
-  if (!/^[0-9a-fA-F:]+$/.test(host)) return false
-  if (host.includes(":::")) return false
-  return true
+  if (!host.includes(":")) return false;
+  if (!/^[0-9a-fA-F:]+$/.test(host)) return false;
+  if (host.includes(":::")) return false;
+  return true;
 }
 
 function splitHostPort(value: string): { host: string; port: string } | null {
-  const raw = value.trim()
-  if (!raw) return null
+  const raw = value.trim();
+  if (!raw) return null;
 
   if (raw.startsWith("[")) {
-    const end = raw.indexOf("]")
-    if (end <= 0) return null
-    const host = raw.slice(1, end).trim()
-    const tail = raw.slice(end + 1)
-    if (!tail.startsWith(":")) return null
-    const port = tail.slice(1).trim()
-    if (!host || !port) return null
-    return { host, port }
+    const end = raw.indexOf("]");
+    if (end <= 0) return null;
+    const host = raw.slice(1, end).trim();
+    const tail = raw.slice(end + 1);
+    if (!tail.startsWith(":")) return null;
+    const port = tail.slice(1).trim();
+    if (!host || !port) return null;
+    return { host, port };
   }
 
-  const idx = raw.lastIndexOf(":")
-  if (idx <= 0) return null
-  const host = raw.slice(0, idx).trim()
-  const port = raw.slice(idx + 1).trim()
-  if (!host || !port) return null
-  if (host.includes(":")) return null
-  return { host, port }
+  const idx = raw.lastIndexOf(":");
+  if (idx <= 0) return null;
+  const host = raw.slice(0, idx).trim();
+  const port = raw.slice(idx + 1).trim();
+  if (!host || !port) return null;
+  if (host.includes(":")) return null;
+  return { host, port };
 }
 
 function normalizeHostPort(host: string, port: number): string {
   if (host.includes(":")) {
-    return `[${host}]:${port}`
+    return `[${host}]:${port}`;
   }
-  return `${host}:${port}`
+  return `${host}:${port}`;
 }
 
 function validateHostPort(value: string): HostPortValidationCode {
-  const raw = value.trim()
-  if (!raw) return null
+  const raw = value.trim();
+  if (!raw) return null;
 
-  const parts = splitHostPort(raw)
-  if (!parts) return "format"
+  const parts = splitHostPort(raw);
+  if (!parts) return "format";
 
   if (!isValidIPv4(parts.host) && !isValidIPv6(parts.host)) {
-    return "ip"
+    return "ip";
   }
 
-  const port = Number(parts.port)
+  const port = Number(parts.port);
   if (!Number.isInteger(port) || port < 1 || port > 65535) {
-    return "port"
+    return "port";
   }
 
-  return null
+  return null;
 }
 
-function defaultSubscriptionParts(apiBaseURL: string): { scheme: SubscriptionScheme; hostPort: string } {
+function defaultSubscriptionParts(apiBaseURL: string): {
+  scheme: SubscriptionScheme;
+  hostPort: string;
+} {
   try {
-    const parsed = new URL(apiBaseURL)
-    const scheme = parsed.protocol === "https:" ? "https" : "http"
+    const parsed = new URL(apiBaseURL);
+    const scheme = parsed.protocol === "https:" ? "https" : "http";
     return {
       scheme,
       hostPort: parsed.host,
-    }
+    };
   } catch {
     return {
       scheme: "http",
       hostPort: "",
-    }
+    };
   }
 }
 
-function parseConfiguredSubscriptionBaseURL(configured: string, apiBaseURL: string): {
-  scheme: SubscriptionScheme
-  hostPort: string
+function parseConfiguredSubscriptionBaseURL(
+  configured: string,
+  apiBaseURL: string,
+): {
+  scheme: SubscriptionScheme;
+  hostPort: string;
 } {
-  const fallback = defaultSubscriptionParts(apiBaseURL)
-  const value = configured.trim()
-  if (!value) return fallback
+  const fallback = defaultSubscriptionParts(apiBaseURL);
+  const value = configured.trim();
+  if (!value) return fallback;
 
   try {
-    const parsed = new URL(value)
-    const scheme = parsed.protocol === "https:" ? "https" : "http"
-    const host = parsed.hostname.trim()
-    const port = parsed.port.trim()
-    if (!host || !port) return fallback
+    const parsed = new URL(value);
+    const scheme = parsed.protocol === "https:" ? "https" : "http";
+    const host = parsed.hostname.trim();
+    const port = parsed.port.trim();
+    if (!host || !port) return fallback;
     return {
       scheme,
       hostPort: normalizeHostPort(host, Number(port)),
-    }
+    };
   } catch {
-    return fallback
+    return fallback;
   }
 }
 
 export function SettingsPage() {
-  const { t, i18n } = useTranslation()
-  const qc = useQueryClient()
-  const apiBaseUrl = window.location.origin
-  const hostPortInputRef = useRef<HTMLInputElement>(null)
-  const timezoneInputRef = useRef<HTMLInputElement>(null)
-  const setGlobalTimezone = useSystemStore((state) => state.setTimezone)
+  const { t, i18n } = useTranslation();
+  const qc = useQueryClient();
+  const apiBaseUrl = window.location.origin;
+  const hostPortInputRef = useRef<HTMLInputElement>(null);
+  const timezoneInputRef = useRef<HTMLInputElement>(null);
+  const setGlobalTimezone = useSystemStore((state) => state.setTimezone);
 
-  const [subscriptionScheme, setSubscriptionScheme] = useState<SubscriptionScheme>("http")
-  const [subscriptionHostPort, setSubscriptionHostPort] = useState("")
-  const [subscriptionMessage, setSubscriptionMessage] = useState<string | null>(null)
-  const [generalMessage, setGeneralMessage] = useState<string | null>(null)
-  const [validationError, setValidationError] = useState<string | null>(null)
-  const [timezoneValidationError, setTimezoneValidationError] = useState<string | null>(null)
-  const [copied, setCopied] = useState(false)
-  const [timezone, setTimezone] = useState("UTC")
-  const [timezoneTouched, setTimezoneTouched] = useState(false)
+  const [subscriptionScheme, setSubscriptionScheme] = useState<SubscriptionScheme>("http");
+  const [subscriptionHostPort, setSubscriptionHostPort] = useState("");
+  const [subscriptionMessage, setSubscriptionMessage] = useState<string | null>(null);
+  const [generalMessage, setGeneralMessage] = useState<string | null>(null);
+  const [validationError, setValidationError] = useState<string | null>(null);
+  const [timezoneValidationError, setTimezoneValidationError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [timezone, setTimezone] = useState("UTC");
+  const [timezoneTouched, setTimezoneTouched] = useState(false);
 
-  const [adminUsername, setAdminUsername] = useState("")
-  const [adminOldPassword, setAdminOldPassword] = useState("")
-  const [adminNewPassword, setAdminNewPassword] = useState("")
-  const [adminConfirmPassword, setAdminConfirmPassword] = useState("")
-  const [adminMessage, setAdminMessage] = useState<string | null>(null)
-  const [adminValidationError, setAdminValidationError] = useState<string | null>(null)
+  const [adminUsername, setAdminUsername] = useState("");
+  const [adminOldPassword, setAdminOldPassword] = useState("");
+  const [adminNewPassword, setAdminNewPassword] = useState("");
+  const [adminConfirmPassword, setAdminConfirmPassword] = useState("");
+  const [adminMessage, setAdminMessage] = useState<string | null>(null);
+  const [adminValidationError, setAdminValidationError] = useState<string | null>(null);
 
   const timezoneOptions = useMemo<TimezoneOption[]>(() => {
     return getTimeZones({ includeUtc: true }).map((item) => {
       const offset = item.currentTimeFormat.startsWith("GMT")
         ? item.currentTimeFormat.replace("GMT", "UTC")
-        : item.currentTimeFormat
-      const searchableMainCities = item.mainCities.join(" ")
+        : item.currentTimeFormat;
+      const searchableMainCities = item.mainCities.join(" ");
 
       return {
         name: item.name,
         label: `(${offset}) ${item.name}`,
-        searchText: `${item.name} ${item.alternativeName} ${item.countryName} ${searchableMainCities}`.toLowerCase(),
-      }
-    })
-  }, [])
+        searchText:
+          `${item.name} ${item.alternativeName} ${item.countryName} ${searchableMainCities}`.toLowerCase(),
+      };
+    });
+  }, []);
 
   const timezoneNameMap = useMemo(() => {
-    const map = new Map<string, string>()
+    const map = new Map<string, string>();
     timezoneOptions.forEach((item) => {
-      map.set(item.name.toLowerCase(), item.name)
-    })
-    return map
-  }, [timezoneOptions])
+      map.set(item.name.toLowerCase(), item.name);
+    });
+    return map;
+  }, [timezoneOptions]);
 
   const filteredTimezoneOptions = useMemo(() => {
-    const query = timezone.trim().toLowerCase()
-    if (!query) return timezoneOptions
-    return timezoneOptions.filter((item) => item.searchText.includes(query))
-  }, [timezone, timezoneOptions])
+    const query = timezone.trim().toLowerCase();
+    if (!query) return timezoneOptions;
+    return timezoneOptions.filter((item) => item.searchText.includes(query));
+  }, [timezone, timezoneOptions]);
 
   const systemInfoQuery = useQuery({
     queryKey: ["system-info"],
     queryFn: getSystemInfo,
-  })
+  });
 
   const systemSettingsQuery = useQuery({
     queryKey: ["system-settings"],
     queryFn: getSystemSettings,
-  })
+  });
 
   const adminProfileQuery = useQuery({
     queryKey: ["admin-profile"],
     queryFn: getAdminProfile,
-  })
+  });
 
   useEffect(() => {
-    if (!systemSettingsQuery.data) return
+    if (!systemSettingsQuery.data) return;
     const parsed = parseConfiguredSubscriptionBaseURL(
       systemSettingsQuery.data.subscription_base_url ?? "",
       apiBaseUrl,
-    )
-    setSubscriptionScheme(parsed.scheme)
-    setSubscriptionHostPort(parsed.hostPort)
+    );
+    setSubscriptionScheme(parsed.scheme);
+    setSubscriptionHostPort(parsed.hostPort);
     if (!timezoneTouched) {
-      setTimezone(systemSettingsQuery.data.timezone ?? "UTC")
+      setTimezone(systemSettingsQuery.data.timezone ?? "UTC");
     }
-    setGlobalTimezone(systemSettingsQuery.data.timezone ?? "UTC")
-  }, [systemSettingsQuery.data, apiBaseUrl, setGlobalTimezone, timezoneTouched])
+    setGlobalTimezone(systemSettingsQuery.data.timezone ?? "UTC");
+  }, [systemSettingsQuery.data, apiBaseUrl, setGlobalTimezone, timezoneTouched]);
 
   useEffect(() => {
-    if (!adminProfileQuery.data) return
-    setAdminUsername((prev) => (prev.trim() ? prev : adminProfileQuery.data.username))
-  }, [adminProfileQuery.data])
+    if (!adminProfileQuery.data) return;
+    setAdminUsername((prev) => (prev.trim() ? prev : adminProfileQuery.data.username));
+  }, [adminProfileQuery.data]);
 
   async function onSystemSettingsSaved(data: { subscription_base_url: string; timezone: string }) {
-    const parsed = parseConfiguredSubscriptionBaseURL(
-      data.subscription_base_url ?? "",
-      apiBaseUrl,
-    )
-    setSubscriptionScheme(parsed.scheme)
-    setSubscriptionHostPort(parsed.hostPort)
-    setTimezone(data.timezone ?? "UTC")
-    setTimezoneTouched(false)
-    setGlobalTimezone(data.timezone ?? "UTC")
-    setValidationError(null)
-    setTimezoneValidationError(null)
-    await qc.invalidateQueries({ queryKey: ["system-settings"] })
+    const parsed = parseConfiguredSubscriptionBaseURL(data.subscription_base_url ?? "", apiBaseUrl);
+    setSubscriptionScheme(parsed.scheme);
+    setSubscriptionHostPort(parsed.hostPort);
+    setTimezone(data.timezone ?? "UTC");
+    setTimezoneTouched(false);
+    setGlobalTimezone(data.timezone ?? "UTC");
+    setValidationError(null);
+    setTimezoneValidationError(null);
+    await qc.invalidateQueries({ queryKey: ["system-settings"] });
   }
 
   const updateSubscriptionMutation = useMutation({
     mutationFn: (payload: UpdateSystemSettingsPayload) => updateSystemSettings(payload),
     onSuccess: async (data) => {
-      await onSystemSettingsSaved(data)
-      setSubscriptionMessage(t("settings.saveSuccess"))
-      setGeneralMessage(null)
+      await onSystemSettingsSaved(data);
+      setSubscriptionMessage(t("settings.saveSuccess"));
+      setGeneralMessage(null);
     },
-  })
+  });
 
   const updateGeneralMutation = useMutation({
     mutationFn: (payload: UpdateSystemSettingsPayload) => updateSystemSettings(payload),
     onSuccess: async (data) => {
-      await onSystemSettingsSaved(data)
-      setGeneralMessage(t("settings.saveSuccess"))
-      setSubscriptionMessage(null)
+      await onSystemSettingsSaved(data);
+      setGeneralMessage(t("settings.saveSuccess"));
+      setSubscriptionMessage(null);
     },
-  })
+  });
 
   const updateAdminProfileMutation = useMutation({
     mutationFn: (payload: UpdateAdminProfilePayload) => updateAdminProfile(payload),
     onSuccess: async (data) => {
-      setAdminUsername(data.username)
-      setAdminOldPassword("")
-      setAdminNewPassword("")
-      setAdminConfirmPassword("")
-      setAdminValidationError(null)
-      setAdminMessage(t("settings.adminUpdateSuccess"))
-      await qc.invalidateQueries({ queryKey: ["admin-profile"] })
+      setAdminUsername(data.username);
+      setAdminOldPassword("");
+      setAdminNewPassword("");
+      setAdminConfirmPassword("");
+      setAdminValidationError(null);
+      setAdminMessage(t("settings.adminUpdateSuccess"));
+      await qc.invalidateQueries({ queryKey: ["admin-profile"] });
     },
-  })
+  });
 
   useEffect(() => {
-    if (!copied) return
+    if (!copied) return;
     const timer = window.setTimeout(() => {
-      setCopied(false)
-    }, 1600)
+      setCopied(false);
+    }, 1600);
     return () => {
-      window.clearTimeout(timer)
-    }
-  }, [copied])
+      window.clearTimeout(timer);
+    };
+  }, [copied]);
 
   const handleLanguageChange = (lang: string) => {
-    i18n.changeLanguage(lang)
-    setGeneralMessage(null)
-  }
+    i18n.changeLanguage(lang);
+    setGeneralMessage(null);
+  };
 
   const resolveTimezoneForSave = (): string | null => {
-    const raw = timezone.trim()
+    const raw = timezone.trim();
     if (!raw) {
-      setTimezone("UTC")
-      setTimezoneValidationError(null)
-      return "UTC"
+      setTimezone("UTC");
+      setTimezoneValidationError(null);
+      return "UTC";
     }
 
-    const canonical = timezoneNameMap.get(raw.toLowerCase()) ?? raw
+    const canonical = timezoneNameMap.get(raw.toLowerCase()) ?? raw;
     try {
-      new Intl.DateTimeFormat(undefined, { timeZone: canonical })
-      setTimezone(canonical)
-      setTimezoneValidationError(null)
-      return canonical
+      new Intl.DateTimeFormat(undefined, { timeZone: canonical });
+      setTimezone(canonical);
+      setTimezoneValidationError(null);
+      return canonical;
     } catch {
-      setTimezoneValidationError(t("settings.timezoneInvalid"))
-      timezoneInputRef.current?.focus()
-      return null
+      setTimezoneValidationError(t("settings.timezoneInvalid"));
+      timezoneInputRef.current?.focus();
+      return null;
     }
-  }
+  };
 
   const resolvedSubscriptionBaseURL = useMemo(() => {
-    const hostPort = subscriptionHostPort.trim()
-    if (!hostPort) return apiBaseUrl
-    return `${subscriptionScheme}://${hostPort}`
-  }, [apiBaseUrl, subscriptionHostPort, subscriptionScheme])
+    const hostPort = subscriptionHostPort.trim();
+    if (!hostPort) return apiBaseUrl;
+    return `${subscriptionScheme}://${hostPort}`;
+  }, [apiBaseUrl, subscriptionHostPort, subscriptionScheme]);
 
-  const copySupported = typeof navigator !== "undefined" && !!navigator.clipboard?.writeText
+  const copySupported = typeof navigator !== "undefined" && !!navigator.clipboard?.writeText;
 
   const resolveValidationError = (hostPort: string): string | null => {
-    const validateCode = validateHostPort(hostPort)
-    if (validateCode === "format") return t("settings.subscriptionAddressInvalidFormat")
-    if (validateCode === "ip") return t("settings.subscriptionAddressInvalidIP")
-    if (validateCode === "port") return t("settings.subscriptionAddressInvalidPort")
-    return null
-  }
+    const validateCode = validateHostPort(hostPort);
+    if (validateCode === "format") return t("settings.subscriptionAddressInvalidFormat");
+    if (validateCode === "ip") return t("settings.subscriptionAddressInvalidIP");
+    if (validateCode === "port") return t("settings.subscriptionAddressInvalidPort");
+    return null;
+  };
 
   const handleHostPortBlur = () => {
-    const hostPort = subscriptionHostPort.trim()
+    const hostPort = subscriptionHostPort.trim();
     if (!hostPort) {
-      setValidationError(null)
-      return
+      setValidationError(null);
+      return;
     }
-    setValidationError(resolveValidationError(hostPort))
-  }
+    setValidationError(resolveValidationError(hostPort));
+  };
 
   const handleCopyBaseURL = async () => {
-    if (!copySupported) return
+    if (!copySupported) return;
     try {
-      await navigator.clipboard.writeText(resolvedSubscriptionBaseURL)
-      setCopied(true)
-      setSubscriptionMessage(t("common.copiedToClipboard"))
+      await navigator.clipboard.writeText(resolvedSubscriptionBaseURL);
+      setCopied(true);
+      setSubscriptionMessage(t("common.copiedToClipboard"));
     } catch {
-      setSubscriptionMessage(t("common.copyFailed"))
+      setSubscriptionMessage(t("common.copyFailed"));
     }
-  }
+  };
 
   function handleSaveSubscriptionAccess() {
-    setSubscriptionMessage(null)
-    setGeneralMessage(null)
-    setValidationError(null)
-    setTimezoneValidationError(null)
-    setCopied(false)
+    setSubscriptionMessage(null);
+    setGeneralMessage(null);
+    setValidationError(null);
+    setTimezoneValidationError(null);
+    setCopied(false);
 
-    const timezoneValue = resolveTimezoneForSave()
-    if (!timezoneValue) return
+    const timezoneValue = resolveTimezoneForSave();
+    if (!timezoneValue) return;
 
-    const hostPort = subscriptionHostPort.trim()
+    const hostPort = subscriptionHostPort.trim();
     if (!hostPort) {
       updateSubscriptionMutation.mutate({
         subscription_base_url: "",
         timezone: timezoneValue,
-      })
-      return
+      });
+      return;
     }
 
-    const validationMessage = resolveValidationError(hostPort)
+    const validationMessage = resolveValidationError(hostPort);
     if (validationMessage) {
-      setValidationError(validationMessage)
-      hostPortInputRef.current?.focus()
-      return
+      setValidationError(validationMessage);
+      hostPortInputRef.current?.focus();
+      return;
     }
 
     updateSubscriptionMutation.mutate({
       subscription_base_url: `${subscriptionScheme}://${hostPort}`,
       timezone: timezoneValue,
-    })
+    });
   }
 
   function handleSaveGeneralSettings() {
-    setGeneralMessage(null)
-    setSubscriptionMessage(null)
-    setTimezoneValidationError(null)
+    setGeneralMessage(null);
+    setSubscriptionMessage(null);
+    setTimezoneValidationError(null);
 
-    const timezoneValue = resolveTimezoneForSave()
-    if (!timezoneValue) return
+    const timezoneValue = resolveTimezoneForSave();
+    if (!timezoneValue) return;
 
-    const hostPort = subscriptionHostPort.trim()
+    const hostPort = subscriptionHostPort.trim();
     if (hostPort) {
-      const subscriptionValidationMessage = resolveValidationError(hostPort)
+      const subscriptionValidationMessage = resolveValidationError(hostPort);
       if (subscriptionValidationMessage) {
-        setValidationError(subscriptionValidationMessage)
-        hostPortInputRef.current?.focus()
-        return
+        setValidationError(subscriptionValidationMessage);
+        hostPortInputRef.current?.focus();
+        return;
       }
     }
 
     updateGeneralMutation.mutate({
       subscription_base_url: hostPort ? `${subscriptionScheme}://${hostPort}` : "",
       timezone: timezoneValue,
-    })
+    });
   }
 
   function handleSaveAdminProfile() {
-    setAdminMessage(null)
-    setAdminValidationError(null)
+    setAdminMessage(null);
+    setAdminValidationError(null);
 
-    const newUsername = adminUsername.trim()
+    const newUsername = adminUsername.trim();
     if (!newUsername) {
-      setAdminValidationError(t("settings.adminUsernameRequired"))
-      return
+      setAdminValidationError(t("settings.adminUsernameRequired"));
+      return;
     }
 
     if (!adminOldPassword.trim()) {
-      setAdminValidationError(t("settings.adminOldPasswordRequired"))
-      return
+      setAdminValidationError(t("settings.adminOldPasswordRequired"));
+      return;
     }
 
-    const wantsPasswordChange = adminNewPassword.trim() !== "" || adminConfirmPassword.trim() !== ""
+    const wantsPasswordChange =
+      adminNewPassword.trim() !== "" || adminConfirmPassword.trim() !== "";
 
     if (wantsPasswordChange) {
       if (adminNewPassword !== adminConfirmPassword) {
-        setAdminValidationError(t("settings.adminPasswordsNotMatch"))
-        return
+        setAdminValidationError(t("settings.adminPasswordsNotMatch"));
+        return;
       }
       if (adminNewPassword.length < 8) {
-        setAdminValidationError(t("settings.adminPasswordTooShort"))
-        return
+        setAdminValidationError(t("settings.adminPasswordTooShort"));
+        return;
       }
     }
 
-    if (!wantsPasswordChange && adminProfileQuery.data && newUsername === adminProfileQuery.data.username) {
-      setAdminValidationError(t("settings.adminNoChanges"))
-      return
+    if (
+      !wantsPasswordChange &&
+      adminProfileQuery.data &&
+      newUsername === adminProfileQuery.data.username
+    ) {
+      setAdminValidationError(t("settings.adminNoChanges"));
+      return;
     }
 
     updateAdminProfileMutation.mutate({
@@ -454,16 +457,14 @@ export function SettingsPage() {
       old_password: adminOldPassword,
       new_password: adminNewPassword,
       confirm_password: adminConfirmPassword,
-    })
+    });
   }
 
   return (
     <div className="px-4 lg:px-6 space-y-6">
       <div className="space-y-2">
         <h1 className="text-xl font-semibold text-slate-900">{t("settings.title")}</h1>
-        <p className="text-sm text-slate-500">
-          {t("settings.subtitle")}
-        </p>
+        <p className="text-sm text-slate-500">{t("settings.subtitle")}</p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
@@ -480,9 +481,9 @@ export function SettingsPage() {
                   <Select
                     value={subscriptionScheme}
                     onValueChange={(value) => {
-                      setSubscriptionScheme(value as SubscriptionScheme)
-                      setValidationError(null)
-                      setSubscriptionMessage(null)
+                      setSubscriptionScheme(value as SubscriptionScheme);
+                      setValidationError(null);
+                      setSubscriptionMessage(null);
                     }}
                   >
                     <SelectTrigger
@@ -501,17 +502,21 @@ export function SettingsPage() {
 
                 <div className="min-w-0 flex-1 space-y-2">
                   <div className="flex items-center gap-1">
-                    <Label htmlFor="subscription-host-port">{t("settings.subscriptionAddress")}</Label>
-                    <FieldHint label={t("settings.subscriptionAddress")}>{t("settings.subscriptionAddressHelp")}</FieldHint>
+                    <Label htmlFor="subscription-host-port">
+                      {t("settings.subscriptionAddress")}
+                    </Label>
+                    <FieldHint label={t("settings.subscriptionAddress")}>
+                      {t("settings.subscriptionAddressHelp")}
+                    </FieldHint>
                   </div>
                   <Input
                     id="subscription-host-port"
                     ref={hostPortInputRef}
                     value={subscriptionHostPort}
                     onChange={(e) => {
-                      setSubscriptionHostPort(e.target.value)
-                      setValidationError(null)
-                      setSubscriptionMessage(null)
+                      setSubscriptionHostPort(e.target.value);
+                      setValidationError(null);
+                      setSubscriptionMessage(null);
                     }}
                     onBlur={handleHostPortBlur}
                     placeholder={t("settings.subscriptionAddressPlaceholder")}
@@ -524,7 +529,9 @@ export function SettingsPage() {
 
             <div className="space-y-2">
               <div className="flex items-center justify-between gap-3">
-                <div className="text-sm font-medium text-slate-700">{t("settings.subscriptionBaseUrlPreview")}</div>
+                <div className="text-sm font-medium text-slate-700">
+                  {t("settings.subscriptionBaseUrlPreview")}
+                </div>
                 <Button
                   type="button"
                   variant="outline"
@@ -533,7 +540,11 @@ export function SettingsPage() {
                   onClick={handleCopyBaseURL}
                   disabled={!copySupported}
                 >
-                  {copied ? <Check className="mr-1 h-3.5 w-3.5" /> : <Copy className="mr-1 h-3.5 w-3.5" />}
+                  {copied ? (
+                    <Check className="mr-1 h-3.5 w-3.5" />
+                  ) : (
+                    <Copy className="mr-1 h-3.5 w-3.5" />
+                  )}
                   {copied ? t("common.copied") : t("common.copy")}
                 </Button>
               </div>
@@ -543,10 +554,18 @@ export function SettingsPage() {
             </div>
 
             <div className="min-h-5 space-y-1" aria-live="polite">
-              {subscriptionMessage ? <p className="text-sm text-emerald-700">{subscriptionMessage}</p> : null}
-              {validationError ? <p role="alert" className="text-sm text-destructive">{validationError}</p> : null}
+              {subscriptionMessage ? (
+                <p className="text-sm text-emerald-700">{subscriptionMessage}</p>
+              ) : null}
+              {validationError ? (
+                <p role="alert" className="text-sm text-destructive">
+                  {validationError}
+                </p>
+              ) : null}
               {updateSubscriptionMutation.error instanceof ApiError ? (
-                <p role="alert" className="text-sm text-destructive">{updateSubscriptionMutation.error.message}</p>
+                <p role="alert" className="text-sm text-destructive">
+                  {updateSubscriptionMutation.error.message}
+                </p>
               ) : null}
             </div>
 
@@ -582,7 +601,9 @@ export function SettingsPage() {
               <Badge variant="outline">{systemInfoQuery.data?.sing_box_version ?? "N/A"}</Badge>
             </div>
             <div className="flex items-center justify-between gap-3">
-              <span className="text-sm text-slate-700">{t("settings.subscriptionBaseUrlLabel")}</span>
+              <span className="text-sm text-slate-700">
+                {t("settings.subscriptionBaseUrlLabel")}
+              </span>
               <code className="rounded bg-slate-100 px-2 py-1 text-xs font-mono">
                 {resolvedSubscriptionBaseURL}
               </code>
@@ -603,9 +624,9 @@ export function SettingsPage() {
                 autoComplete="username"
                 value={adminUsername}
                 onChange={(e) => {
-                  setAdminUsername(e.target.value)
-                  setAdminMessage(null)
-                  setAdminValidationError(null)
+                  setAdminUsername(e.target.value);
+                  setAdminMessage(null);
+                  setAdminValidationError(null);
                 }}
                 placeholder={t("settings.adminUsernamePlaceholder")}
               />
@@ -619,9 +640,9 @@ export function SettingsPage() {
                 autoComplete="current-password"
                 value={adminOldPassword}
                 onChange={(e) => {
-                  setAdminOldPassword(e.target.value)
-                  setAdminMessage(null)
-                  setAdminValidationError(null)
+                  setAdminOldPassword(e.target.value);
+                  setAdminMessage(null);
+                  setAdminValidationError(null);
                 }}
                 placeholder={t("settings.adminOldPasswordPlaceholder")}
               />
@@ -635,9 +656,9 @@ export function SettingsPage() {
                 autoComplete="new-password"
                 value={adminNewPassword}
                 onChange={(e) => {
-                  setAdminNewPassword(e.target.value)
-                  setAdminMessage(null)
-                  setAdminValidationError(null)
+                  setAdminNewPassword(e.target.value);
+                  setAdminMessage(null);
+                  setAdminValidationError(null);
                 }}
                 placeholder={t("settings.adminNewPasswordPlaceholder")}
               />
@@ -651,9 +672,9 @@ export function SettingsPage() {
                 autoComplete="new-password"
                 value={adminConfirmPassword}
                 onChange={(e) => {
-                  setAdminConfirmPassword(e.target.value)
-                  setAdminMessage(null)
-                  setAdminValidationError(null)
+                  setAdminConfirmPassword(e.target.value);
+                  setAdminMessage(null);
+                  setAdminValidationError(null);
                 }}
                 placeholder={t("settings.adminConfirmPasswordPlaceholder")}
               />
@@ -661,9 +682,15 @@ export function SettingsPage() {
 
             <div className="min-h-5 space-y-1" aria-live="polite">
               {adminMessage ? <p className="text-sm text-emerald-700">{adminMessage}</p> : null}
-              {adminValidationError ? <p role="alert" className="text-sm text-destructive">{adminValidationError}</p> : null}
+              {adminValidationError ? (
+                <p role="alert" className="text-sm text-destructive">
+                  {adminValidationError}
+                </p>
+              ) : null}
               {updateAdminProfileMutation.error instanceof ApiError ? (
-                <p role="alert" className="text-sm text-destructive">{updateAdminProfileMutation.error.message}</p>
+                <p role="alert" className="text-sm text-destructive">
+                  {updateAdminProfileMutation.error.message}
+                </p>
               ) : null}
             </div>
 
@@ -714,20 +741,20 @@ export function SettingsPage() {
                 list="system-timezone-options"
                 value={timezone}
                 onChange={(e) => {
-                  setTimezone(e.target.value)
-                  setTimezoneTouched(true)
-                  setGeneralMessage(null)
-                  setTimezoneValidationError(null)
+                  setTimezone(e.target.value);
+                  setTimezoneTouched(true);
+                  setGeneralMessage(null);
+                  setTimezoneValidationError(null);
                 }}
                 onBlur={() => {
                   if (!timezone.trim()) {
-                    setTimezone("UTC")
-                    setTimezoneValidationError(null)
-                    return
+                    setTimezone("UTC");
+                    setTimezoneValidationError(null);
+                    return;
                   }
-                  const matched = timezoneNameMap.get(timezone.trim().toLowerCase())
+                  const matched = timezoneNameMap.get(timezone.trim().toLowerCase());
                   if (matched) {
-                    setTimezone(matched)
+                    setTimezone(matched);
                   }
                 }}
                 placeholder={t("settings.timezonePlaceholder")}
@@ -743,9 +770,15 @@ export function SettingsPage() {
 
             <div className="min-h-5 space-y-1" aria-live="polite">
               {generalMessage ? <p className="text-sm text-emerald-700">{generalMessage}</p> : null}
-              {timezoneValidationError ? <p role="alert" className="text-sm text-destructive">{timezoneValidationError}</p> : null}
+              {timezoneValidationError ? (
+                <p role="alert" className="text-sm text-destructive">
+                  {timezoneValidationError}
+                </p>
+              ) : null}
               {updateGeneralMutation.error instanceof ApiError ? (
-                <p role="alert" className="text-sm text-destructive">{updateGeneralMutation.error.message}</p>
+                <p role="alert" className="text-sm text-destructive">
+                  {updateGeneralMutation.error.message}
+                </p>
               ) : null}
             </div>
 
@@ -762,8 +795,7 @@ export function SettingsPage() {
             </div>
           </CardContent>
         </Card>
-
       </div>
     </div>
-  )
+  );
 }

@@ -4,7 +4,7 @@ import {
   IconLogout,
   IconNotification,
   IconUserCircle,
-} from "@tabler/icons-react"
+} from "@tabler/icons-react";
 
 import {
   DropdownMenu,
@@ -14,26 +14,26 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
-} from "@/components/ui/sidebar"
+} from "@/components/ui/sidebar";
 
 export function NavUser({
   user,
   onLogout,
 }: {
   user: {
-    name: string
-    email?: string
-  }
-  onLogout?: () => void
+    name: string;
+    email?: string;
+  };
+  onLogout?: () => void;
 }) {
-  const { isMobile } = useSidebar()
-  const showEmail = !!user.email && user.email.trim() !== "" && user.email !== user.name
+  const { isMobile } = useSidebar();
+  const showEmail = !!user.email && user.email.trim() !== "" && user.email !== user.name;
 
   return (
     <SidebarMenu>
@@ -47,9 +47,7 @@ export function NavUser({
               <div className="grid min-w-0 flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">{user.name}</span>
                 {showEmail ? (
-                  <span className="text-muted-foreground truncate text-xs">
-                    {user.email}
-                  </span>
+                  <span className="text-muted-foreground truncate text-xs">{user.email}</span>
                 ) : null}
               </div>
               <IconDotsVertical className="ml-auto size-4" />
@@ -65,9 +63,7 @@ export function NavUser({
               <div className="px-2 py-1.5 text-left text-sm">
                 <div className="truncate font-medium">{user.name}</div>
                 {showEmail ? (
-                  <div className="text-muted-foreground truncate text-xs">
-                    {user.email}
-                  </div>
+                  <div className="text-muted-foreground truncate text-xs">{user.email}</div>
                 ) : null}
               </div>
             </DropdownMenuLabel>
@@ -89,8 +85,8 @@ export function NavUser({
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onSelect={(e) => {
-                e.preventDefault()
-                onLogout?.()
+                e.preventDefault();
+                onLogout?.();
               }}
             >
               <IconLogout />
@@ -100,5 +96,5 @@ export function NavUser({
         </DropdownMenu>
       </SidebarMenuItem>
     </SidebarMenu>
-  )
+  );
 }

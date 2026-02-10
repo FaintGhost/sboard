@@ -1,81 +1,88 @@
-import { useMemo } from "react"
-import { useQuery } from "@tanstack/react-query"
-import { useTranslation } from "react-i18next"
-import { Link } from "react-router-dom"
-import { IconArrowRight, IconCloud, IconRefresh, IconServer2, IconUsers } from "@tabler/icons-react"
-
-import { listUsers } from "@/lib/api/users"
-import { listNodes } from "@/lib/api/nodes"
-import { ChartAreaInteractive } from "@/components/chart-area-interactive"
-import { SectionCards } from "@/components/section-cards"
+import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Button } from "@/components/ui/button"
-import { listTrafficNodesSummary, getTrafficTotalSummary } from "@/lib/api/traffic"
-import { tableColumnSpacing } from "@/lib/table-spacing"
-import { bytesToGBString } from "@/lib/units"
+  IconArrowRight,
+  IconCloud,
+  IconRefresh,
+  IconServer2,
+  IconUsers,
+} from "@tabler/icons-react";
+
+import { listUsers } from "@/lib/api/users";
+import { listNodes } from "@/lib/api/nodes";
+import { ChartAreaInteractive } from "@/components/chart-area-interactive";
+import { SectionCards } from "@/components/section-cards";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { listTrafficNodesSummary, getTrafficTotalSummary } from "@/lib/api/traffic";
+import { tableColumnSpacing } from "@/lib/table-spacing";
+import { bytesToGBString } from "@/lib/units";
 
 export function DashboardPage() {
-  const { t } = useTranslation()
-  const spacing = tableColumnSpacing.three
+  const { t } = useTranslation();
+  const spacing = tableColumnSpacing.three;
   const usersQuery = useQuery({
     queryKey: ["users", "dashboard-preview"],
     queryFn: () => listUsers({ limit: 10, offset: 0 }),
-  })
+  });
 
   const nodesQuery = useQuery({
     queryKey: ["nodes", "dashboard"],
     queryFn: () => listNodes({ limit: 1000, offset: 0 }),
     refetchInterval: 10_000,
-  })
+  });
 
   const total1hQuery = useQuery({
     queryKey: ["traffic", "total", "summary", "1h"],
     queryFn: () => getTrafficTotalSummary({ window: "1h" }),
     refetchInterval: 30_000,
-  })
+  });
 
   const total24hQuery = useQuery({
     queryKey: ["traffic", "total", "summary", "24h"],
     queryFn: () => getTrafficTotalSummary({ window: "24h" }),
     refetchInterval: 30_000,
-  })
+  });
 
   const totalAllQuery = useQuery({
     queryKey: ["traffic", "total", "summary", "all"],
     queryFn: () => getTrafficTotalSummary({ window: "all" }),
     refetchInterval: 60_000,
-  })
+  });
 
   const nodes24hQuery = useQuery({
     queryKey: ["traffic", "nodes", "summary", "24h", "dashboard"],
     queryFn: () => listTrafficNodesSummary({ window: "24h" }),
     refetchInterval: 30_000,
-  })
+  });
 
   const topNodes = (nodes24hQuery.data ?? [])
     .slice()
-    .sort((a, b) => (b.upload + b.download) - (a.upload + a.download))
-    .slice(0, 8)
+    .sort((a, b) => b.upload + b.download - (a.upload + a.download))
+    .slice(0, 8);
 
-  const nodeNameByID = new Map<number, string>()
-  for (const n of nodesQuery.data ?? []) nodeNameByID.set(n.id, n.name)
+  const nodeNameByID = new Map<number, string>();
+  for (const n of nodesQuery.data ?? []) nodeNameByID.set(n.id, n.name);
 
   const activeUsers = useMemo(
     () => (usersQuery.data ?? []).filter((user) => user.status === "active").length,
     [usersQuery.data],
-  )
+  );
 
   const onlineNodes = useMemo(
     () => (nodesQuery.data ?? []).filter((node) => node.status === "online").length,
     [nodesQuery.data],
-  )
+  );
 
   const quickLinks = [
     {
@@ -106,7 +113,7 @@ export function DashboardPage() {
       value: usersQuery.data ? String(usersQuery.data.length) : "-",
       sub: t("dashboard.quickSubsSub"),
     },
-  ]
+  ];
 
   return (
     <div className="flex flex-1 flex-col gap-4">
@@ -169,14 +176,20 @@ export function DashboardPage() {
               <TableBody>
                 {nodes24hQuery.isLoading ? (
                   <TableRow>
-                    <TableCell className={`${spacing.cellFirst} py-8 text-center text-muted-foreground`} colSpan={3}>
+                    <TableCell
+                      className={`${spacing.cellFirst} py-8 text-center text-muted-foreground`}
+                      colSpan={3}
+                    >
                       {t("common.loading")}
                     </TableCell>
                   </TableRow>
                 ) : null}
                 {!nodes24hQuery.isLoading && topNodes.length === 0 ? (
                   <TableRow>
-                    <TableCell className={`${spacing.cellFirst} py-8 text-center text-muted-foreground`} colSpan={3}>
+                    <TableCell
+                      className={`${spacing.cellFirst} py-8 text-center text-muted-foreground`}
+                      colSpan={3}
+                    >
                       {t("common.noData")}
                     </TableCell>
                   </TableRow>
@@ -186,7 +199,9 @@ export function DashboardPage() {
                     <TableCell className={`${spacing.cellFirst} font-medium`}>
                       {nodeNameByID.get(n.node_id) ?? `#${n.node_id}`}
                     </TableCell>
-                    <TableCell className={`${spacing.cellMiddle} text-muted-foreground tabular-nums`}>
+                    <TableCell
+                      className={`${spacing.cellMiddle} text-muted-foreground tabular-nums`}
+                    >
                       {bytesToGBString(n.upload)} GB
                     </TableCell>
                     <TableCell className={`${spacing.cellLast} text-muted-foreground tabular-nums`}>
@@ -208,5 +223,5 @@ export function DashboardPage() {
         </Card>
       </div>
     </div>
-  )
+  );
 }

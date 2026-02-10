@@ -1,22 +1,20 @@
-import type { Inbound } from "@/lib/api/types"
+import type { Inbound } from "@/lib/api/types";
 
-export type InboundTemplatePresetProtocol = "vless" | "vmess" | "trojan" | "shadowsocks"
+export type InboundTemplatePresetProtocol = "vless" | "vmess" | "trojan" | "shadowsocks";
 
 type InboundTemplatePayload = {
-  tag: string
-  protocol: string
-  listen_port: number
-  public_port: number
-  settings: Record<string, unknown>
-  tls_settings?: Record<string, unknown>
-  transport_settings?: Record<string, unknown>
-}
+  tag: string;
+  protocol: string;
+  listen_port: number;
+  public_port: number;
+  settings: Record<string, unknown>;
+  tls_settings?: Record<string, unknown>;
+  transport_settings?: Record<string, unknown>;
+};
 
-type ParseResult =
-  | { ok: true; payload: InboundTemplatePayload }
-  | { ok: false; error: string }
+type ParseResult = { ok: true; payload: InboundTemplatePayload } | { ok: false; error: string };
 
-const extraConfigKey = "__config"
+const extraConfigKey = "__config";
 
 const fullConfigKeys = [
   "$schema",
@@ -29,14 +27,14 @@ const fullConfigKeys = [
   "route",
   "services",
   "experimental",
-] as const
+] as const;
 
 export const inboundTemplatePresetProtocols: InboundTemplatePresetProtocol[] = [
   "vless",
   "vmess",
   "trojan",
   "shadowsocks",
-]
+];
 
 const inboundTemplatePresets: Record<InboundTemplatePresetProtocol, Record<string, unknown>> = {
   vless: {
@@ -66,7 +64,7 @@ const inboundTemplatePresets: Record<InboundTemplatePresetProtocol, Record<strin
     password: "8JCsPssfgS8tiRwiMlhARg==",
     users: [],
   },
-}
+};
 
 const reservedKeys = new Set([
   "type",
@@ -77,70 +75,70 @@ const reservedKeys = new Set([
   "users",
   "tls",
   "transport",
-])
+]);
 
 function asRecord(value: unknown): Record<string, unknown> | null {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return null
-  return value as Record<string, unknown>
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  return value as Record<string, unknown>;
 }
 
 function asArray(value: unknown): unknown[] | null {
-  if (!Array.isArray(value)) return null
-  return value
+  if (!Array.isArray(value)) return null;
+  return value;
 }
 
 function shouldKeepExtraConfigValue(value: unknown): boolean {
-  if (value == null) return false
-  if (Array.isArray(value)) return value.length > 0
-  if (typeof value === "object") return Object.keys(value as Record<string, unknown>).length > 0
-  return true
+  if (value == null) return false;
+  if (Array.isArray(value)) return value.length > 0;
+  if (typeof value === "object") return Object.keys(value as Record<string, unknown>).length > 0;
+  return true;
 }
 
 function readRequiredString(obj: Record<string, unknown>, key: string): string | null {
-  const value = obj[key]
-  if (typeof value !== "string") return null
-  const trimmed = value.trim()
-  return trimmed ? trimmed : null
+  const value = obj[key];
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return trimmed ? trimmed : null;
 }
 
 function readPort(value: unknown): number | null {
-  if (typeof value !== "number" || !Number.isFinite(value)) return null
-  if (!Number.isInteger(value)) return null
-  return value > 0 ? value : null
+  if (typeof value !== "number" || !Number.isFinite(value)) return null;
+  if (!Number.isInteger(value)) return null;
+  return value > 0 ? value : null;
 }
 
 function extractInboundAndExtraConfig(
   template: Record<string, unknown>,
 ): { inbound: Record<string, unknown>; extraConfig?: Record<string, unknown> } | { error: string } {
-  const maybeInbounds = template.inbounds
+  const maybeInbounds = template.inbounds;
   if (maybeInbounds == null) {
-    return { inbound: template }
+    return { inbound: template };
   }
 
-  const inbounds = asArray(maybeInbounds)
+  const inbounds = asArray(maybeInbounds);
   if (!inbounds) {
-    return { error: "inbounds must be an array" }
+    return { error: "inbounds must be an array" };
   }
   if (inbounds.length === 0) {
-    return { error: "inbounds requires at least one item" }
+    return { error: "inbounds requires at least one item" };
   }
   if (inbounds.length > 1) {
-    return { error: "only one inbound is supported in template" }
+    return { error: "only one inbound is supported in template" };
   }
 
-  const inbound = asRecord(inbounds[0])
+  const inbound = asRecord(inbounds[0]);
   if (!inbound) {
-    return { error: "inbounds[0] must be an object" }
+    return { error: "inbounds[0] must be an object" };
   }
 
-  const extraConfig: Record<string, unknown> = {}
+  const extraConfig: Record<string, unknown> = {};
   for (const key of fullConfigKeys) {
     if (template[key] !== undefined) {
-      extraConfig[key] = template[key]
+      extraConfig[key] = template[key];
     }
   }
 
-  return { inbound, extraConfig }
+  return { inbound, extraConfig };
 }
 
 function buildFullConfigTemplate(
@@ -149,78 +147,78 @@ function buildFullConfigTemplate(
 ): Record<string, unknown> {
   const full: Record<string, unknown> = {
     inbounds: [inbound],
-  }
+  };
 
   if (extraConfig) {
     for (const key of fullConfigKeys) {
-      const value = extraConfig[key]
+      const value = extraConfig[key];
       if (shouldKeepExtraConfigValue(value)) {
-        full[key] = extraConfig[key]
+        full[key] = extraConfig[key];
       }
     }
   }
 
-  return full
+  return full;
 }
 
 export function parseInboundTemplateToPayload(input: string): ParseResult {
-  let raw: unknown
+  let raw: unknown;
   try {
-    raw = JSON.parse(input)
+    raw = JSON.parse(input);
   } catch {
-    return { ok: false, error: "invalid JSON" }
+    return { ok: false, error: "invalid JSON" };
   }
 
-  const template = asRecord(raw)
+  const template = asRecord(raw);
   if (!template) {
-    return { ok: false, error: "template must be a JSON object" }
+    return { ok: false, error: "template must be a JSON object" };
   }
 
-  const extracted = extractInboundAndExtraConfig(template)
+  const extracted = extractInboundAndExtraConfig(template);
   if ("error" in extracted) {
-    return { ok: false, error: extracted.error }
+    return { ok: false, error: extracted.error };
   }
 
-  const protocol = readRequiredString(extracted.inbound, "type")
+  const protocol = readRequiredString(extracted.inbound, "type");
   if (!protocol) {
-    return { ok: false, error: "type required" }
+    return { ok: false, error: "type required" };
   }
 
-  const tag = readRequiredString(extracted.inbound, "tag")
+  const tag = readRequiredString(extracted.inbound, "tag");
   if (!tag) {
-    return { ok: false, error: "tag required" }
+    return { ok: false, error: "tag required" };
   }
 
-  const listenPort = readPort(extracted.inbound.listen_port)
+  const listenPort = readPort(extracted.inbound.listen_port);
   if (listenPort == null) {
-    return { ok: false, error: "listen_port required and must be > 0" }
+    return { ok: false, error: "listen_port required and must be > 0" };
   }
 
-  const settings: Record<string, unknown> = {}
+  const settings: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(extracted.inbound)) {
-    if (reservedKeys.has(key)) continue
-    settings[key] = value
+    if (reservedKeys.has(key)) continue;
+    settings[key] = value;
   }
   if (extracted.extraConfig) {
-    settings[extraConfigKey] = extracted.extraConfig
+    settings[extraConfigKey] = extracted.extraConfig;
   }
 
-  let tlsSettings: Record<string, unknown> | undefined
+  let tlsSettings: Record<string, unknown> | undefined;
   if (extracted.inbound.tls != null) {
-    const tls = asRecord(extracted.inbound.tls)
+    const tls = asRecord(extracted.inbound.tls);
     if (!tls) {
-      return { ok: false, error: "tls must be an object" }
+      return { ok: false, error: "tls must be an object" };
     }
-    tlsSettings = tls
+    tlsSettings = tls;
   }
 
-  let transportSettings: Record<string, unknown> | undefined
+  let transportSettings: Record<string, unknown> | undefined;
   if (extracted.inbound.transport != null) {
-    const transport = asRecord(extracted.inbound.transport)
+    const transport = asRecord(extracted.inbound.transport);
     if (!transport) {
-      return { ok: false, error: "transport must be an object" }
+      return { ok: false, error: "transport must be an object" };
     }
-    transportSettings = transport
+    transportSettings = transport;
   }
 
   return {
@@ -234,65 +232,65 @@ export function parseInboundTemplateToPayload(input: string): ParseResult {
       tls_settings: tlsSettings,
       transport_settings: transportSettings,
     },
-  }
+  };
 }
 
 export function readTemplateProtocol(input: string): InboundTemplatePresetProtocol | null {
-  let raw: unknown
+  let raw: unknown;
   try {
-    raw = JSON.parse(input)
+    raw = JSON.parse(input);
   } catch {
-    return null
+    return null;
   }
-  const root = asRecord(raw)
-  if (!root) return null
+  const root = asRecord(raw);
+  if (!root) return null;
 
-  let inbound = root
-  const inbounds = asArray(root.inbounds)
+  let inbound = root;
+  const inbounds = asArray(root.inbounds);
   if (inbounds && inbounds.length > 0) {
-    const first = asRecord(inbounds[0])
+    const first = asRecord(inbounds[0]);
     if (first) {
-      inbound = first
+      inbound = first;
     }
   }
 
-  const protocol = readRequiredString(inbound, "type")
-  if (!protocol) return null
-  return inboundTemplatePresetProtocols.find((item) => item === protocol) ?? null
+  const protocol = readRequiredString(inbound, "type");
+  if (!protocol) return null;
+  return inboundTemplatePresetProtocols.find((item) => item === protocol) ?? null;
 }
 
 export function buildPresetInboundTemplateText(protocol: InboundTemplatePresetProtocol): string {
-  const full = buildFullConfigTemplate(inboundTemplatePresets[protocol])
-  return JSON.stringify(full, null, 2)
+  const full = buildFullConfigTemplate(inboundTemplatePresets[protocol]);
+  return JSON.stringify(full, null, 2);
 }
 
 export function buildInboundTemplateText(inbound: Inbound): string {
-  const settings = asRecord(inbound.settings) ?? {}
-  const extraConfig = asRecord(settings[extraConfigKey])
+  const settings = asRecord(inbound.settings) ?? {};
+  const extraConfig = asRecord(settings[extraConfigKey]);
 
   const inboundTemplate: Record<string, unknown> = {
     type: inbound.protocol,
     tag: inbound.tag,
     listen_port: inbound.listen_port,
     users: [],
-  }
+  };
 
   for (const [key, value] of Object.entries(settings)) {
-    if (key === extraConfigKey) continue
-    if (reservedKeys.has(key)) continue
-    inboundTemplate[key] = value
+    if (key === extraConfigKey) continue;
+    if (reservedKeys.has(key)) continue;
+    inboundTemplate[key] = value;
   }
 
-  const tls = asRecord(inbound.tls_settings)
+  const tls = asRecord(inbound.tls_settings);
   if (tls) {
-    inboundTemplate.tls = tls
+    inboundTemplate.tls = tls;
   }
 
-  const transport = asRecord(inbound.transport_settings)
+  const transport = asRecord(inbound.transport_settings);
   if (transport) {
-    inboundTemplate.transport = transport
+    inboundTemplate.transport = transport;
   }
 
-  const full = buildFullConfigTemplate(inboundTemplate, extraConfig ?? undefined)
-  return JSON.stringify(full, null, 2)
+  const full = buildFullConfigTemplate(inboundTemplate, extraConfig ?? undefined);
+  return JSON.stringify(full, null, 2);
 }

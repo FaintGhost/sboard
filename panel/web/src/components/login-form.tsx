@@ -1,29 +1,17 @@
-import { cn } from "@/lib/utils"
-import { AsyncButton } from "@/components/ui/async-button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import {
-  Field,
-  FieldDescription,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useTranslation } from "react-i18next"
-import { useForm } from "react-hook-form"
-import { z } from "zod"
+import { cn } from "@/lib/utils";
+import { AsyncButton } from "@/components/ui/async-button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useTranslation } from "react-i18next";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 
 type LoginValues = {
-  username: string
-  password: string
-}
+  username: string;
+  password: string;
+};
 
 export function LoginForm({
   className,
@@ -32,21 +20,21 @@ export function LoginForm({
   onLogin,
   ...props
 }: React.ComponentProps<"div"> & {
-  isPending?: boolean
-  errorMessage?: string | null
-  onLogin: (values: LoginValues) => void
+  isPending?: boolean;
+  errorMessage?: string | null;
+  onLogin: (values: LoginValues) => void;
 }) {
-  const { t } = useTranslation()
+  const { t } = useTranslation();
 
   const loginSchema = z.object({
     username: z.string().min(1, t("auth.usernameRequired")),
     password: z.string().min(1, t("auth.passwordRequired")),
-  })
+  });
 
   const form = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: { username: "", password: "" },
-  })
+  });
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
@@ -56,17 +44,11 @@ export function LoginForm({
           <CardDescription>{t("auth.adminLoginSubtitle")}</CardDescription>
         </CardHeader>
         <CardContent>
-          <form
-            onSubmit={form.handleSubmit((values) => onLogin(values))}
-          >
+          <form onSubmit={form.handleSubmit((values) => onLogin(values))}>
             <FieldGroup>
               <Field>
                 <FieldLabel htmlFor="username">{t("auth.username")}</FieldLabel>
-                <Input
-                  id="username"
-                  autoComplete="username"
-                  {...form.register("username")}
-                />
+                <Input id="username" autoComplete="username" {...form.register("username")} />
                 <FieldError errors={[form.formState.errors.username]} />
               </Field>
               <Field>
@@ -94,9 +76,7 @@ export function LoginForm({
           </form>
         </CardContent>
       </Card>
-      <FieldDescription className="px-6 text-center">
-        {t("auth.tokenStoredHint")}
-      </FieldDescription>
+      <FieldDescription className="px-6 text-center">{t("auth.tokenStoredHint")}</FieldDescription>
     </div>
-  )
+  );
 }

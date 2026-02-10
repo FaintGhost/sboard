@@ -1,8 +1,8 @@
-import { apiRequest } from "./client"
-import type { UserGroups } from "./types"
+import { apiRequest } from "./client";
+import type { UserGroups } from "./types";
 
 export function getUserGroups(userId: number) {
-  return apiRequest<UserGroups>(`/api/users/${userId}/groups`)
+  return apiRequest<UserGroups>(`/api/users/${userId}/groups`);
 }
 
 export function putUserGroups(userId: number, payload: { group_ids: number[] }) {
@@ -10,6 +10,5 @@ export function putUserGroups(userId: number, payload: { group_ids: number[] }) 
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
-  })
+  });
 }
-

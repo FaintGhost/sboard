@@ -1,5 +1,5 @@
-import { apiRequest } from "./client"
-import type { ListUsersParams, User } from "./types"
+import { apiRequest } from "./client";
+import type { ListUsersParams, User } from "./types";
 
 export function createUser(payload: { username: string }) {
   return apiRequest<User>("/api/users", {
@@ -8,17 +8,17 @@ export function createUser(payload: { username: string }) {
       "Content-Type": "application/json",
     },
     body: JSON.stringify(payload),
-  })
+  });
 }
 
 export function updateUser(
   id: number,
   payload: Partial<{
-    username: string
-    status: string
-    expire_at: string
-    traffic_limit: number
-    traffic_reset_day: number
+    username: string;
+    status: string;
+    expire_at: string;
+    traffic_limit: number;
+    traffic_reset_day: number;
   }>,
 ) {
   return apiRequest<User>(`/api/users/${id}`, {
@@ -27,33 +27,33 @@ export function updateUser(
       "Content-Type": "application/json",
     },
     body: JSON.stringify(payload),
-  })
+  });
 }
 
 export function disableUser(id: number) {
   return apiRequest<User>(`/api/users/${id}`, {
     method: "DELETE",
-  })
+  });
 }
 
 export function deleteUser(id: number) {
   return apiRequest<{ message: string }>(`/api/users/${id}?hard=true`, {
     method: "DELETE",
-  })
+  });
 }
 
 export function listUsers(params: ListUsersParams = {}) {
-  const query = new URLSearchParams()
+  const query = new URLSearchParams();
   if (typeof params.limit === "number") {
-    query.set("limit", String(params.limit))
+    query.set("limit", String(params.limit));
   }
   if (typeof params.offset === "number") {
-    query.set("offset", String(params.offset))
+    query.set("offset", String(params.offset));
   }
   if (params.status) {
-    query.set("status", params.status)
+    query.set("status", params.status);
   }
 
-  const suffix = query.toString() ? `?${query.toString()}` : ""
-  return apiRequest<User[]>(`/api/users${suffix}`)
+  const suffix = query.toString() ? `?${query.toString()}` : "";
+  return apiRequest<User[]>(`/api/users${suffix}`);
 }

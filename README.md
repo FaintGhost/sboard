@@ -118,6 +118,19 @@ docker push "$SBOARD_PANEL_IMAGE"
   - `NODE_SECRET_KEY`：API 密钥，用于 `Authorization: Bearer <secret>`
   - `NODE_LOG_LEVEL`：日志级别，默认 `info`
 
+
+
+**前端代码质量（Oxc）**
+- `panel/web` 已从 ESLint 迁移到 Oxc（`oxlint` + `oxfmt`）。
+- 推荐使用 `bun`：
+  - `cd /root/workspace/sboard/panel/web`
+  - `bun run lint`
+  - `bun run lint:fix`
+  - `bun run format`
+  - `bun run format:check`
+- 兼容 `npm run` 同名脚本。
+
+
 **前后端联调（本地）**
 1. 启动 Panel（如上，确保设置 `PANEL_JWT_SECRET`）
 2. 启动前端：

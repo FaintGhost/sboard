@@ -1,11 +1,11 @@
-import type { UserStatus } from "@/lib/api/types"
+import type { UserStatus } from "@/lib/api/types";
 
-export type UserListStatusFilter = UserStatus | "all"
+export type UserListStatusFilter = UserStatus | "all";
 
 export type UserListFilters = {
-  statusFilter: UserListStatusFilter
-  search: string
-}
+  statusFilter: UserListStatusFilter;
+  search: string;
+};
 
 const allowedStatusFilters: UserListStatusFilter[] = [
   "all",
@@ -13,19 +13,22 @@ const allowedStatusFilters: UserListStatusFilter[] = [
   "disabled",
   "expired",
   "traffic_exceeded",
-]
+];
 
-function parseStatusFilter(raw: string | null, fallback: UserListStatusFilter): UserListStatusFilter {
-  if (!raw) return fallback
+function parseStatusFilter(
+  raw: string | null,
+  fallback: UserListStatusFilter,
+): UserListStatusFilter {
+  if (!raw) return fallback;
   if (allowedStatusFilters.includes(raw as UserListStatusFilter)) {
-    return raw as UserListStatusFilter
+    return raw as UserListStatusFilter;
   }
-  return fallback
+  return fallback;
 }
 
 function parseSearch(raw: string | null): string {
-  if (!raw) return ""
-  return raw.trim()
+  if (!raw) return "";
+  return raw.trim();
 }
 
 export function parseUserListSearchParams(
@@ -35,23 +38,23 @@ export function parseUserListSearchParams(
   return {
     statusFilter: parseStatusFilter(params.get("status"), defaultStatusFilter),
     search: parseSearch(params.get("search")),
-  }
+  };
 }
 
 export function buildUserListSearchParams(
   filters: UserListFilters,
   defaultStatusFilter: UserListStatusFilter,
 ): URLSearchParams {
-  const params = new URLSearchParams()
+  const params = new URLSearchParams();
 
   if (filters.statusFilter !== defaultStatusFilter) {
-    params.set("status", filters.statusFilter)
+    params.set("status", filters.statusFilter);
   }
 
-  const keyword = filters.search.trim()
+  const keyword = filters.search.trim();
   if (keyword) {
-    params.set("search", keyword)
+    params.set("search", keyword);
   }
 
-  return params
+  return params;
 }

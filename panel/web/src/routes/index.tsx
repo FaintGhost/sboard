@@ -1,29 +1,47 @@
-import { lazy, Suspense, type ReactNode } from "react"
+import { lazy, Suspense, type ReactNode } from "react";
 import {
   createBrowserRouter,
   Navigate,
   Outlet,
   RouterProvider,
   useLocation,
-} from "react-router-dom"
+} from "react-router-dom";
 
-import { AppLayout } from "@/layouts/app-layout"
-import { useAuthStore } from "@/store/auth"
+import { AppLayout } from "@/layouts/app-layout";
+import { useAuthStore } from "@/store/auth";
 
-const DashboardPage = lazy(() => import("@/pages/dashboard-page").then((mod) => ({ default: mod.DashboardPage })))
-const GroupsPage = lazy(() => import("@/pages/groups-page").then((mod) => ({ default: mod.GroupsPage })))
-const InboundsPage = lazy(() => import("@/pages/inbounds-page").then((mod) => ({ default: mod.InboundsPage })))
-const LoginPage = lazy(() => import("@/pages/login-page").then((mod) => ({ default: mod.LoginPage })))
-const NodesPage = lazy(() => import("@/pages/nodes-page").then((mod) => ({ default: mod.NodesPage })))
-const SettingsPage = lazy(() => import("@/pages/settings-page").then((mod) => ({ default: mod.SettingsPage })))
-const SyncJobsPage = lazy(() => import("@/pages/sync-jobs-page").then((mod) => ({ default: mod.SyncJobsPage })))
-const SubscriptionsPage = lazy(() => import("@/pages/subscriptions-page").then((mod) => ({ default: mod.SubscriptionsPage })))
-const UsersPage = lazy(() => import("@/pages/users-page").then((mod) => ({ default: mod.UsersPage })))
+const DashboardPage = lazy(() =>
+  import("@/pages/dashboard-page").then((mod) => ({ default: mod.DashboardPage })),
+);
+const GroupsPage = lazy(() =>
+  import("@/pages/groups-page").then((mod) => ({ default: mod.GroupsPage })),
+);
+const InboundsPage = lazy(() =>
+  import("@/pages/inbounds-page").then((mod) => ({ default: mod.InboundsPage })),
+);
+const LoginPage = lazy(() =>
+  import("@/pages/login-page").then((mod) => ({ default: mod.LoginPage })),
+);
+const NodesPage = lazy(() =>
+  import("@/pages/nodes-page").then((mod) => ({ default: mod.NodesPage })),
+);
+const SettingsPage = lazy(() =>
+  import("@/pages/settings-page").then((mod) => ({ default: mod.SettingsPage })),
+);
+const SyncJobsPage = lazy(() =>
+  import("@/pages/sync-jobs-page").then((mod) => ({ default: mod.SyncJobsPage })),
+);
+const SubscriptionsPage = lazy(() =>
+  import("@/pages/subscriptions-page").then((mod) => ({ default: mod.SubscriptionsPage })),
+);
+const UsersPage = lazy(() =>
+  import("@/pages/users-page").then((mod) => ({ default: mod.UsersPage })),
+);
 
 function withSuspense(element: ReactNode) {
   return (
     <Suspense
-      fallback={(
+      fallback={
         <div className="px-4 py-6">
           <div className="h-9 w-40 animate-pulse rounded-md bg-muted/70" />
           <div className="mt-3 h-4 w-64 animate-pulse rounded bg-muted/60" />
@@ -32,22 +50,22 @@ function withSuspense(element: ReactNode) {
             <div className="h-24 animate-pulse rounded-lg bg-muted/50" />
           </div>
         </div>
-      )}
+      }
     >
       {element}
     </Suspense>
-  )
+  );
 }
 
 function RequireAuth() {
-  const token = useAuthStore((state) => state.token)
-  const location = useLocation()
+  const token = useAuthStore((state) => state.token);
+  const location = useLocation();
 
   if (!token) {
-    return <Navigate to="/login" replace state={{ from: location.pathname }} />
+    return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   }
 
-  return <Outlet />
+  return <Outlet />;
 }
 
 const router = createBrowserRouter([
@@ -73,8 +91,8 @@ const router = createBrowserRouter([
       },
     ],
   },
-])
+]);
 
 export function AppRouter() {
-  return <RouterProvider router={router} />
+  return <RouterProvider router={router} />;
 }

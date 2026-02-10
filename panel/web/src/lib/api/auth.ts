@@ -1,11 +1,11 @@
-import { apiRequest } from "./client"
+import { apiRequest } from "./client";
 import type {
   BootstrapRequest,
   BootstrapResponse,
   BootstrapStatus,
   LoginRequest,
   LoginResponse,
-} from "./types"
+} from "./types";
 
 export function loginAdmin(payload: LoginRequest) {
   return apiRequest<LoginResponse>("/api/admin/login", {
@@ -14,11 +14,11 @@ export function loginAdmin(payload: LoginRequest) {
       "Content-Type": "application/json",
     },
     body: JSON.stringify(payload),
-  })
+  });
 }
 
 export function getBootstrapStatus() {
-  return apiRequest<BootstrapStatus>("/api/admin/bootstrap")
+  return apiRequest<BootstrapStatus>("/api/admin/bootstrap");
 }
 
 export function bootstrapAdmin(payload: BootstrapRequest) {
@@ -28,5 +28,5 @@ export function bootstrapAdmin(payload: BootstrapRequest) {
       "Content-Type": "application/json",
     },
     body: JSON.stringify(payload),
-  })
+  });
 }

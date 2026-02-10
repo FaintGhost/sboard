@@ -1,27 +1,23 @@
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
 
 type StatusDotProps = {
-  status: string
-  labelOnline: string
-  labelOffline: string
-  labelUnknown: string
-  className?: string
-}
+  status: string;
+  labelOnline: string;
+  labelOffline: string;
+  labelUnknown: string;
+  className?: string;
+};
 
 export function StatusDot(props: StatusDotProps) {
-  const s = (props.status || "").toLowerCase()
-  const isOnline = s === "online"
-  const isOffline = s === "offline"
+  const s = (props.status || "").toLowerCase();
+  const isOnline = s === "online";
+  const isOffline = s === "offline";
 
-  const label = isOnline
-    ? props.labelOnline
-    : isOffline
-      ? props.labelOffline
-      : props.labelUnknown
+  const label = isOnline ? props.labelOnline : isOffline ? props.labelOffline : props.labelUnknown;
 
-  const dot = isOnline ? "bg-emerald-500" : isOffline ? "bg-red-500" : "bg-slate-400"
-  const glow = isOnline ? "bg-emerald-400/70" : isOffline ? "bg-red-400/70" : "bg-slate-400/60"
-  const ripple = isOnline ? "bg-emerald-400/25" : isOffline ? "bg-red-400/25" : "bg-slate-400/20"
+  const dot = isOnline ? "bg-emerald-500" : isOffline ? "bg-red-500" : "bg-slate-400";
+  const glow = isOnline ? "bg-emerald-400/70" : isOffline ? "bg-red-400/70" : "bg-slate-400/60";
+  const ripple = isOnline ? "bg-emerald-400/25" : isOffline ? "bg-red-400/25" : "bg-slate-400/20";
 
   return (
     <span className={cn("inline-flex items-center gap-2", props.className)}>
@@ -55,6 +51,5 @@ export function StatusDot(props: StatusDotProps) {
       </span>
       <span className="text-xs text-muted-foreground">{label}</span>
     </span>
-  )
+  );
 }
-

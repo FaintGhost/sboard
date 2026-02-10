@@ -1,7 +1,7 @@
-import { useTranslation } from "react-i18next"
+import { useTranslation } from "react-i18next";
 
-import { AsyncButton } from "@/components/ui/async-button"
-import { Button } from "@/components/ui/button"
+import { AsyncButton } from "@/components/ui/async-button";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -9,18 +9,18 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { ApiError } from "@/lib/api/client"
-import type { User } from "@/lib/api/types"
+} from "@/components/ui/dialog";
+import { ApiError } from "@/lib/api/client";
+import type { User } from "@/lib/api/types";
 
 type DeleteUserDialogProps = {
-  user: User | null
-  onClose: () => void
-  onConfirm: (userId: number) => void
-  isPending: boolean
-  isError: boolean
-  error: Error | null
-}
+  user: User | null;
+  onClose: () => void;
+  onConfirm: (userId: number) => void;
+  isPending: boolean;
+  isError: boolean;
+  error: Error | null;
+};
 
 export function DeleteUserDialog({
   user,
@@ -30,13 +30,10 @@ export function DeleteUserDialog({
   isError,
   error,
 }: DeleteUserDialogProps) {
-  const { t } = useTranslation()
+  const { t } = useTranslation();
 
   return (
-    <Dialog
-      open={!!user}
-      onOpenChange={(open) => (!open ? onClose() : null)}
-    >
+    <Dialog open={!!user} onOpenChange={(open) => (!open ? onClose() : null)}>
       <DialogContent aria-label={t("users.deleteUser")}>
         <DialogHeader>
           <DialogTitle>{t("users.deleteUser")}</DialogTitle>
@@ -47,9 +44,7 @@ export function DeleteUserDialog({
 
         {isError ? (
           <p className="text-sm text-red-600">
-            {error instanceof ApiError
-              ? error.message
-              : t("users.deleteFailed")}
+            {error instanceof ApiError ? error.message : t("users.deleteFailed")}
           </p>
         ) : null}
 
@@ -60,8 +55,8 @@ export function DeleteUserDialog({
           <AsyncButton
             variant="destructive"
             onClick={() => {
-              if (!user) return
-              onConfirm(user.id)
+              if (!user) return;
+              onConfirm(user.id);
             }}
             disabled={isPending}
             pending={isPending}
@@ -72,5 +67,5 @@ export function DeleteUserDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

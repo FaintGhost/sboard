@@ -1,18 +1,18 @@
-import { apiRequest } from "./client"
+import { apiRequest } from "./client";
 import type {
   SingBoxCheckResponse,
   SingBoxFormatResponse,
   SingBoxGenerateCommand,
   SingBoxGenerateResponse,
   SingBoxToolMode,
-} from "./types"
+} from "./types";
 
 export function formatSingBoxConfig(payload: { config: string; mode?: SingBoxToolMode }) {
   return apiRequest<SingBoxFormatResponse>("/api/sing-box/format", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
-  })
+  });
 }
 
 export function checkSingBoxConfig(payload: { config: string; mode?: SingBoxToolMode }) {
@@ -20,7 +20,7 @@ export function checkSingBoxConfig(payload: { config: string; mode?: SingBoxTool
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
-  })
+  });
 }
 
 export function generateSingBoxValue(command: SingBoxGenerateCommand) {
@@ -28,5 +28,5 @@ export function generateSingBoxValue(command: SingBoxGenerateCommand) {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ command }),
-  })
+  });
 }

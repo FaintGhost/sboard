@@ -1,13 +1,13 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { MoreHorizontal, Pencil, Trash2 } from "lucide-react"
-import { lazy, Suspense, useMemo, useState } from "react"
-import { useTranslation } from "react-i18next"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { lazy, Suspense, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 
-import { AsyncButton } from "@/components/ui/async-button"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { PageHeader } from "@/components/page-header"
-import { TableEmptyState } from "@/components/table-empty-state"
+import { AsyncButton } from "@/components/ui/async-button";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/page-header";
+import { TableEmptyState } from "@/components/table-empty-state";
 import {
   Dialog,
   DialogContent,
@@ -15,23 +15,23 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
+} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Label } from "@/components/ui/label"
-import { FieldHint } from "@/components/ui/field-hint"
+} from "@/components/ui/dropdown-menu";
+import { Label } from "@/components/ui/label";
+import { FieldHint } from "@/components/ui/field-hint";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -39,12 +39,16 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { ApiError } from "@/lib/api/client"
-import { createInbound, deleteInbound, listInbounds, updateInbound } from "@/lib/api/inbounds"
-import { listNodes } from "@/lib/api/nodes"
-import { checkSingBoxConfig, formatSingBoxConfig, generateSingBoxValue } from "@/lib/api/singbox-tools"
-import type { Inbound, Node, SingBoxGenerateCommand } from "@/lib/api/types"
+} from "@/components/ui/table";
+import { ApiError } from "@/lib/api/client";
+import { createInbound, deleteInbound, listInbounds, updateInbound } from "@/lib/api/inbounds";
+import { listNodes } from "@/lib/api/nodes";
+import {
+  checkSingBoxConfig,
+  formatSingBoxConfig,
+  generateSingBoxValue,
+} from "@/lib/api/singbox-tools";
+import type { Inbound, Node, SingBoxGenerateCommand } from "@/lib/api/types";
 import {
   buildInboundTemplateText,
   buildPresetInboundTemplateText,
@@ -52,23 +56,23 @@ import {
   parseInboundTemplateToPayload,
   readTemplateProtocol,
   type InboundTemplatePresetProtocol,
-} from "@/lib/inbound-template"
-import { tableColumnSpacing } from "@/lib/table-spacing"
-import { tableTransitionClass } from "@/lib/table-motion"
-import { useTableQueryTransition } from "@/lib/table-query-transition"
-import { tableToolbarClass } from "@/lib/table-toolbar"
+} from "@/lib/inbound-template";
+import { tableColumnSpacing } from "@/lib/table-spacing";
+import { tableTransitionClass } from "@/lib/table-motion";
+import { useTableQueryTransition } from "@/lib/table-query-transition";
+import { tableToolbarClass } from "@/lib/table-toolbar";
 
-const MonacoEditor = lazy(() => import("@monaco-editor/react"))
+const MonacoEditor = lazy(() => import("@monaco-editor/react"));
 
-type TemplatePreset = InboundTemplatePresetProtocol | "custom"
+type TemplatePreset = InboundTemplatePresetProtocol | "custom";
 
 type EditState = {
-  mode: "create" | "edit"
-  inbound: Inbound
-  nodeID: number
-  templateText: string
-  preset: TemplatePreset
-}
+  mode: "create" | "edit";
+  inbound: Inbound;
+  nodeID: number;
+  templateText: string;
+  preset: TemplatePreset;
+};
 
 const defaultNewInbound: Inbound = {
   id: 0,
@@ -81,9 +85,9 @@ const defaultNewInbound: Inbound = {
   settings: {},
   tls_settings: null,
   transport_settings: null,
-}
+};
 
-const defaultPreset: InboundTemplatePresetProtocol = "vless"
+const defaultPreset: InboundTemplatePresetProtocol = "vless";
 
 const generateCommandOptions: Array<{ value: SingBoxGenerateCommand; labelKey: string }> = [
   { value: "uuid", labelKey: "inbounds.generateUuid" },
@@ -92,38 +96,38 @@ const generateCommandOptions: Array<{ value: SingBoxGenerateCommand; labelKey: s
   { value: "vapid-keypair", labelKey: "inbounds.generateVapid" },
   { value: "rand-base64-16", labelKey: "inbounds.generateRand16" },
   { value: "rand-base64-32", labelKey: "inbounds.generateRand32" },
-]
+];
 
 function nodeName(nodes: Node[] | undefined, id: number): string {
-  if (!nodes) return String(id)
-  const node = nodes.find((item) => item.id === id)
-  return node ? node.name : String(id)
+  if (!nodes) return String(id);
+  const node = nodes.find((item) => item.id === id);
+  return node ? node.name : String(id);
 }
 
 function templateHint(t: (key: string) => string, input: string): string | null {
-  const parsed = parseInboundTemplateToPayload(input)
-  return parsed.ok ? null : `${t("inbounds.templateParseFailed")}: ${parsed.error}`
+  const parsed = parseInboundTemplateToPayload(input);
+  return parsed.ok ? null : `${t("inbounds.templateParseFailed")}: ${parsed.error}`;
 }
 
 function presetTextKey(preset: TemplatePreset): string {
   switch (preset) {
     case "vless":
-      return "inbounds.presetVless"
+      return "inbounds.presetVless";
     case "vmess":
-      return "inbounds.presetVmess"
+      return "inbounds.presetVmess";
     case "trojan":
-      return "inbounds.presetTrojan"
+      return "inbounds.presetTrojan";
     case "shadowsocks":
-      return "inbounds.presetShadowsocks"
+      return "inbounds.presetShadowsocks";
     default:
-      return "inbounds.presetCustom"
+      return "inbounds.presetCustom";
   }
 }
 
 function toApiErrorMessage(error: unknown, fallback: string): string {
-  if (error instanceof ApiError) return error.message
-  if (error instanceof Error) return error.message
-  return fallback
+  if (error instanceof ApiError) return error.message;
+  if (error instanceof Error) return error.message;
+  return fallback;
 }
 
 function applyGeneratedValueToTemplate(
@@ -132,47 +136,49 @@ function applyGeneratedValueToTemplate(
   output: string,
 ): string {
   if (command !== "rand-base64-16" && command !== "rand-base64-32") {
-    return templateText
+    return templateText;
   }
 
   try {
-    const parsed = JSON.parse(templateText) as Record<string, unknown>
+    const parsed = JSON.parse(templateText) as Record<string, unknown>;
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-      return templateText
+      return templateText;
     }
 
-    const inbounds = parsed.inbounds
+    const inbounds = parsed.inbounds;
     if (Array.isArray(inbounds) && inbounds.length > 0) {
-      const first = inbounds[0]
+      const first = inbounds[0];
       if (first && typeof first === "object" && !Array.isArray(first)) {
-        ;(first as Record<string, unknown>).password = output.trim()
-        return JSON.stringify(parsed, null, 2)
+        (first as Record<string, unknown>).password = output.trim();
+        return JSON.stringify(parsed, null, 2);
       }
     }
 
-    parsed.password = output.trim()
-    return JSON.stringify(parsed, null, 2)
+    parsed.password = output.trim();
+    return JSON.stringify(parsed, null, 2);
   } catch {
-    return templateText
+    return templateText;
   }
 }
 
 export function InboundsPage() {
-  const { t } = useTranslation()
-  const qc = useQueryClient()
-  const spacing = tableColumnSpacing.five
-  const [nodeFilter, setNodeFilter] = useState<number | "all">("all")
-  const [upserting, setUpserting] = useState<EditState | null>(null)
-  const [toolMessage, setToolMessage] = useState<{ tone: "ok" | "error"; text: string } | null>(null)
-  const [generateCommand, setGenerateCommand] = useState<SingBoxGenerateCommand>("uuid")
-  const [generateOutput, setGenerateOutput] = useState<string>("")
+  const { t } = useTranslation();
+  const qc = useQueryClient();
+  const spacing = tableColumnSpacing.five;
+  const [nodeFilter, setNodeFilter] = useState<number | "all">("all");
+  const [upserting, setUpserting] = useState<EditState | null>(null);
+  const [toolMessage, setToolMessage] = useState<{ tone: "ok" | "error"; text: string } | null>(
+    null,
+  );
+  const [generateCommand, setGenerateCommand] = useState<SingBoxGenerateCommand>("uuid");
+  const [generateOutput, setGenerateOutput] = useState<string>("");
 
-  const queryParams = useMemo(() => ({ limit: 50, offset: 0 }), [])
+  const queryParams = useMemo(() => ({ limit: 50, offset: 0 }), []);
 
   const nodesQuery = useQuery({
     queryKey: ["nodes", queryParams],
     queryFn: () => listNodes(queryParams),
-  })
+  });
 
   const inboundsQuery = useQuery({
     queryKey: ["inbounds", nodeFilter],
@@ -182,7 +188,7 @@ export function InboundsPage() {
         offset: 0,
         node_id: nodeFilter === "all" ? undefined : nodeFilter,
       }),
-  })
+  });
 
   const inboundsTable = useTableQueryTransition({
     filterKey: String(nodeFilter),
@@ -190,56 +196,56 @@ export function InboundsPage() {
     isLoading: inboundsQuery.isLoading,
     isFetching: inboundsQuery.isFetching,
     isError: inboundsQuery.isError,
-  })
+  });
 
   const createMutation = useMutation({
     mutationFn: createInbound,
     onSuccess: async () => {
-      setUpserting(null)
-      await qc.invalidateQueries({ queryKey: ["inbounds"] })
+      setUpserting(null);
+      await qc.invalidateQueries({ queryKey: ["inbounds"] });
     },
-  })
+  });
 
   const updateMutation = useMutation({
     mutationFn: (input: { id: number; payload: Record<string, unknown> }) =>
       updateInbound(input.id, input.payload),
     onSuccess: async () => {
-      setUpserting(null)
-      await qc.invalidateQueries({ queryKey: ["inbounds"] })
+      setUpserting(null);
+      await qc.invalidateQueries({ queryKey: ["inbounds"] });
     },
-  })
+  });
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => deleteInbound(id),
     onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey: ["inbounds"] })
+      await qc.invalidateQueries({ queryKey: ["inbounds"] });
     },
-  })
+  });
 
   const formatMutation = useMutation({
     mutationFn: (config: string) => formatSingBoxConfig({ config, mode: "inbound" }),
-  })
+  });
 
   const checkMutation = useMutation({
     mutationFn: (config: string) => checkSingBoxConfig({ config, mode: "inbound" }),
-  })
+  });
 
   const generateMutation = useMutation({
     mutationFn: (command: SingBoxGenerateCommand) => generateSingBoxValue(command),
-  })
+  });
 
   const openCreateDialog = () => {
-    const firstNode = nodesQuery.data?.[0]
-    if (!firstNode) return
+    const firstNode = nodesQuery.data?.[0];
+    if (!firstNode) return;
 
-    createMutation.reset()
-    updateMutation.reset()
-    formatMutation.reset()
-    checkMutation.reset()
-    generateMutation.reset()
-    setToolMessage(null)
-    setGenerateOutput("")
-    setGenerateCommand("uuid")
+    createMutation.reset();
+    updateMutation.reset();
+    formatMutation.reset();
+    checkMutation.reset();
+    generateMutation.reset();
+    setToolMessage(null);
+    setGenerateOutput("");
+    setGenerateCommand("uuid");
 
     setUpserting({
       mode: "create",
@@ -247,38 +253,35 @@ export function InboundsPage() {
       nodeID: firstNode.id,
       templateText: buildPresetInboundTemplateText(defaultPreset),
       preset: defaultPreset,
-    })
-  }
+    });
+  };
 
   const openEditDialog = (inbound: Inbound) => {
-    createMutation.reset()
-    updateMutation.reset()
-    formatMutation.reset()
-    checkMutation.reset()
-    generateMutation.reset()
-    setToolMessage(null)
-    setGenerateOutput("")
-    setGenerateCommand("uuid")
+    createMutation.reset();
+    updateMutation.reset();
+    formatMutation.reset();
+    checkMutation.reset();
+    generateMutation.reset();
+    setToolMessage(null);
+    setGenerateOutput("");
+    setGenerateCommand("uuid");
 
-    const templateText = buildInboundTemplateText(inbound)
+    const templateText = buildInboundTemplateText(inbound);
     setUpserting({
       mode: "edit",
       inbound,
       nodeID: inbound.node_id,
       templateText,
       preset: readTemplateProtocol(templateText) ?? "custom",
-    })
-  }
+    });
+  };
 
-  const currentTemplateHint = upserting ? templateHint(t, upserting.templateText) : null
+  const currentTemplateHint = upserting ? templateHint(t, upserting.templateText) : null;
 
   const mutationErrorText =
     createMutation.isError || updateMutation.isError
-      ? toApiErrorMessage(
-          createMutation.error ?? updateMutation.error,
-          t("inbounds.saveFailed"),
-        )
-      : null
+      ? toApiErrorMessage(createMutation.error ?? updateMutation.error, t("inbounds.saveFailed"))
+      : null;
 
   return (
     <div className="px-4 lg:px-6">
@@ -286,14 +289,14 @@ export function InboundsPage() {
         <PageHeader
           title={t("inbounds.title")}
           description={t("inbounds.subtitle")}
-          action={(
+          action={
             <Button
               onClick={openCreateDialog}
               disabled={!nodesQuery.data || nodesQuery.data.length === 0}
             >
               {t("inbounds.createInbound")}
             </Button>
-          )}
+          }
         />
 
         <Card>
@@ -348,7 +351,9 @@ export function InboundsPage() {
                     <TableCell className={`${spacing.cellFirst} font-medium`}>
                       {nodeName(nodesQuery.data, inbound.node_id)}
                     </TableCell>
-                    <TableCell className={`${spacing.cellMiddle} font-medium`}>{inbound.tag}</TableCell>
+                    <TableCell className={`${spacing.cellMiddle} font-medium`}>
+                      {inbound.tag}
+                    </TableCell>
                     <TableCell className={`${spacing.cellMiddle} text-muted-foreground`}>
                       {inbound.protocol}
                     </TableCell>
@@ -402,11 +407,15 @@ export function InboundsPage() {
         <Dialog open={!!upserting} onOpenChange={(open) => (!open ? setUpserting(null) : null)}>
           <DialogContent
             className="sm:max-w-4xl"
-            aria-label={upserting?.mode === "create" ? t("inbounds.createInbound") : t("inbounds.editInbound")}
+            aria-label={
+              upserting?.mode === "create" ? t("inbounds.createInbound") : t("inbounds.editInbound")
+            }
           >
             <DialogHeader>
               <DialogTitle>
-                {upserting?.mode === "create" ? t("inbounds.createInbound") : t("inbounds.editInbound")}
+                {upserting?.mode === "create"
+                  ? t("inbounds.createInbound")
+                  : t("inbounds.editInbound")}
               </DialogTitle>
               <DialogDescription>
                 {upserting?.mode === "edit" ? upserting.inbound.tag : t("inbounds.createInbound")}
@@ -446,14 +455,16 @@ export function InboundsPage() {
                       </FieldHint>
                     </div>
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                      <Label className="text-xs text-slate-500">{t("inbounds.templatePreset")}</Label>
+                      <Label className="text-xs text-slate-500">
+                        {t("inbounds.templatePreset")}
+                      </Label>
                       <Select
                         value={upserting.preset}
                         onValueChange={(value) => {
-                          const preset = value as TemplatePreset
+                          const preset = value as TemplatePreset;
                           if (preset === "custom") {
-                            setUpserting((prev) => (prev ? { ...prev, preset } : prev))
-                            return
+                            setUpserting((prev) => (prev ? { ...prev, preset } : prev));
+                            return;
                           }
                           setUpserting((prev) =>
                             prev
@@ -463,11 +474,14 @@ export function InboundsPage() {
                                   templateText: buildPresetInboundTemplateText(preset),
                                 }
                               : prev,
-                          )
-                          setToolMessage(null)
+                          );
+                          setToolMessage(null);
                         }}
                       >
-                        <SelectTrigger className="w-full sm:w-56" aria-label={t("inbounds.templatePreset")}>
+                        <SelectTrigger
+                          className="w-full sm:w-56"
+                          aria-label={t("inbounds.templatePreset")}
+                        >
                           <SelectValue placeholder={t("inbounds.templatePreset")} />
                         </SelectTrigger>
                         <SelectContent>
@@ -483,7 +497,13 @@ export function InboundsPage() {
                   </div>
 
                   <div className="overflow-hidden rounded-md border">
-                    <Suspense fallback={<div className="h-[360px] px-3 py-2 text-sm text-muted-foreground">加载中...</div>}>
+                    <Suspense
+                      fallback={
+                        <div className="h-[360px] px-3 py-2 text-sm text-muted-foreground">
+                          加载中...
+                        </div>
+                      }
+                    >
                       <MonacoEditor
                         height="360px"
                         defaultLanguage="json"
@@ -499,8 +519,8 @@ export function InboundsPage() {
                                   preset: readTemplateProtocol(value ?? "") ?? "custom",
                                 }
                               : prev,
-                          )
-                          setToolMessage(null)
+                          );
+                          setToolMessage(null);
                         }}
                         options={{
                           minimap: { enabled: false },
@@ -534,16 +554,16 @@ export function InboundsPage() {
                                     preset: readTemplateProtocol(result.formatted) ?? "custom",
                                   }
                                 : prev,
-                            )
-                            setToolMessage({ tone: "ok", text: t("inbounds.formatSuccess") })
+                            );
+                            setToolMessage({ tone: "ok", text: t("inbounds.formatSuccess") });
                           },
                           onError: (error) => {
                             setToolMessage({
                               tone: "error",
                               text: toApiErrorMessage(error, t("inbounds.formatFailed")),
-                            })
+                            });
                           },
-                        })
+                        });
                       }}
                     >
                       {t("inbounds.formatTemplate")}
@@ -560,21 +580,21 @@ export function InboundsPage() {
                         checkMutation.mutate(upserting.templateText, {
                           onSuccess: (result) => {
                             if (result.ok) {
-                              setToolMessage({ tone: "ok", text: t("inbounds.checkSuccess") })
+                              setToolMessage({ tone: "ok", text: t("inbounds.checkSuccess") });
                             } else {
                               setToolMessage({
                                 tone: "error",
                                 text: `${t("inbounds.checkFailed")}: ${result.output}`,
-                              })
+                              });
                             }
                           },
                           onError: (error) => {
                             setToolMessage({
                               tone: "error",
                               text: toApiErrorMessage(error, t("inbounds.checkFailed")),
-                            })
+                            });
                           },
-                        })
+                        });
                       }}
                     >
                       {t("inbounds.checkTemplate")}
@@ -584,7 +604,10 @@ export function InboundsPage() {
                       value={generateCommand}
                       onValueChange={(value) => setGenerateCommand(value as SingBoxGenerateCommand)}
                     >
-                      <SelectTrigger className="w-full sm:w-56" aria-label={t("inbounds.generateCommand")}>
+                      <SelectTrigger
+                        className="w-full sm:w-56"
+                        aria-label={t("inbounds.generateCommand")}
+                      >
                         <SelectValue placeholder={t("inbounds.generateCommand")} />
                       </SelectTrigger>
                       <SelectContent>
@@ -606,7 +629,7 @@ export function InboundsPage() {
                       onClick={() => {
                         generateMutation.mutate(generateCommand, {
                           onSuccess: (result) => {
-                            setGenerateOutput(result.output)
+                            setGenerateOutput(result.output);
                             setUpserting((prev) =>
                               prev
                                 ? {
@@ -618,22 +641,23 @@ export function InboundsPage() {
                                     ),
                                   }
                                 : prev,
-                            )
+                            );
                             setToolMessage({
                               tone: "ok",
                               text:
-                                generateCommand === "rand-base64-16" || generateCommand === "rand-base64-32"
+                                generateCommand === "rand-base64-16" ||
+                                generateCommand === "rand-base64-32"
                                   ? t("inbounds.generateAndFillPassword")
                                   : t("inbounds.generateSuccess"),
-                            })
+                            });
                           },
                           onError: (error) => {
                             setToolMessage({
                               tone: "error",
                               text: toApiErrorMessage(error, t("inbounds.generateFailed")),
-                            })
+                            });
                           },
-                        })
+                        });
                       }}
                     >
                       {t("inbounds.generateRun")}
@@ -645,7 +669,13 @@ export function InboundsPage() {
                   ) : null}
 
                   {toolMessage ? (
-                    <p className={toolMessage.tone === "ok" ? "text-xs text-emerald-700" : "text-xs text-amber-700"}>
+                    <p
+                      className={
+                        toolMessage.tone === "ok"
+                          ? "text-xs text-emerald-700"
+                          : "text-xs text-amber-700"
+                      }
+                    >
                       {toolMessage.text}
                     </p>
                   ) : null}
@@ -653,14 +683,14 @@ export function InboundsPage() {
                   {generateOutput ? (
                     <div className="rounded-md border bg-muted/30 p-2">
                       <p className="mb-1 text-xs text-slate-500">{t("inbounds.generateOutput")}</p>
-                      <pre className="whitespace-pre-wrap break-all text-xs text-slate-700">{generateOutput}</pre>
+                      <pre className="whitespace-pre-wrap break-all text-xs text-slate-700">
+                        {generateOutput}
+                      </pre>
                     </div>
                   ) : null}
                 </div>
 
-                <div className="text-sm text-amber-700 md:col-span-2">
-                  {mutationErrorText}
-                </div>
+                <div className="text-sm text-amber-700 md:col-span-2">{mutationErrorText}</div>
               </div>
             ) : null}
 
@@ -674,29 +704,27 @@ export function InboundsPage() {
               </Button>
               <AsyncButton
                 onClick={() => {
-                  if (!upserting) return
-                  if (upserting.nodeID <= 0) return
+                  if (!upserting) return;
+                  if (upserting.nodeID <= 0) return;
 
-                  const parsedTemplate = parseInboundTemplateToPayload(upserting.templateText)
-                  if (!parsedTemplate.ok) return
+                  const parsedTemplate = parseInboundTemplateToPayload(upserting.templateText);
+                  if (!parsedTemplate.ok) return;
 
                   const payload = {
                     node_id: upserting.nodeID,
                     ...parsedTemplate.payload,
-                  }
+                  };
 
                   if (upserting.mode === "create") {
-                    createMutation.mutate(payload)
+                    createMutation.mutate(payload);
                   } else {
-                    updateMutation.mutate({ id: upserting.inbound.id, payload })
+                    updateMutation.mutate({ id: upserting.inbound.id, payload });
                   }
                 }}
                 disabled={createMutation.isPending || updateMutation.isPending}
                 pending={createMutation.isPending || updateMutation.isPending}
                 pendingText={
-                  upserting?.mode === "create"
-                    ? t("common.creating")
-                    : t("common.saving")
+                  upserting?.mode === "create" ? t("common.creating") : t("common.saving")
                 }
               >
                 {t("common.save")}
@@ -706,5 +734,5 @@ export function InboundsPage() {
         </Dialog>
       </section>
     </div>
-  )
+  );
 }
