@@ -658,3 +658,27 @@ Complete
 - [x] 复跑 `panel`/`node` 全量 Go 测试与覆盖率
 - [x] 合并后端覆盖率并记录到计划文件
 - **Status:** complete
+
+## 2026-02-10 Session: 后端覆盖率提升（P2）
+
+### Goal
+继续补齐 `panel/internal/db` 低覆盖分支（admins/group_users/groups/nodes/sync_jobs/users）并拉高后端合并覆盖率。
+
+### Phases
+
+#### Phase 1: 低覆盖扫描
+- [x] 基于 `panel/internal/db` 重新扫描 0% 函数热点
+- **Status:** complete
+
+#### Phase 2: 补测实施
+- [x] 新增 `admins` 全链路测试
+- [x] 新增 `group_users + groups` 关键路径测试
+- [x] 新增 `user_groups batch + user delete` 测试
+- [x] 新增 `nodes` 更新与在线状态测试
+- [x] 新增 `sync_jobs` 列表过滤测试
+- **Status:** complete
+
+#### Phase 3: 全量复测与记录
+- [x] 复跑 `panel`/`node` Go 全量测试与覆盖率
+- [x] 更新 `findings.md` 与 `progress.md`
+- **Status:** complete

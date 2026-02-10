@@ -709,3 +709,21 @@
 - 包级（本批重点）：
   - `panel/internal/db`: `50.0%`
   - `node/internal/api`: `92.8%`
+
+## 2026-02-10 Findings: 后端覆盖率提升（P2）
+
+### 关键发现
+- `panel/internal/db` 中多个历史接口（尤其 admin 与 group 侧 API）此前几乎无覆盖，属于高 ROI 补测区域。
+- `sync_jobs` 的筛选逻辑（`status/trigger_source/from/to/limit/offset`）需要单独回归，避免前端筛选回归。
+- 补齐这批分支后，后端合并覆盖率已跨过 `60%`。
+
+### 新增/扩展测试文件
+- `panel/internal/db/admins_nodes_groupusers_test.go`
+- `panel/internal/db/sync_jobs_test.go`（新增 `TestSyncJobs_ListFilters`）
+
+### 覆盖率结果
+- Panel 总覆盖率：`55.7% -> 63.1%`
+- Node 总覆盖率：`70.3%`（本批未新增 node 业务测试）
+- 后端合并覆盖率：`57.3% -> 63.9%`
+- 包级（本批重点）：
+  - `panel/internal/db`: `75.5%`

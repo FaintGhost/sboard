@@ -835,3 +835,23 @@
 - Panel：`55.7%`
 - Node：`70.3%`
 - Backend Combined：`57.3%`
+
+## 2026-02-10 Progress: 后端覆盖率提升（P2）
+
+### 已完成
+- 新增 `admins` 测试：覆盖 `AdminCount/AdminGetByID/AdminGetByUsername/AdminGetFirst/AdminUpdateCredentials/AdminCreateIfNone`。
+- 新增 `group_users + groups` 测试：覆盖分组成员替换、列举、分组更新与错误分支。
+- 新增 `user_groups batch + user delete` 测试：覆盖 `ListUserGroupIDsBatch`、`GetUserByUUID`、`DeleteUser`。
+- 新增 `nodes` 测试：覆盖 `ListNodes/UpdateNode/MarkNodeOnline/MarkNodeOffline`。
+- 扩展 `sync_jobs` 测试：覆盖 `ListSyncJobs` 的筛选与分页分支。
+
+### 验证命令
+- `cd panel && GOCACHE=/tmp/go-build GOMODCACHE=/tmp/go/pkg/mod go test ./... -coverprofile=/tmp/panel.cover.next2 -covermode=atomic`
+- `cd node && GOCACHE=/tmp/go-build GOMODCACHE=/tmp/go/pkg/mod go test ./... -coverprofile=/tmp/node.cover.next2 -covermode=atomic`
+- `{ head -n1 /tmp/panel.cover.next2; tail -n +2 /tmp/panel.cover.next2; tail -n +2 /tmp/node.cover.next2; } > /tmp/backend.cover.next2`
+- `GOCACHE=/tmp/go-build go tool cover -func=/tmp/backend.cover.next2 | tail -n1`
+
+### 结果
+- Panel：`63.1%`
+- Node：`70.3%`
+- Backend Combined：`63.9%`
