@@ -764,27 +764,6 @@ export function SettingsPage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>{t("settings.subscriptionFormats")}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2 p-4 bg-slate-50 rounded-lg">
-                <div className="font-medium">{t("subscriptions.formatSingbox")}</div>
-                <p className="text-sm text-slate-600">
-                  {t("settings.singboxFormatHint")}
-                </p>
-              </div>
-              <div className="space-y-2 p-4 bg-slate-50 rounded-lg">
-                <div className="font-medium">{t("subscriptions.formatV2ray")} (Base64)</div>
-                <p className="text-sm text-slate-600">
-                  {t("settings.v2rayFormatHint")}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </div>
   )
