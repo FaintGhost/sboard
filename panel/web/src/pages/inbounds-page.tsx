@@ -1,7 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
-import { lazy, Suspense, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+
+import MonacoEditor, { loader } from "@monaco-editor/react";
+import * as monaco from "monaco-editor";
 
 import { AsyncButton } from "@/components/ui/async-button";
 import { Button } from "@/components/ui/button";
@@ -62,7 +65,7 @@ import { tableTransitionClass } from "@/lib/table-motion";
 import { useTableQueryTransition } from "@/lib/table-query-transition";
 import { tableToolbarClass } from "@/lib/table-toolbar";
 
-const MonacoEditor = lazy(() => import("@monaco-editor/react"));
+loader.config({ monaco });
 
 type TemplatePreset = InboundTemplatePresetProtocol | "custom";
 
@@ -497,42 +500,39 @@ export function InboundsPage() {
                   </div>
 
                   <div className="overflow-hidden rounded-md border">
-                    <Suspense
-                      fallback={
+                    <MonacoEditor
+                      height="360px"
+                      defaultLanguage="json"
+                      language="json"
+                      theme="vs-dark"
+                      loading={
                         <div className="h-[360px] px-3 py-2 text-sm text-muted-foreground">
-                          加载中...
+                          {t("common.loading")}
                         </div>
                       }
-                    >
-                      <MonacoEditor
-                        height="360px"
-                        defaultLanguage="json"
-                        language="json"
-                        theme="vs-dark"
-                        value={upserting.templateText}
-                        onChange={(value) => {
-                          setUpserting((prev) =>
-                            prev
-                              ? {
-                                  ...prev,
-                                  templateText: value ?? "",
-                                  preset: readTemplateProtocol(value ?? "") ?? "custom",
-                                }
-                              : prev,
-                          );
-                          setToolMessage(null);
-                        }}
-                        options={{
-                          minimap: { enabled: false },
-                          fontSize: 13,
-                          lineNumbersMinChars: 3,
-                          scrollBeyondLastLine: false,
-                          wordWrap: "on",
-                          tabSize: 2,
-                          automaticLayout: true,
-                        }}
-                      />
-                    </Suspense>
+                      value={upserting.templateText}
+                      onChange={(value) => {
+                        setUpserting((prev) =>
+                          prev
+                            ? {
+                                ...prev,
+                                templateText: value ?? "",
+                                preset: readTemplateProtocol(value ?? "") ?? "custom",
+                              }
+                            : prev,
+                        );
+                        setToolMessage(null);
+                      }}
+                      options={{
+                        minimap: { enabled: false },
+                        fontSize: 13,
+                        lineNumbersMinChars: 3,
+                        scrollBeyondLastLine: false,
+                        wordWrap: "on",
+                        tabSize: 2,
+                        automaticLayout: true,
+                      }}
+                    />
                   </div>
 
                   <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
