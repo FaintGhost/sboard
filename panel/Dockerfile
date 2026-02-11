@@ -15,6 +15,7 @@ FROM golang:1.25 AS builder
 ARG PANEL_VERSION=unknown
 ARG PANEL_COMMIT_ID=unknown
 ARG SING_BOX_VERSION=unknown
+ARG GO_BUILD_TAGS=with_utls
 
 WORKDIR /src
 COPY go.mod ./
@@ -39,7 +40,7 @@ RUN --mount=type=cache,target=/go/pkg/mod \
   GOFLAGS= go mod tidy
 RUN --mount=type=cache,target=/go/pkg/mod \
   --mount=type=cache,target=/root/.cache/go-build \
-  CGO_ENABLED=1 go build -mod=mod -trimpath -ldflags "-s -w \
+  CGO_ENABLED=1 go build -mod=mod -tags "${GO_BUILD_TAGS}" -trimpath -ldflags "-s -w \
   -X sboard/panel/internal/buildinfo.PanelVersion=${PANEL_VERSION} \
   -X sboard/panel/internal/buildinfo.PanelCommitID=${PANEL_COMMIT_ID} \
   -X sboard/panel/internal/buildinfo.SingBoxVersion=${SING_BOX_VERSION}" -o /out/sboard-panel ./cmd/panel

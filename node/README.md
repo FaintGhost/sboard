@@ -25,7 +25,7 @@ docker compose up -d
 cd sboard/node
 export NODE_SECRET_KEY='change-me'
 export NODE_LOG_LEVEL=info
-go run ./cmd/node
+GOFLAGS='-tags=with_utls' go run ./cmd/node
 ```
 
 ## 构建并推送到 Docker Hub (本机)
@@ -67,6 +67,7 @@ GOWORK=off go mod tidy
 ## 构建加速建议
 
 - 本项目 Dockerfile 已启用 BuildKit 缓存挂载（Go module / go build cache）。
+- Dockerfile 默认使用 `GO_BUILD_TAGS=with_utls` 构建，以支持 Reality 相关能力。
 - 建议显式开启 BuildKit：
 
 ```bash

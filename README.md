@@ -21,6 +21,7 @@ PANEL_CORS_ALLOW_ORIGINS=http://localhost:5173 \
 PANEL_JWT_SECRET=change-me-in-prod \
 # 可选：自定义 onboarding token；不设置会在首次启动日志里生成并打印
 PANEL_SETUP_TOKEN= \
+GOFLAGS='-tags=with_utls' \
 go run ./cmd/panel
 ```
 
@@ -30,6 +31,7 @@ cd /root/workspace/sboard/node
 NODE_HTTP_ADDR=:3000 \
 NODE_SECRET_KEY=secret \
 NODE_LOG_LEVEL=info \
+GOFLAGS='-tags=with_utls' \
 go run ./cmd/node
 ```
 

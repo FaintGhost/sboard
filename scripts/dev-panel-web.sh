@@ -9,6 +9,7 @@ PANEL_DB_PATH="${PANEL_DB_PATH:-panel.db}"
 PANEL_JWT_SECRET="${PANEL_JWT_SECRET:-dev-secret-change-me}"
 PANEL_CORS_ALLOW_ORIGINS="${PANEL_CORS_ALLOW_ORIGINS:-http://127.0.0.1:5173,http://localhost:5173}"
 PANEL_SERVE_WEB="false"
+GO_BUILD_TAGS="${GO_BUILD_TAGS:-with_utls}"
 
 VITE_PROXY_TARGET="${VITE_PROXY_TARGET:-http://127.0.0.1:8080}"
 WEB_HOST="${WEB_HOST:-0.0.0.0}"
@@ -43,7 +44,7 @@ cleanup() {
 
 trap cleanup INT TERM EXIT
 
-echo "[dev] 启动 panel API: ${PANEL_HTTP_ADDR}"
+echo "[dev] 启动 panel API: ${PANEL_HTTP_ADDR} (tags=${GO_BUILD_TAGS})"
 (
   cd "${ROOT_DIR}/panel"
   PANEL_HTTP_ADDR="${PANEL_HTTP_ADDR}" \
@@ -51,6 +52,7 @@ echo "[dev] 启动 panel API: ${PANEL_HTTP_ADDR}"
   PANEL_JWT_SECRET="${PANEL_JWT_SECRET}" \
   PANEL_CORS_ALLOW_ORIGINS="${PANEL_CORS_ALLOW_ORIGINS}" \
   PANEL_SERVE_WEB="${PANEL_SERVE_WEB}" \
+  GOFLAGS="-tags=${GO_BUILD_TAGS}" \
   go run ./cmd/panel
 ) &
 PANEL_PID=$!

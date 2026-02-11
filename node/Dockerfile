@@ -2,6 +2,8 @@
 
 FROM golang:1.25 AS builder
 
+ARG GO_BUILD_TAGS=with_utls
+
 WORKDIR /src
 COPY go.mod ./
 
@@ -19,7 +21,7 @@ RUN --mount=type=cache,target=/go/pkg/mod \
   GOFLAGS= go mod tidy
 RUN --mount=type=cache,target=/go/pkg/mod \
   --mount=type=cache,target=/root/.cache/go-build \
-  CGO_ENABLED=0 go build -mod=mod -trimpath -ldflags "-s -w" -o /out/sboard-node ./cmd/node
+  CGO_ENABLED=0 go build -mod=mod -tags "${GO_BUILD_TAGS}" -trimpath -ldflags "-s -w" -o /out/sboard-node ./cmd/node
 
 FROM debian:stable-slim
 WORKDIR /app
