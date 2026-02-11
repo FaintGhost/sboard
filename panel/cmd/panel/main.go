@@ -15,6 +15,24 @@ import (
 	"sboard/panel/internal/monitor"
 )
 
+func ensureSetupTokenIfNeeded(cfg *config.Config, store *db.Store) (string, error) {
+	n, err := db.AdminCount(store)
+	if err != nil {
+		return "", err
+	}
+	if n > 0 {
+		return "", nil
+	}
+	if cfg.SetupToken == "" {
+		token, err := api.GenerateSetupToken()
+		if err != nil {
+			return "", err
+		}
+		cfg.SetupToken = token
+	}
+	return cfg.SetupToken, nil
+}
+
 func main() {
 	cfg := config.Load()
 	if err := config.Validate(cfg); err != nil {
@@ -33,15 +51,10 @@ func main() {
 		log.Fatalf("init timezone failed: %v", err)
 	}
 
-	if n, err := db.AdminCount(store); err == nil && n == 0 {
-		if cfg.SetupToken == "" {
-			token, err := api.GenerateSetupToken()
-			if err != nil {
-				log.Fatal(err)
-			}
-			cfg.SetupToken = token
-		}
-		log.Printf("[setup] no admin found. setup token: %s", cfg.SetupToken)
+	if token, err := ensureSetupTokenIfNeeded(&cfg, store); err != nil {
+		log.Fatal(err)
+	} else if token != "" {
+		log.Printf("[setup] no admin found. setup token: %s", token)
 	}
 
 	monitorCtx, monitorCancel := context.WithCancel(context.Background())

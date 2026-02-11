@@ -23,12 +23,16 @@ type coreAdapter struct {
 	statePath string
 }
 
-func (a *coreAdapter) ApplyConfig(ctx *gin.Context, body []byte) error {
+func (a *coreAdapter) applyRawConfig(body []byte) error {
 	options, err := sync.ParseAndValidateConfig(a.sbctx, body)
 	if err != nil {
 		return err
 	}
-	if err := a.c.ApplyOptions(options, body); err != nil {
+	return a.c.ApplyOptions(options, body)
+}
+
+func (a *coreAdapter) ApplyConfig(ctx *gin.Context, body []byte) error {
+	if err := a.applyRawConfig(body); err != nil {
 		return err
 	}
 	if err := state.Persist(a.statePath, body); err != nil {
