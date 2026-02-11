@@ -55,6 +55,8 @@ import type { Inbound, Node, SingBoxGenerateCommand } from "@/lib/api/types";
 import {
   buildInboundTemplateText,
   buildPresetInboundTemplateText,
+  buildSingBoxConfigTextFromTemplate,
+  buildTemplateTextFromPayload,
   inboundTemplatePresetProtocols,
   parseInboundTemplateToPayload,
   readTemplateProtocol,
@@ -107,9 +109,18 @@ function nodeName(nodes: Node[] | undefined, id: number): string {
   return node ? node.name : String(id);
 }
 
-function templateHint(t: (key: string) => string, input: string): string | null {
+function templateFeedback(
+  t: (key: string) => string,
+  input: string,
+): { error: string | null; warnings: string[] } {
   const parsed = parseInboundTemplateToPayload(input);
-  return parsed.ok ? null : `${t("inbounds.templateParseFailed")}: ${parsed.error}`;
+  if (!parsed.ok) {
+    return { error: `${t("inbounds.templateParseFailed")}: ${parsed.error}`, warnings: [] };
+  }
+  return {
+    error: null,
+    warnings: parsed.warnings ?? [],
+  };
 }
 
 function presetTextKey(preset: TemplatePreset): string {
@@ -122,6 +133,12 @@ function presetTextKey(preset: TemplatePreset): string {
       return "inbounds.presetTrojan";
     case "shadowsocks":
       return "inbounds.presetShadowsocks";
+    case "socks":
+      return "inbounds.presetSocks";
+    case "http":
+      return "inbounds.presetHttp";
+    case "mixed":
+      return "inbounds.presetMixed";
     default:
       return "inbounds.presetCustom";
   }
@@ -170,9 +187,9 @@ export function InboundsPage() {
   const spacing = tableColumnSpacing.five;
   const [nodeFilter, setNodeFilter] = useState<number | "all">("all");
   const [upserting, setUpserting] = useState<EditState | null>(null);
-  const [toolMessage, setToolMessage] = useState<{ tone: "ok" | "error"; text: string } | null>(
-    null,
-  );
+  const [toolMessage, setToolMessage] = useState<
+    { tone: "ok" | "error" | "warn"; text: string } | null
+  >(null);
   const [generateCommand, setGenerateCommand] = useState<SingBoxGenerateCommand>("uuid");
   const [generateOutput, setGenerateOutput] = useState<string>("");
 
@@ -279,7 +296,9 @@ export function InboundsPage() {
     });
   };
 
-  const currentTemplateHint = upserting ? templateHint(t, upserting.templateText) : null;
+  const currentTemplateFeedback = upserting
+    ? templateFeedback(t, upserting.templateText)
+    : { error: null, warnings: [] };
 
   const mutationErrorText =
     createMutation.isError || updateMutation.isError
@@ -544,18 +563,38 @@ export function InboundsPage() {
                       pending={formatMutation.isPending}
                       pendingText={t("common.loading")}
                       onClick={() => {
-                        formatMutation.mutate(upserting.templateText, {
-                          onSuccess: (result) => {
+                        const normalized = buildSingBoxConfigTextFromTemplate(upserting.templateText);
+                        if (!normalized.ok) {
+                          setToolMessage({
+                            tone: "error",
+                            text: `${t("inbounds.templateParseFailed")}: ${normalized.error}`,
+                          });
+                          return;
+                        }
+                        formatMutation.mutate(normalized.text, {
+                          onSuccess: () => {
+                            const parsedForTemplate = parseInboundTemplateToPayload(upserting.templateText);
+                            const nextTemplateText = parsedForTemplate.ok
+                              ? buildTemplateTextFromPayload(parsedForTemplate.payload)
+                              : normalized.text;
+
                             setUpserting((prev) =>
                               prev
                                 ? {
                                     ...prev,
-                                    templateText: result.formatted,
-                                    preset: readTemplateProtocol(result.formatted) ?? "custom",
+                                    templateText: nextTemplateText,
+                                    preset: readTemplateProtocol(nextTemplateText) ?? "custom",
                                   }
                                 : prev,
                             );
-                            setToolMessage({ tone: "ok", text: t("inbounds.formatSuccess") });
+                            if (normalized.warnings && normalized.warnings.length > 0) {
+                              setToolMessage({
+                                tone: "warn",
+                                text: `${t("inbounds.formatSuccess")} · ${t("inbounds.templateWarning")}: ${normalized.warnings[0]}`,
+                              });
+                            } else {
+                              setToolMessage({ tone: "ok", text: t("inbounds.formatSuccess") });
+                            }
                           },
                           onError: (error) => {
                             setToolMessage({
@@ -577,10 +616,25 @@ export function InboundsPage() {
                       pending={checkMutation.isPending}
                       pendingText={t("common.loading")}
                       onClick={() => {
-                        checkMutation.mutate(upserting.templateText, {
+                        const normalized = buildSingBoxConfigTextFromTemplate(upserting.templateText);
+                        if (!normalized.ok) {
+                          setToolMessage({
+                            tone: "error",
+                            text: `${t("inbounds.templateParseFailed")}: ${normalized.error}`,
+                          });
+                          return;
+                        }
+                        checkMutation.mutate(normalized.text, {
                           onSuccess: (result) => {
                             if (result.ok) {
-                              setToolMessage({ tone: "ok", text: t("inbounds.checkSuccess") });
+                              if (normalized.warnings && normalized.warnings.length > 0) {
+                                setToolMessage({
+                                  tone: "warn",
+                                  text: `${t("inbounds.checkSuccess")} · ${t("inbounds.templateWarning")}: ${normalized.warnings[0]}`,
+                                });
+                              } else {
+                                setToolMessage({ tone: "ok", text: t("inbounds.checkSuccess") });
+                              }
                             } else {
                               setToolMessage({
                                 tone: "error",
@@ -664,8 +718,16 @@ export function InboundsPage() {
                     </AsyncButton>
                   </div>
 
-                  {currentTemplateHint ? (
-                    <p className="text-xs text-destructive">{currentTemplateHint}</p>
+                  {currentTemplateFeedback.error ? (
+                    <p className="text-xs text-destructive">{currentTemplateFeedback.error}</p>
+                  ) : null}
+
+                  {currentTemplateFeedback.warnings.length > 0 ? (
+                    <div className="space-y-1 text-xs text-amber-700">
+                      {currentTemplateFeedback.warnings.map((warning, index) => (
+                        <p key={`${warning}-${index}`}>{`${t("inbounds.templateWarning")}: ${warning}`}</p>
+                      ))}
+                    </div>
                   ) : null}
 
                   {toolMessage ? (
@@ -673,7 +735,9 @@ export function InboundsPage() {
                       className={
                         toolMessage.tone === "ok"
                           ? "text-xs text-emerald-700"
-                          : "text-xs text-destructive"
+                          : toolMessage.tone === "warn"
+                            ? "text-xs text-amber-700"
+                            : "text-xs text-destructive"
                       }
                     >
                       {toolMessage.text}

@@ -76,6 +76,56 @@ func TestBuildSyncPayload_MergesGlobalConfigFromTemplate(t *testing.T) {
 	require.Equal(t, "direct", payload.Route["final"])
 }
 
+func TestBuildSyncPayload_VLESSFlowShouldOnlyApplyToUsers(t *testing.T) {
+	payload, err := BuildSyncPayload(db.Node{}, []db.Inbound{
+		{
+			UUID:       "11111111-1111-1111-1111-111111111111",
+			Tag:        "vless-in",
+			NodeID:     1,
+			Protocol:   "vless",
+			ListenPort: 443,
+			Settings:   []byte(`{"flow":"xtls-rprx-vision"}`),
+		},
+	}, []db.User{{UUID: "u-1", Username: "alice"}})
+	require.NoError(t, err)
+	require.Len(t, payload.Inbounds, 1)
+
+	item := payload.Inbounds[0]
+	_, hasFlow := item["flow"]
+	require.False(t, hasFlow, "vless flow must not appear at inbound top-level")
+
+	users, ok := item["users"].([]map[string]any)
+	require.True(t, ok)
+	require.Len(t, users, 1)
+	require.Equal(t, "xtls-rprx-vision", users[0]["flow"])
+}
+
+func TestBuildSyncPayload_VLESSRealityWithoutFlowKeepsUserFlowEmpty(t *testing.T) {
+	payload, err := BuildSyncPayload(db.Node{}, []db.Inbound{
+		{
+			UUID:       "11111111-1111-1111-1111-111111111111",
+			Tag:        "vless-in",
+			NodeID:     1,
+			Protocol:   "vless",
+			ListenPort: 443,
+			Settings:   []byte(`{}`),
+			TLSSettings: []byte(`{
+				"enabled": true,
+				"reality": {"enabled": true}
+			}`),
+		},
+	}, []db.User{{UUID: "u-1", Username: "alice"}})
+	require.NoError(t, err)
+	require.Len(t, payload.Inbounds, 1)
+
+	item := payload.Inbounds[0]
+	users, ok := item["users"].([]map[string]any)
+	require.True(t, ok)
+	require.Len(t, users, 1)
+	_, hasFlow := users[0]["flow"]
+	require.False(t, hasFlow)
+}
+
 func TestBuildSyncPayload_MergesGlobalConfigOnlyOnce(t *testing.T) {
 	payload, err := BuildSyncPayload(db.Node{}, []db.Inbound{
 		{

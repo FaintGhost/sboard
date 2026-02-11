@@ -79,6 +79,9 @@ func BuildSyncPayload(node db.Node, inbounds []db.Inbound, users []db.User) (Syn
 			if _, exists := item[k]; exists {
 				continue
 			}
+			if shouldSkipSettingKeyInInbound(typ, k) {
+				continue
+			}
 			item[k] = v
 		}
 
@@ -198,6 +201,17 @@ func asArray(value any) ([]any, bool) {
 	return arr, true
 }
 
+func shouldSkipSettingKeyInInbound(protocol string, key string) bool {
+	if key == extraConfigKey {
+		return true
+	}
+	if protocol == "vless" && key == "flow" {
+		// flow is a vless user-level field, not inbound top-level field.
+		return true
+	}
+	return false
+}
+
 func buildUsersForProtocol(protocol string, users []db.User, settings map[string]any) []map[string]any {
 	out := make([]map[string]any, 0, len(users))
 	flow, _ := settings["flow"].(string)
@@ -225,6 +239,8 @@ func buildUsersForProtocol(protocol string, users []db.User, settings map[string
 				}
 			}
 			out = append(out, map[string]any{"name": name, "password": u.UUID})
+		case "socks", "http", "mixed":
+			out = append(out, map[string]any{"username": name, "password": u.UUID})
 		default:
 			out = append(out, map[string]any{"name": name, "uuid": u.UUID})
 		}

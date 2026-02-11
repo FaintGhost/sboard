@@ -58,6 +58,119 @@ func TestSingboxFiltersInternalConfigField(t *testing.T) {
 	require.Equal(t, "2022-blake3-aes-256-gcm", outbound["method"])
 }
 
+func TestSingboxVlessRealityTLSConvertsToOutboundSyntax(t *testing.T) {
+	user := subscription.User{UUID: "6fd47678-1f45-48f1-8051-fdbcdc2a3ccb", Username: "alice"}
+	items := []subscription.Item{
+		{
+			InboundType:       "vless",
+			InboundTag:        "VLESS_TCP_REALITY",
+			NodePublicAddress: "174.136.204.13",
+			InboundListenPort: 443,
+			Settings:          json.RawMessage(`{"flow":"xtls-rprx-vision","sniff":true,"sniff_override_destination":true}`),
+			TLSSettings: json.RawMessage(`{
+				"enabled": true,
+				"server_name": "aws.amazon.com",
+				"reality": {
+					"enabled": true,
+					"handshake": {"server":"aws.amazon.com","server_port":443},
+					"private_key": "j07u-NRZcenXO3VD8u5QnZdpO2Dd-usrntJ6vh2UbLs",
+					"short_id": ["f02ea9614ec73e47"]
+				}
+			}`),
+		},
+	}
+
+	out, err := subscription.BuildSingbox(user, items)
+	require.NoError(t, err)
+
+	var payload struct {
+		Outbounds []map[string]any `json:"outbounds"`
+	}
+	require.NoError(t, json.Unmarshal(out, &payload))
+	require.Len(t, payload.Outbounds, 1)
+
+	ob := payload.Outbounds[0]
+	require.Equal(t, "xtls-rprx-vision", ob["flow"])
+	_, hasSniff := ob["sniff"]
+	require.False(t, hasSniff, "outbound should not contain inbound-only field sniff")
+	_, hasSniffOverride := ob["sniff_override_destination"]
+	require.False(t, hasSniffOverride, "outbound should not contain inbound-only field sniff_override_destination")
+	tls, ok := ob["tls"].(map[string]any)
+	require.True(t, ok)
+	reality, ok := tls["reality"].(map[string]any)
+	require.True(t, ok)
+
+	_, hasPrivate := reality["private_key"]
+	require.False(t, hasPrivate, "outbound reality must not contain private_key")
+	_, hasHandshake := reality["handshake"]
+	require.False(t, hasHandshake, "outbound reality should not contain handshake")
+
+	publicKey, _ := reality["public_key"].(string)
+	require.NotEmpty(t, publicKey, "outbound reality should contain derived public_key")
+
+	sid, sidOK := reality["short_id"].(string)
+	require.True(t, sidOK)
+	require.Equal(t, "f02ea9614ec73e47", sid)
+
+	utls, utlsOK := tls["utls"].(map[string]any)
+	require.True(t, utlsOK)
+	require.Equal(t, true, utls["enabled"])
+	require.Equal(t, "chrome", utls["fingerprint"])
+}
+
+func TestSingboxVlessWithoutFlowShouldNotInjectFlow(t *testing.T) {
+	user := subscription.User{UUID: "u-1", Username: "alice"}
+	items := []subscription.Item{
+		{
+			InboundType:       "vless",
+			NodePublicAddress: "a.example.com",
+			InboundListenPort: 443,
+			Settings:          json.RawMessage(`{"sniff":true}`),
+			TLSSettings:       json.RawMessage(`{"enabled":true,"reality":{"enabled":true,"public_key":"abc"}}`),
+		},
+	}
+
+	out, err := subscription.BuildSingbox(user, items)
+	require.NoError(t, err)
+
+	var payload struct {
+		Outbounds []map[string]any `json:"outbounds"`
+	}
+	require.NoError(t, json.Unmarshal(out, &payload))
+	require.Len(t, payload.Outbounds, 1)
+	_, hasFlow := payload.Outbounds[0]["flow"]
+	require.False(t, hasFlow)
+}
+
+func TestSingboxRemovesInboundOnlySniffFields(t *testing.T) {
+	user := subscription.User{UUID: "u-1", Username: "alice"}
+	items := []subscription.Item{
+		{
+			InboundType:       "vmess",
+			NodePublicAddress: "a.example.com",
+			InboundListenPort: 443,
+			Settings:          json.RawMessage(`{"sniff":true,"sniff_override_destination":true,"sniff_timeout":"300ms"}`),
+		},
+	}
+
+	out, err := subscription.BuildSingbox(user, items)
+	require.NoError(t, err)
+
+	var payload struct {
+		Outbounds []map[string]any `json:"outbounds"`
+	}
+	require.NoError(t, json.Unmarshal(out, &payload))
+	require.Len(t, payload.Outbounds, 1)
+
+	ob := payload.Outbounds[0]
+	_, hasSniff := ob["sniff"]
+	require.False(t, hasSniff)
+	_, hasSniffOverride := ob["sniff_override_destination"]
+	require.False(t, hasSniffOverride)
+	_, hasSniffTimeout := ob["sniff_timeout"]
+	require.False(t, hasSniffTimeout)
+}
+
 func TestSingboxShadowsocks2022UsesPerUserPassword(t *testing.T) {
 	inboundUUID := "11111111-1111-4111-8111-111111111111"
 	userA := subscription.User{UUID: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", Username: "alice"}
