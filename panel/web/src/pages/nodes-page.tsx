@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { MoreHorizontal, Pencil, ShieldAlert, Trash2 } from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 
 import { AsyncButton } from "@/components/ui/async-button";
 import { Button } from "@/components/ui/button";
@@ -87,6 +88,10 @@ const defaultNewNode: Node = {
   status: "offline",
 };
 
+const motionEase: [number, number, number, number] = [0.22, 1, 0.36, 1];
+const interactiveTableRowClass =
+  "hover:bg-muted/50 data-[state=selected]:bg-muted border-b transition-colors";
+
 function groupName(groups: Group[] | undefined, id: number | null): string {
   if (!groups || id == null) return "-";
   const g = groups.find((x) => x.id === id);
@@ -104,6 +109,8 @@ function formatDateTime(
 export function NodesPage() {
   const { t, i18n } = useTranslation();
   const timezone = useSystemStore((state) => state.timezone);
+  const prefersReducedMotion = useReducedMotion();
+  const shouldAnimate = !prefersReducedMotion;
   const qc = useQueryClient();
   const spacing = tableColumnSpacing.seven;
   const layout = tableColumnLayout.sevenActionIcon;
@@ -220,7 +227,12 @@ export function NodesPage() {
 
   return (
     <div className="px-4 lg:px-6">
-      <section className="space-y-6">
+      <motion.section
+        className="space-y-6"
+        initial={shouldAnimate ? { opacity: 0, y: 12 } : false}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.28, ease: motionEase }}
+      >
         <PageHeader
           title={t("nodes.title")}
           description={t("nodes.subtitle")}
@@ -248,7 +260,12 @@ export function NodesPage() {
           }
         />
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <motion.div
+          className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3"
+          initial={shouldAnimate ? { opacity: 0 } : false}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.25, ease: motionEase }}
+        >
           {nodesQuery.isLoading ? (
             <>
               {Array.from({ length: 6 }).map((_, i) => (
@@ -267,7 +284,7 @@ export function NodesPage() {
             </>
           ) : null}
 
-          {nodesQuery.data?.map((n) => {
+          {nodesQuery.data?.map((n, index) => {
             const s24 = trafficSummaryByNodeID.map24.get(n.id);
             const s1 = trafficSummaryByNodeID.map1.get(n.id);
             const last = s24?.last_recorded_at || s1?.last_recorded_at || n.last_seen_at || "";
@@ -278,60 +295,69 @@ export function NodesPage() {
             const down1 = s1?.download ?? 0;
 
             return (
-              <Card
+              <motion.div
                 key={n.id}
-                className="border-border/75 bg-card shadow-[0_1px_0_0_rgba(255,255,255,0.25)_inset,0_14px_30px_-30px_rgba(0,0,0,0.55)] dark:shadow-[0_1px_0_0_rgba(255,255,255,0.06)_inset,0_18px_34px_-28px_rgba(0,0,0,0.9)]"
+                layout
+                initial={shouldAnimate ? { opacity: 0, y: 10, scale: 0.99 } : false}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{
+                  duration: 0.24,
+                  delay: Math.min(index * 0.04, 0.24),
+                  ease: motionEase,
+                }}
               >
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <CardTitle className="truncate text-base">{n.name}</CardTitle>
-                      <CardDescription className="truncate">
-                        {groupName(groupsQuery.data, n.group_id)} · {n.api_address}:{n.api_port}
-                      </CardDescription>
+                <Card className="border-border/75 bg-card shadow-[0_1px_0_0_rgba(255,255,255,0.25)_inset,0_14px_30px_-30px_rgba(0,0,0,0.55)] dark:shadow-[0_1px_0_0_rgba(255,255,255,0.06)_inset,0_18px_34px_-28px_rgba(0,0,0,0.9)]">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <CardTitle className="truncate text-base">{n.name}</CardTitle>
+                        <CardDescription className="truncate">
+                          {groupName(groupsQuery.data, n.group_id)} · {n.api_address}:{n.api_port}
+                        </CardDescription>
+                      </div>
+                      <StatusDot
+                        status={n.status}
+                        labelOnline={t("nodes.statusOnline")}
+                        labelOffline={t("nodes.statusOffline")}
+                        labelUnknown={t("nodes.statusUnknown")}
+                        className="shrink-0"
+                      />
                     </div>
-                    <StatusDot
-                      status={n.status}
-                      labelOnline={t("nodes.statusOnline")}
-                      labelOffline={t("nodes.statusOffline")}
-                      labelUnknown={t("nodes.statusUnknown")}
-                      className="shrink-0"
-                    />
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-2 text-sm">
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-muted-foreground">{t("traffic.window1h")}</span>
-                    <FlashValue
-                      value={`↑ ${bytesToGBString(up1)} GB  ↓ ${bytesToGBString(down1)} GB`}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-muted-foreground">{t("traffic.window24h")}</span>
-                    <FlashValue
-                      value={`↑ ${bytesToGBString(up24)} GB  ↓ ${bytesToGBString(down24)} GB`}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-muted-foreground">{t("nodes.lastUpdatedAt")}</span>
-                    <span className="truncate">
-                      <FlashValue value={lastFormatted} className="max-w-full" />
-                    </span>
-                  </div>
-                  <div className="flex justify-end gap-2 pt-2">
-                    <Button
-                      type="button"
-                      size="sm"
-                      onClick={() => {
-                        setActionMessage(null);
-                        setTrafficNode(n);
-                      }}
-                    >
-                      {t("nodes.traffic")}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardHeader>
+                  <CardContent className="space-y-2 text-sm">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-muted-foreground">{t("traffic.window1h")}</span>
+                      <FlashValue
+                        value={`↑ ${bytesToGBString(up1)} GB  ↓ ${bytesToGBString(down1)} GB`}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-muted-foreground">{t("traffic.window24h")}</span>
+                      <FlashValue
+                        value={`↑ ${bytesToGBString(up24)} GB  ↓ ${bytesToGBString(down24)} GB`}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-muted-foreground">{t("nodes.lastUpdatedAt")}</span>
+                      <span className="truncate">
+                        <FlashValue value={lastFormatted} className="max-w-full" />
+                      </span>
+                    </div>
+                    <div className="flex justify-end gap-2 pt-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => {
+                          setActionMessage(null);
+                          setTrafficNode(n);
+                        }}
+                      >
+                        {t("nodes.traffic")}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
             );
           })}
 
@@ -342,7 +368,7 @@ export function NodesPage() {
               </CardContent>
             </Card>
           ) : null}
-        </div>
+        </motion.div>
 
         <Card>
           <CardHeader className="pb-3">
@@ -353,7 +379,20 @@ export function NodesPage() {
                   {nodesQuery.isLoading ? t("common.loading") : null}
                   {nodesQuery.isError ? t("common.loadFailed") : null}
                   {nodesQuery.data ? t("nodes.count", { count: nodesQuery.data.length }) : null}
-                  {actionMessage ? <span className="ml-3">{actionMessage}</span> : null}
+                  <AnimatePresence mode="wait">
+                    {actionMessage ? (
+                      <motion.span
+                        key={actionMessage}
+                        className="ml-3 inline-block"
+                        initial={shouldAnimate ? { opacity: 0, y: -4 } : false}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={shouldAnimate ? { opacity: 0, y: -4 } : undefined}
+                        transition={{ duration: 0.18, ease: motionEase }}
+                      >
+                        {actionMessage}
+                      </motion.span>
+                    ) : null}
+                  </AnimatePresence>
                 </CardDescription>
               </div>
             </div>
@@ -415,77 +454,91 @@ export function NodesPage() {
                     ))}
                   </>
                 ) : null}
-                {nodesQuery.data?.map((n) => (
-                  <TableRow key={n.id}>
-                    <TableCell className={`${spacing.cellFirst} font-medium`}>{n.name}</TableCell>
-                    <TableCell className={`${spacing.cellMiddle} text-muted-foreground`}>
-                      {groupName(groupsQuery.data, n.group_id)}
-                    </TableCell>
-                    <TableCell className={`${spacing.cellMiddle} text-muted-foreground`}>
-                      {n.api_address}:{n.api_port}
-                    </TableCell>
-                    <TableCell className={`${spacing.cellMiddle} text-muted-foreground`}>
-                      {n.public_address}
-                    </TableCell>
-                    <TableCell className={spacing.cellMiddle}>
-                      <StatusDot
-                        status={n.status}
-                        labelOnline={t("nodes.statusOnline")}
-                        labelOffline={t("nodes.statusOffline")}
-                        labelUnknown={t("nodes.statusUnknown")}
-                      />
-                    </TableCell>
-                    <TableCell className={`${spacing.cellMiddle} text-muted-foreground`}>
-                      {formatDateTime(n.last_seen_at, i18n.language, timezone)}
-                    </TableCell>
-                    <TableCell className={spacing.cellLast}>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="size-8">
-                            <MoreHorizontal className="size-4" />
-                            <span className="sr-only">{t("common.actions")}</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onClick={() => {
-                              setActionMessage(null);
-                              createMutation.reset();
-                              updateMutation.reset();
-                              setUpserting({
-                                mode: "edit",
-                                node: n,
-                                name: n.name,
-                                apiAddress: n.api_address,
-                                apiPort: n.api_port,
-                                secretKey: n.secret_key,
-                                publicAddress: n.public_address,
-                                groupID: n.group_id,
-                                linkAddress: n.public_address.trim() === n.api_address.trim(),
-                              });
-                            }}
-                          >
-                            <Pencil className="mr-2 size-4" />
-                            {t("common.edit")}
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            variant="destructive"
-                            disabled={deleteMutation.isPending}
-                            onClick={() => {
-                              setActionMessage(null);
-                              deleteMutation.reset();
-                              setDeleting({ node: n, force: false });
-                            }}
-                          >
-                            <Trash2 className="mr-2 size-4" />
-                            {t("nodes.deleteNode")}
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                <AnimatePresence initial={false}>
+                  {nodesQuery.data?.map((n, index) => (
+                    <motion.tr
+                      key={n.id}
+                      layout
+                      className={interactiveTableRowClass}
+                      initial={shouldAnimate ? { opacity: 0, y: 6 } : false}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={shouldAnimate ? { opacity: 0, y: -4 } : undefined}
+                      transition={{
+                        duration: 0.18,
+                        delay: Math.min(index * 0.02, 0.12),
+                        ease: motionEase,
+                      }}
+                    >
+                      <TableCell className={`${spacing.cellFirst} font-medium`}>{n.name}</TableCell>
+                      <TableCell className={`${spacing.cellMiddle} text-muted-foreground`}>
+                        {groupName(groupsQuery.data, n.group_id)}
+                      </TableCell>
+                      <TableCell className={`${spacing.cellMiddle} text-muted-foreground`}>
+                        {n.api_address}:{n.api_port}
+                      </TableCell>
+                      <TableCell className={`${spacing.cellMiddle} text-muted-foreground`}>
+                        {n.public_address}
+                      </TableCell>
+                      <TableCell className={spacing.cellMiddle}>
+                        <StatusDot
+                          status={n.status}
+                          labelOnline={t("nodes.statusOnline")}
+                          labelOffline={t("nodes.statusOffline")}
+                          labelUnknown={t("nodes.statusUnknown")}
+                        />
+                      </TableCell>
+                      <TableCell className={`${spacing.cellMiddle} text-muted-foreground`}>
+                        {formatDateTime(n.last_seen_at, i18n.language, timezone)}
+                      </TableCell>
+                      <TableCell className={spacing.cellLast}>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="size-8">
+                              <MoreHorizontal className="size-4" />
+                              <span className="sr-only">{t("common.actions")}</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setActionMessage(null);
+                                createMutation.reset();
+                                updateMutation.reset();
+                                setUpserting({
+                                  mode: "edit",
+                                  node: n,
+                                  name: n.name,
+                                  apiAddress: n.api_address,
+                                  apiPort: n.api_port,
+                                  secretKey: n.secret_key,
+                                  publicAddress: n.public_address,
+                                  groupID: n.group_id,
+                                  linkAddress: n.public_address.trim() === n.api_address.trim(),
+                                });
+                              }}
+                            >
+                              <Pencil className="mr-2 size-4" />
+                              {t("common.edit")}
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              variant="destructive"
+                              disabled={deleteMutation.isPending}
+                              onClick={() => {
+                                setActionMessage(null);
+                                deleteMutation.reset();
+                                setDeleting({ node: n, force: false });
+                              }}
+                            >
+                              <Trash2 className="mr-2 size-4" />
+                              {t("nodes.deleteNode")}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </motion.tr>
+                  ))}
+                </AnimatePresence>
                 {!nodesQuery.isLoading && nodesQuery.data && nodesQuery.data.length === 0 ? (
                   <TableEmptyState
                     colSpan={7}
@@ -894,8 +947,19 @@ export function NodesPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {trafficByInbound.map((r) => (
-                    <TableRow key={r.inbound}>
+                  {trafficByInbound.map((r, index) => (
+                    <motion.tr
+                      key={r.inbound}
+                      layout
+                      className={interactiveTableRowClass}
+                      initial={shouldAnimate ? { opacity: 0, y: 6 } : false}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{
+                        duration: 0.16,
+                        delay: Math.min(index * 0.015, 0.12),
+                        ease: motionEase,
+                      }}
+                    >
                       <TableCell className={`${trafficSpacing.cellFirst} font-medium`}>
                         {r.inbound}
                       </TableCell>
@@ -906,7 +970,7 @@ export function NodesPage() {
                       <TableCell className={`${trafficSpacing.cellLast} text-muted-foreground`}>
                         {formatDateTime(r.last, i18n.language, timezone)}
                       </TableCell>
-                    </TableRow>
+                    </motion.tr>
                   ))}
                   {!trafficQuery.isLoading && trafficByInbound.length === 0 ? (
                     <TableRow>
@@ -929,7 +993,7 @@ export function NodesPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      </section>
+      </motion.section>
     </div>
   );
 }
