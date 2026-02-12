@@ -1153,3 +1153,18 @@
 |------|-------|----------|--------|--------|
 | API 定向测试 | `GOCACHE=/tmp/go-build go test ./panel/internal/api -count=1` | 通过 | 通过 | ✓ |
 | Panel 后端全量 | `GOCACHE=/tmp/go-build go test ./panel/internal/... ./panel/cmd/panel/... -count=1` | 通过 | 通过 | ✓ |
+
+### Phase 4: 流量明细分页统一（增量）
+- **Status:** complete
+- Actions taken:
+  - `/api/nodes/:id/traffic` 改用通用 `parseID` + `parseLimitOffset`。
+  - 新增该接口分页参数回归测试，覆盖超限/非法值/边界值。
+- Files created/modified:
+  - `panel/internal/api/traffic.go` (modified)
+  - `panel/internal/api/traffic_store_guard_test.go` (modified)
+
+## Test Results (2026-02-12, Traffic Pagination)
+| Test | Input | Expected | Actual | Status |
+|------|-------|----------|--------|--------|
+| API 定向测试 | `GOCACHE=/tmp/go-build go test ./panel/internal/api -count=1` | 通过 | 通过 | ✓ |
+| Panel 后端全量 | `GOCACHE=/tmp/go-build go test ./panel/internal/... ./panel/cmd/panel/... -count=1` | 通过 | 通过 | ✓ |

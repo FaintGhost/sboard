@@ -2,7 +2,6 @@ package api
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"sboard/panel/internal/db"
@@ -22,23 +21,16 @@ func NodeTrafficList(store *db.Store) gin.HandlerFunc {
 			return
 		}
 
-		id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+		id, err := parseID(c.Param("id"))
 		if err != nil || id <= 0 {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
 			return
 		}
 
-		limit := 50
-		if v := c.Query("limit"); v != "" {
-			if n, err := strconv.Atoi(v); err == nil && n >= 1 && n <= 500 {
-				limit = n
-			}
-		}
-		offset := 0
-		if v := c.Query("offset"); v != "" {
-			if n, err := strconv.Atoi(v); err == nil && n >= 0 && n <= 1_000_000 {
-				offset = n
-			}
+		limit, offset, err := parseLimitOffset(c)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid pagination"})
+			return
 		}
 
 		items, err := store.ListNodeTrafficSamples(c.Request.Context(), id, limit, offset)

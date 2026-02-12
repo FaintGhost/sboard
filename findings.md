@@ -890,3 +890,5 @@
   - `NodeTrafficList`、`TrafficNodesSummary`、`TrafficTotalSummary`、`TrafficTimeseries` 统一先执行 `ensureStore`。
   - 缺失 store 时统一返回 `500 {"error":"store not ready"}`。
 - 覆盖：新增 `traffic_store_guard_test.go`，一次性覆盖 4 个 traffic 接口。
+- 增量统一：`/api/nodes/:id/traffic` 改为复用通用请求参数解析模块，避免继续维护单独分页分支。
+- 行为变化：该接口对非法分页参数从“静默回退默认值”收敛为“明确返回 400 invalid pagination”，便于客户端快速发现参数错误。

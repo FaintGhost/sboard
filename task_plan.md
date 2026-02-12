@@ -900,3 +900,9 @@ Complete
 - [x] 新增 nil store 场景测试覆盖 4 个 traffic 接口
 - [x] 运行后端测试通过
 - **Status:** complete
+
+### Phase 4: 流量明细接口参数解析统一（增量）
+- [x] `GET /api/nodes/:id/traffic` 改为复用 `parseID + parseLimitOffset`
+- [x] 移除该接口独立分页解析分支，统一错误语义为 `invalid pagination`
+- [x] 补分页边界测试（非法值拒绝、500 上限通过）
+- **Status:** complete
