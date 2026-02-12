@@ -1233,3 +1233,40 @@
 | Test | Input | Expected | Actual | Status |
 |------|-------|----------|--------|--------|
 | 同步任务页回归 | `bun run test -- src/pages/sync-jobs-page.test.tsx` | 通过 | 通过 | ✓ |
+
+## Session: 2026-02-12 (Remove Node Menu Sync-Jobs Entry)
+
+### Phase 1: 需求对齐与定位
+- **Status:** complete
+- Actions taken:
+  - 定位节点页二级菜单“查看同步任务”实现。
+  - 确认该文案键仅此一处使用。
+- Files created/modified:
+  - `panel/web/src/pages/nodes-page.tsx` (inspected)
+  - `panel/web/src/i18n/locales/zh.json` (inspected)
+  - `panel/web/src/i18n/locales/en.json` (inspected)
+
+### Phase 2: 代码调整
+- **Status:** complete
+- Actions taken:
+  - 删除节点页菜单项与对应跳转逻辑。
+  - 删除无用 `useNavigate` 引用。
+  - 清理 i18n 键 `nodes.viewSyncJobs`。
+- Files created/modified:
+  - `panel/web/src/pages/nodes-page.tsx` (modified)
+  - `panel/web/src/i18n/locales/zh.json` (modified)
+  - `panel/web/src/i18n/locales/en.json` (modified)
+
+### Phase 3: 验证
+- **Status:** complete
+- Actions taken:
+  - 运行节点页与同步任务页测试。
+  - 执行前端构建。
+- Files created/modified:
+  - N/A
+
+## Test Results (2026-02-12, Remove Redundant Entry)
+| Test | Input | Expected | Actual | Status |
+|------|-------|----------|--------|--------|
+| 页面测试 | `bun run test -- src/pages/nodes-page.test.tsx src/pages/sync-jobs-page.test.tsx` | 通过 | 通过 | ✓ |
+| 前端构建 | `bun run build` | 通过 | 通过（含 chunk size 警告） | ✓ |

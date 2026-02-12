@@ -2,7 +2,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { MoreHorizontal, Pencil, ShieldAlert, Trash2 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 
 import { AsyncButton } from "@/components/ui/async-button";
 import { Button } from "@/components/ui/button";
@@ -105,7 +104,6 @@ function formatDateTime(
 export function NodesPage() {
   const { t, i18n } = useTranslation();
   const timezone = useSystemStore((state) => state.timezone);
-  const navigate = useNavigate();
   const qc = useQueryClient();
   const spacing = tableColumnSpacing.seven;
   const [upserting, setUpserting] = useState<EditState | null>(null);
@@ -454,13 +452,6 @@ export function NodesPage() {
                           >
                             <Pencil className="mr-2 size-4" />
                             {t("common.edit")}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => {
-                              navigate(`/sync-jobs?node_id=${n.id}`);
-                            }}
-                          >
-                            {t("nodes.viewSyncJobs")}
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem

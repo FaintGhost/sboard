@@ -961,3 +961,31 @@ Complete
 ### Phase 3: 验证
 - [x] 更新并通过 `sync-jobs-page` 回归测试
 - **Status:** complete
+
+---
+
+# Session Plan: 移除节点页“查看同步任务”二级菜单入口（2026-02-12）
+
+## Goal
+按用户要求移除节点管理页二级菜单中的“查看同步任务”，避免重复入口与误导路径。
+
+## Current Phase
+Complete
+
+## Phases
+
+### Phase 1: 影响面确认
+- [x] 定位菜单项实现与路由跳转
+- [x] 确认文案键仅在节点页使用
+- **Status:** complete
+
+### Phase 2: 实施
+- [x] 删除节点页菜单项
+- [x] 移除无用 `useNavigate` 依赖
+- [x] 清理中英文无用 i18n 键 `nodes.viewSyncJobs`
+- **Status:** complete
+
+### Phase 3: 验证
+- [x] 运行节点页与同步任务页相关测试
+- [x] 执行前端构建验证
+- **Status:** complete

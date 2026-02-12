@@ -192,7 +192,6 @@
     "healthOffline": "离线",
     "healthOk": "Node 健康检查: OK",
     "healthFailed": "健康检查失败",
-    "viewSyncJobs": "查看同步任务",
     "deleteNode": "删除节点",
     "deleteConfirm": "确定要删除节点 {{name}} 吗？",
     "deleteDialogTitle": "删除节点",

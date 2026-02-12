@@ -907,3 +907,10 @@
 - 用户反馈问题成立：在 `sync-jobs` 表格空态时，按钮文案显示“查看同步任务”，但点击跳转 `/nodes`，形成语义与行为冲突。
 - 根因：`sync-jobs-page` 空态误用了 `nodes.viewSyncJobs` 文案键，并设置了 `actionTo="/nodes"`。
 - 修复策略：移除该空态按钮，仅保留 `暂无数据`，避免误导与页面循环跳转。
+
+## Session Findings (2026-02-12, Remove Redundant Node->SyncJobs Entry)
+- 用户需求明确：不需要节点页二级菜单中的“查看同步任务”入口（侧栏已有统一入口）。
+- 已执行：
+  - 移除 `nodes-page` 中该菜单项及 `useNavigate` 依赖。
+  - 清理无用文案键：`nodes.viewSyncJobs`（中英文）。
+- 结果：避免重复导航入口与操作歧义，页面入口收敛到侧栏主导航。

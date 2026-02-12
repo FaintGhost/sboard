@@ -192,7 +192,6 @@
     "healthOffline": "Offline",
     "healthOk": "Node health check: OK",
     "healthFailed": "Health check failed",
-    "viewSyncJobs": "View Sync Jobs",
     "deleteNode": "Delete Node",
     "deleteConfirm": "Are you sure you want to delete node {{name}}?",
     "deleteDialogTitle": "Delete Node",
