@@ -832,3 +832,10 @@
 - `GOCACHE=/tmp/go-build go test ./panel/internal/api -count=1` 通过
 - `GOCACHE=/tmp/go-build go test ./panel/internal/... ./panel/cmd/panel/... -count=1` 通过
 - `GOCACHE=/tmp/go-build go test ./node/internal/... ./node/cmd/node/... -count=1` 通过
+
+### 后续改进（本轮继续完成）
+- Node 同步接口已增加请求体大小上限（4 MiB），超限返回 `413 body too large`，降低异常大包导致的内存压力风险。
+- `panel/internal/api/node_sync_helpers.go` 已按职责拆分：
+  - 编排主流程保留在 `node_sync_helpers.go`
+  - 通用运行时辅助函数迁移到 `node_sync_runtime_helpers.go`
+- 拆分为无行为改动，相关 API 回归与 panel/node 后端全量测试均通过。

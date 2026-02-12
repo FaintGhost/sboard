@@ -14,13 +14,20 @@ import (
 )
 
 const nodeSyncDebugPayloadEnv = "NODE_SYNC_DEBUG_PAYLOAD"
+const maxSyncBodyBytes int64 = 4 << 20 // 4 MiB
 
 func ConfigSync(c *gin.Context, secret string, core Core) {
 	if !requireBearer(c, secret) {
 		return
 	}
-	body, err := io.ReadAll(c.Request.Body)
+	limitedBody := http.MaxBytesReader(c.Writer, c.Request.Body, maxSyncBodyBytes)
+	body, err := io.ReadAll(limitedBody)
 	if err != nil {
+		var maxBytesErr *http.MaxBytesError
+		if errors.As(err, &maxBytesErr) {
+			c.JSON(http.StatusRequestEntityTooLarge, gin.H{"error": "body too large"})
+			return
+		}
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid body"})
 		return
 	}

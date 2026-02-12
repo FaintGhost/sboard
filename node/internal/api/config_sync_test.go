@@ -44,6 +44,17 @@ func TestConfigSyncBranches(t *testing.T) {
 		require.Contains(t, w.Body.String(), "invalid body")
 	})
 
+	t.Run("body too large", func(t *testing.T) {
+		r := newTestRouter(&fakeCore{}, nil)
+		w := httptest.NewRecorder()
+		oversized := strings.Repeat("a", (4<<20)+1)
+		req := httptest.NewRequest(http.MethodPost, "/api/config/sync", strings.NewReader(oversized))
+		req.Header.Set("Authorization", "Bearer secret")
+		r.ServeHTTP(w, req)
+		require.Equal(t, http.StatusRequestEntityTooLarge, w.Code)
+		require.Contains(t, w.Body.String(), "body too large")
+	})
+
 	t.Run("bad request error -> 400", func(t *testing.T) {
 		r := newTestRouter(&fakeCore{err: sync2.BadRequestError{Message: "bad config"}}, nil)
 		w := httptest.NewRecorder()

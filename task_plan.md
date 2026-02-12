@@ -809,6 +809,16 @@ Complete
 - [x] 更新 `findings.md` 与 `progress.md`
 - **Status:** complete
 
+### Phase 6: Node Sync 请求体防护
+- [x] 为 `POST /api/config/sync` 增加 body size 上限
+- [x] 增加 413 回归测试
+- **Status:** complete
+
+### Phase 7: 同步编排模块拆分
+- [x] 拆分 `node_sync_helpers.go`，将运行时辅助函数迁移到独立文件
+- [x] 保持行为不变并通过全量回归
+- **Status:** complete
+
 ## Risks
 - `users status` 由“存储状态 + 运行时状态”组合计算，分页修复需兼顾正确性与性能。
 - `group_id` 字段的 JSON 绑定改动可能影响现有更新分支，必须补测试兜底。

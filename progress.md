@@ -1019,3 +1019,30 @@
 | API 定向回归 | `GOCACHE=/tmp/go-build go test ./panel/internal/api -count=1` | 通过 | 通过 | ✓ |
 | Panel 后端回归 | `GOCACHE=/tmp/go-build go test ./panel/internal/... ./panel/cmd/panel/... -count=1` | 通过 | 通过 | ✓ |
 | Node 后端回归 | `GOCACHE=/tmp/go-build go test ./node/internal/... ./node/cmd/node/... -count=1` | 通过 | 通过 | ✓ |
+
+### Phase 6: Node Sync 请求体防护
+- **Status:** complete
+- Actions taken:
+  - `ConfigSync` 使用 `http.MaxBytesReader` 限制请求体大小为 4 MiB。
+  - 超限错误映射为 `413 body too large`。
+  - 增加超限回归测试。
+- Files created/modified:
+  - `node/internal/api/config_sync.go` (modified)
+  - `node/internal/api/config_sync_test.go` (modified)
+
+### Phase 7: 同步编排模块拆分
+- **Status:** complete
+- Actions taken:
+  - 拆分 `panel/internal/api/node_sync_helpers.go`，将工具函数迁移至新文件。
+  - 保持函数签名和调用关系不变，降低单文件职责密度。
+- Files created/modified:
+  - `panel/internal/api/node_sync_helpers.go` (modified)
+  - `panel/internal/api/node_sync_runtime_helpers.go` (created)
+
+## Test Results (Follow-up)
+| Test | Input | Expected | Actual | Status |
+|------|-------|----------|--------|--------|
+| Node API 定向 | `GOCACHE=/tmp/go-build go test ./node/internal/api -count=1` | 通过 | 通过 | ✓ |
+| Panel API 定向 | `GOCACHE=/tmp/go-build go test ./panel/internal/api -count=1` | 通过 | 通过 | ✓ |
+| Panel 后端回归 | `GOCACHE=/tmp/go-build go test ./panel/internal/... ./panel/cmd/panel/... -count=1` | 通过 | 通过 | ✓ |
+| Node 后端回归 | `GOCACHE=/tmp/go-build go test ./node/internal/... ./node/cmd/node/... -count=1` | 通过 | 通过 | ✓ |
