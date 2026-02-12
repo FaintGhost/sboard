@@ -771,3 +771,51 @@ Complete
 - [x] 复跑 `panel`/`node` 全量 Go 测试与覆盖率
 - [x] 更新 `findings.md` 与 `progress.md`
 - **Status:** complete
+
+---
+
+# Session Plan: 后端健壮性与模块化整改（2026-02-12）
+
+## Goal
+根据本轮后端审查结果，修复影响正确性与可维护性的关键问题，并补齐回归测试，确保行为可验证。
+
+## Current Phase
+Complete
+
+## Phases
+
+### Phase 1: 基线与问题固化
+- [x] 运行后端测试基线并确认通过
+- [x] 固化问题清单与优先级
+- **Status:** complete
+
+### Phase 2: 用户删除与同步一致性
+- [x] 修复 `hard delete` 用户后未触发节点同步的问题
+- [x] 增加回归测试（覆盖有分组绑定的硬删除）
+- **Status:** complete
+
+### Phase 3: 用户状态筛选分页正确性
+- [x] 修复“先分页后筛选”导致的结果偏差
+- [x] 增加回归测试（小 limit + offset 场景）
+- **Status:** complete
+
+### Phase 4: 节点 group_id 可置空更新
+- [x] 修复 `PUT /api/nodes/:id` 无法设置 `group_id = null`
+- [x] 增加回归测试（置空与非法值）
+- **Status:** complete
+
+### Phase 5: 回归验证与文档更新
+- [x] 运行受影响后端测试集
+- [x] 更新 `findings.md` 与 `progress.md`
+- **Status:** complete
+
+## Risks
+- `users status` 由“存储状态 + 运行时状态”组合计算，分页修复需兼顾正确性与性能。
+- `group_id` 字段的 JSON 绑定改动可能影响现有更新分支，必须补测试兜底。
+
+## Decisions Made
+| Decision | Rationale |
+|----------|-----------|
+| 先修复 correctness 再做结构重构 | 先消除行为风险，控制改动面 |
+| 使用增量扫描方式修复状态筛选分页 | 保持现有接口语义，同时确保分页正确 |
+| 通过字段级 presence 解析支持 group_id 置空 | 避免大规模改 DTO 绑定模型 |

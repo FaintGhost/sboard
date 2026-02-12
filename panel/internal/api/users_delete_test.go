@@ -6,11 +6,13 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"sboard/panel/internal/api"
 	"sboard/panel/internal/config"
+	"sboard/panel/internal/node"
 )
 
 func TestUsersDelete_SoftDeleteAndHardDelete(t *testing.T) {
@@ -96,4 +98,71 @@ func TestUsersDelete_InvalidIDAndNotFound(t *testing.T) {
 	req.Header.Set("Authorization", "Bearer "+token)
 	r.ServeHTTP(w, req)
 	require.Equal(t, http.StatusNotFound, w.Code)
+}
+
+func TestUsersDelete_HardDelete_AutoSyncsNodesByUserGroups(t *testing.T) {
+	doer := &usersAPIFakeDoer{}
+	restore := api.SetNodeClientFactoryForTest(func() *node.Client {
+		return node.NewClient(doer)
+	})
+	t.Cleanup(restore)
+
+	cfg := config.Config{JWTSecret: "secret"}
+	store := setupStore(t)
+	r := api.NewRouter(cfg, store)
+	token := mustToken(cfg.JWTSecret)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/api/groups", strings.NewReader(`{"name":"g-hard-delete","description":""}`))
+	req.Header.Set("Authorization", "Bearer "+token)
+	r.ServeHTTP(w, req)
+	require.Equal(t, http.StatusCreated, w.Code)
+	var g groupResp
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &g))
+
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest(
+		http.MethodPost,
+		"/api/nodes",
+		strings.NewReader(fmt.Sprintf(`{"name":"node-hard-delete","api_address":"127.0.0.1","api_port":3000,"secret_key":"secret","public_address":"a.example.com","group_id":%d}`, g.Data.ID)),
+	)
+	req.Header.Set("Authorization", "Bearer "+token)
+	r.ServeHTTP(w, req)
+	require.Equal(t, http.StatusCreated, w.Code)
+	var n nodeResp
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &n))
+
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest(
+		http.MethodPost,
+		"/api/inbounds",
+		strings.NewReader(fmt.Sprintf(`{"node_id":%d,"tag":"hard-delete-sync","protocol":"vless","listen_port":6543,"public_port":6543,"settings":{}}`, n.Data.ID)),
+	)
+	req.Header.Set("Authorization", "Bearer "+token)
+	r.ServeHTTP(w, req)
+	require.Equal(t, http.StatusCreated, w.Code)
+
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest(http.MethodPost, "/api/users", strings.NewReader(`{"username":"hard-delete-user"}`))
+	req.Header.Set("Authorization", "Bearer "+token)
+	r.ServeHTTP(w, req)
+	require.Equal(t, http.StatusCreated, w.Code)
+	var u userResp
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &u))
+
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest(http.MethodPut, fmt.Sprintf("/api/users/%d/groups", u.Data.ID), strings.NewReader(fmt.Sprintf(`{"group_ids":[%d]}`, g.Data.ID)))
+	req.Header.Set("Authorization", "Bearer "+token)
+	r.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	syncBeforeDelete := atomic.LoadInt32(&doer.got)
+
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest(http.MethodDelete, fmt.Sprintf("/api/users/%d?hard=true", u.Data.ID), nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	r.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	require.Equal(t, syncBeforeDelete+1, atomic.LoadInt32(&doer.got))
 }

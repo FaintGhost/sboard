@@ -796,3 +796,39 @@
 - Panel 总覆盖率：`69.0% -> 70.1%`
 - Node 总覆盖率：`77.0%`
 - 后端合并覆盖率：`69.9% -> 70.9%`
+
+---
+
+## Session Findings (2026-02-12, Backend Robustness Audit)
+
+### 审查结论摘要
+- 后端整体分层基本清晰（API/DB/Node client/core），但 Panel API 层存在少量 correctness 与边界问题。
+- 测试基线通过（panel/node 后端测试均通过），但有关键行为缺口未被当前测试覆盖。
+
+### 关键问题（待修复）
+- `UsersDelete(hard=true)` 删除后未触发相关节点同步，存在节点侧旧用户残留风险。
+- `UsersList(status=...)` 当前是“数据库分页后再内存筛选”，在 limit/offset 下可能漏数据。
+- `NodesUpdate` 无法表达 `group_id=null`，导致节点无法解绑分组。
+
+### 本轮修复策略
+- 先补失败场景测试，再最小实现修复，再跑回归（TDD 风格执行）。
+- 不做大规模目录重构，先保证行为正确和接口稳定。
+
+### 修复结果（已完成）
+- `UsersDelete(hard=true)` 现在会先读取用户分组，再在删除成功后触发分组相关节点同步，修复删除后节点配置残留风险。
+- `UsersList(status=...)` 改为按有效状态增量扫描并在过滤后应用 `limit/offset`，修复分页语义偏差。
+- `NodesUpdate` 新增字段 presence 解析，支持 `group_id: null` 显式解绑；同时拦截 `group_id <= 0` 非法输入。
+
+### 新增回归测试
+- `panel/internal/api/users_delete_test.go`
+  - `TestUsersDelete_HardDelete_AutoSyncsNodesByUserGroups`
+- `panel/internal/api/users_test.go`
+  - `TestUsersAPI_StatusFilterPagination`
+- `panel/internal/api/handlers_validation_test.go`
+  - `TestNodesUpdate_GroupIDCanBeClearedWithNull`
+  - `TestNodesUpdateValidationBranches` 增补 `invalid group id` 分支
+
+### 验证结果
+- `GOCACHE=/tmp/go-build go test ./panel/internal/api -count=1` 通过
+- `GOCACHE=/tmp/go-build go test ./panel/internal/... ./panel/cmd/panel/... -count=1` 通过
+- `GOCACHE=/tmp/go-build go test ./node/internal/... ./node/cmd/node/... -count=1` 通过

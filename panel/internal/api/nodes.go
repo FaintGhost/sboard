@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 	"strings"
@@ -34,13 +35,31 @@ type createNodeReq struct {
 }
 
 type updateNodeReq struct {
-	Name          *string `json:"name"`
-	APIAddress    *string `json:"api_address"`
-	APIPort       *int    `json:"api_port"`
-	SecretKey     *string `json:"secret_key"`
-	PublicAddress *string `json:"public_address"`
-	GroupID       *int64  `json:"group_id"`
-	GroupIDSet    bool    `json:"-"`
+	Name          *string       `json:"name"`
+	APIAddress    *string       `json:"api_address"`
+	APIPort       *int          `json:"api_port"`
+	SecretKey     *string       `json:"secret_key"`
+	PublicAddress *string       `json:"public_address"`
+	GroupID       optionalInt64 `json:"group_id"`
+}
+
+type optionalInt64 struct {
+	Set   bool
+	Value *int64
+}
+
+func (o *optionalInt64) UnmarshalJSON(data []byte) error {
+	o.Set = true
+	if string(data) == "null" {
+		o.Value = nil
+		return nil
+	}
+	var value int64
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	o.Value = &value
+	return nil
 }
 
 func NodesCreate(store *db.Store) gin.HandlerFunc {
@@ -180,9 +199,13 @@ func NodesUpdate(store *db.Store) gin.HandlerFunc {
 			}
 			upd.PublicAddress = &addr
 		}
-		if req.GroupID != nil {
+		if req.GroupID.Set {
+			if req.GroupID.Value != nil && *req.GroupID.Value <= 0 {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "invalid group_id"})
+				return
+			}
 			upd.GroupIDSet = true
-			upd.GroupID = req.GroupID
+			upd.GroupID = req.GroupID.Value
 		}
 		n, err := store.UpdateNode(c.Request.Context(), id, upd)
 		if err != nil {

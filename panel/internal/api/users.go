@@ -101,19 +101,10 @@ func UsersList(store *db.Store) gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid status"})
 			return
 		}
-		users, err := store.ListUsers(c.Request.Context(), limit, offset, "")
+		users, err := listUsersForStatus(c.Request.Context(), store, status, limit, offset)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "list users failed"})
 			return
-		}
-		if status != "" {
-			filtered := make([]db.User, 0, len(users))
-			for _, u := range users {
-				if effectiveUserStatus(u) == status {
-					filtered = append(filtered, u)
-				}
-			}
-			users = filtered
 		}
 
 		// Batch fetch group IDs to avoid N+1 queries
@@ -223,6 +214,11 @@ func UsersDelete(store *db.Store) gin.HandlerFunc {
 		hard := c.Query("hard") == "true"
 
 		if hard {
+			groupIDs, err := store.ListUserGroupIDs(c.Request.Context(), id)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "list user groups failed"})
+				return
+			}
 			if err := store.DeleteUser(c.Request.Context(), id); err != nil {
 				if errors.Is(err, db.ErrNotFound) {
 					c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
@@ -231,6 +227,7 @@ func UsersDelete(store *db.Store) gin.HandlerFunc {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "delete user failed"})
 				return
 			}
+			syncNodesByGroupIDsWithSource(c.Request.Context(), store, groupIDs, triggerSourceUser)
 			c.JSON(http.StatusOK, gin.H{"message": "user deleted"})
 			return
 		}
@@ -281,6 +278,45 @@ func ensureStore(c *gin.Context, store *db.Store) bool {
 		return false
 	}
 	return true
+}
+
+func listUsersForStatus(ctx context.Context, store *db.Store, status string, limit int, offset int) ([]db.User, error) {
+	if status == "" {
+		return store.ListUsers(ctx, limit, offset, "")
+	}
+	if limit == 0 {
+		return []db.User{}, nil
+	}
+
+	const scanBatchSize = 200
+	out := make([]db.User, 0, limit)
+	scanOffset := 0
+	filteredOffset := 0
+
+	for {
+		batch, err := store.ListUsers(ctx, scanBatchSize, scanOffset, "")
+		if err != nil {
+			return nil, err
+		}
+		if len(batch) == 0 {
+			return out, nil
+		}
+		scanOffset += len(batch)
+
+		for _, user := range batch {
+			if effectiveUserStatus(user) != status {
+				continue
+			}
+			if filteredOffset < offset {
+				filteredOffset++
+				continue
+			}
+			out = append(out, user)
+			if len(out) >= limit {
+				return out, nil
+			}
+		}
+	}
 }
 
 func parseLimitOffset(c *gin.Context) (int, int, error) {

@@ -63,6 +63,7 @@ func TestNodesUpdateValidationBranches(t *testing.T) {
 		{name: "invalid api port", path: fmt.Sprintf("/api/nodes/%d", node.ID), body: `{"api_port":0}`, status: http.StatusBadRequest},
 		{name: "invalid secret", path: fmt.Sprintf("/api/nodes/%d", node.ID), body: `{"secret_key":""}`, status: http.StatusBadRequest},
 		{name: "invalid public address", path: fmt.Sprintf("/api/nodes/%d", node.ID), body: `{"public_address":""}`, status: http.StatusBadRequest},
+		{name: "invalid group id", path: fmt.Sprintf("/api/nodes/%d", node.ID), body: `{"group_id":0}`, status: http.StatusBadRequest},
 		{name: "not found", path: "/api/nodes/999999", body: `{"name":"n2"}`, status: http.StatusNotFound},
 	}
 
@@ -84,6 +85,40 @@ func TestNodesUpdateValidationBranches(t *testing.T) {
 	r.ServeHTTP(w, req)
 	require.Equal(t, http.StatusOK, w.Code)
 	require.Contains(t, w.Body.String(), "node-updated")
+}
+
+func TestNodesUpdate_GroupIDCanBeClearedWithNull(t *testing.T) {
+	cfg := config.Config{JWTSecret: "secret"}
+	store := setupStore(t)
+	r := api.NewRouter(cfg, store)
+	token := mustToken(cfg.JWTSecret)
+
+	group, err := store.CreateGroup(t.Context(), "g-nullable", "")
+	require.NoError(t, err)
+	node := createNodeForAPITests(t, store)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPut, fmt.Sprintf("/api/nodes/%d", node.ID), strings.NewReader(fmt.Sprintf(`{"group_id":%d}`, group.ID)))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	r.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var withGroup nodeResp
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &withGroup))
+	require.NotNil(t, withGroup.Data.GroupID)
+	require.Equal(t, group.ID, *withGroup.Data.GroupID)
+
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest(http.MethodPut, fmt.Sprintf("/api/nodes/%d", node.ID), strings.NewReader(`{"group_id":null}`))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	r.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var cleared nodeResp
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &cleared))
+	require.Nil(t, cleared.Data.GroupID)
 }
 
 func TestGroupsGetAndUpdateValidationBranches(t *testing.T) {

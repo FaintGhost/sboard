@@ -947,3 +947,75 @@
 - Panel：`70.1%`
 - Node：`77.0%`
 - Backend Combined：`70.9%`
+
+---
+
+## Session: 2026-02-12 (Backend Robustness & Modularity)
+
+### Phase 1: 基线与问题固化
+- **Status:** complete
+- Actions taken:
+  - 运行后端测试基线：`GOCACHE=/tmp/go-build go test ./panel/internal/... ./panel/cmd/panel/... -count=1`
+  - 运行后端测试基线：`GOCACHE=/tmp/go-build go test ./node/internal/... ./node/cmd/node/... -count=1`
+  - 完成静态审查并产出分级问题清单。
+- Files created/modified:
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 2: 用户删除与同步一致性
+- **Status:** in_progress
+- Actions taken:
+  - 正在实现 hard delete 同步修复与对应回归测试。
+- Files created/modified:
+  - pending
+
+## Error Log
+| Timestamp | Error | Attempt | Resolution |
+|-----------|-------|---------|------------|
+| 2026-02-12 | `go test` 默认缓存目录无权限写入 | 1 | 改用 `GOCACHE=/tmp/go-build` 成功 |
+
+### Phase 2: 用户删除与同步一致性
+- **Status:** complete
+- Actions taken:
+  - `UsersDelete(hard=true)` 增加删除后按历史分组触发节点同步。
+  - 新增硬删除同步回归测试。
+- Files created/modified:
+  - `panel/internal/api/users.go` (modified)
+  - `panel/internal/api/users_delete_test.go` (modified)
+
+### Phase 3: 用户状态筛选分页正确性
+- **Status:** complete
+- Actions taken:
+  - 新增 `listUsersForStatus` 增量扫描逻辑，过滤后再应用 `offset/limit`。
+  - 新增 `status=disabled` 分页回归测试（`limit=1&offset=1`）。
+- Files created/modified:
+  - `panel/internal/api/users.go` (modified)
+  - `panel/internal/api/users_test.go` (modified)
+
+### Phase 4: 节点 group_id 可置空更新
+- **Status:** complete
+- Actions taken:
+  - `NodesUpdate` 支持 `group_id: null` 显式解绑。
+  - 增加 `group_id<=0` 校验及回归测试。
+- Files created/modified:
+  - `panel/internal/api/nodes.go` (modified)
+  - `panel/internal/api/handlers_validation_test.go` (modified)
+
+### Phase 5: 回归验证与文档更新
+- **Status:** complete
+- Actions taken:
+  - 运行 `panel/internal/api` 定向测试通过。
+  - 运行 panel/node 后端测试集通过。
+  - 更新 planning 文件。
+- Files created/modified:
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+## Test Results
+| Test | Input | Expected | Actual | Status |
+|------|-------|----------|--------|--------|
+| API 定向回归 | `GOCACHE=/tmp/go-build go test ./panel/internal/api -count=1` | 通过 | 通过 | ✓ |
+| Panel 后端回归 | `GOCACHE=/tmp/go-build go test ./panel/internal/... ./panel/cmd/panel/... -count=1` | 通过 | 通过 | ✓ |
+| Node 后端回归 | `GOCACHE=/tmp/go-build go test ./node/internal/... ./node/cmd/node/... -count=1` | 通过 | 通过 | ✓ |

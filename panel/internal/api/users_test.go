@@ -267,6 +267,52 @@ func TestUsersAPI_EffectiveStatusAndFilters(t *testing.T) {
 	assertSingleStatusFilteredUser("disabled", disabledUser.Username)
 }
 
+func TestUsersAPI_StatusFilterPagination(t *testing.T) {
+	cfg := config.Config{JWTSecret: "secret"}
+	store := setupStore(t)
+	r := api.NewRouter(cfg, store)
+	token := mustToken(cfg.JWTSecret)
+
+	disabledOlder, err := store.CreateUser(t.Context(), "disabled-older")
+	require.NoError(t, err)
+	require.NoError(t, store.DisableUser(t.Context(), disabledOlder.ID))
+
+	_, err = store.CreateUser(t.Context(), "active-1")
+	require.NoError(t, err)
+	_, err = store.CreateUser(t.Context(), "active-2")
+	require.NoError(t, err)
+	_, err = store.CreateUser(t.Context(), "active-3")
+	require.NoError(t, err)
+
+	disabledNewer, err := store.CreateUser(t.Context(), "disabled-newer")
+	require.NoError(t, err)
+	require.NoError(t, store.DisableUser(t.Context(), disabledNewer.ID))
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/api/users?status=disabled&limit=1&offset=0", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	r.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var page1 listResp
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &page1))
+	require.Len(t, page1.Data, 1)
+	require.Equal(t, "disabled-newer", page1.Data[0].Username)
+	require.Equal(t, "disabled", page1.Data[0].Status)
+
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest(http.MethodGet, "/api/users?status=disabled&limit=1&offset=1", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	r.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var page2 listResp
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &page2))
+	require.Len(t, page2.Data, 1)
+	require.Equal(t, "disabled-older", page2.Data[0].Username)
+	require.Equal(t, "disabled", page2.Data[0].Status)
+}
+
 func TestUsersAPI_UpdateAndDisable_AutoSyncsNodesByUserGroups(t *testing.T) {
 	doer := &usersAPIFakeDoer{}
 	restore := api.SetNodeClientFactoryForTest(func() *node.Client {
