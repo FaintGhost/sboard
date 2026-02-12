@@ -18,6 +18,10 @@ type nodeTrafficSampleDTO struct {
 
 func NodeTrafficList(store *db.Store) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		if !ensureStore(c, store) {
+			return
+		}
+
 		id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 		if err != nil || id <= 0 {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})

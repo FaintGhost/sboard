@@ -38,6 +38,9 @@ type trafficTimeseriesPointDTO struct {
 func TrafficNodesSummary(store *db.Store) gin.HandlerFunc {
 	p := traffic.NewSQLiteProvider(store)
 	return func(c *gin.Context) {
+		if !ensureStore(c, store) {
+			return
+		}
 		window := parseWindowOrDefault(c.Query("window"), 24*time.Hour)
 		if window < 0 {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid window"})
@@ -66,6 +69,9 @@ func TrafficNodesSummary(store *db.Store) gin.HandlerFunc {
 func TrafficTotalSummary(store *db.Store) gin.HandlerFunc {
 	p := traffic.NewSQLiteProvider(store)
 	return func(c *gin.Context) {
+		if !ensureStore(c, store) {
+			return
+		}
 		window := parseWindowOrDefault(c.Query("window"), 24*time.Hour)
 		if window < 0 {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid window"})
@@ -90,6 +96,9 @@ func TrafficTotalSummary(store *db.Store) gin.HandlerFunc {
 func TrafficTimeseries(store *db.Store) gin.HandlerFunc {
 	p := traffic.NewSQLiteProvider(store)
 	return func(c *gin.Context) {
+		if !ensureStore(c, store) {
+			return
+		}
 		window := parseWindowOrDefault(c.Query("window"), 24*time.Hour)
 		if window < 0 {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid window"})

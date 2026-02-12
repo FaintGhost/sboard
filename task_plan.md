@@ -873,3 +873,30 @@ Complete
 - [x] 新增跨接口分页边界测试（超限拒绝 + 边界值通过）
 - [x] 运行后端相关测试
 - **Status:** complete
+
+---
+
+# Session Plan: Traffic Handler Store Guard 一致性修复（2026-02-12）
+
+## Goal
+统一 traffic 相关 API 的 `store` 就绪检查，避免 `store=nil` 时行为不一致（panic/recovery 或错误信息漂移）。
+
+## Current Phase
+Complete
+
+## Phases
+
+### Phase 1: 同类问题排查
+- [x] 排查所有使用 `*db.Store` 的 traffic handler
+- [x] 识别 `NodeTrafficList` 与 traffic aggregate 三个接口缺少 `ensureStore`
+- **Status:** complete
+
+### Phase 2: 统一修复
+- [x] 在 `NodeTrafficList` 增加 `ensureStore`
+- [x] 在 `TrafficNodesSummary/TrafficTotalSummary/TrafficTimeseries` 增加 `ensureStore`
+- **Status:** complete
+
+### Phase 3: 回归验证
+- [x] 新增 nil store 场景测试覆盖 4 个 traffic 接口
+- [x] 运行后端测试通过
+- **Status:** complete

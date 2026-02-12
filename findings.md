@@ -880,3 +880,13 @@
   - `GET /api/inbounds`
   - `GET /api/sync-jobs`
 - 测试结论：新增跨接口边界测试，验证超限拒绝与边界值（500）可用。
+
+## Session Findings (2026-02-12, Traffic Store Guard)
+- 同类缺陷定位：traffic 相关 4 个 handler 缺少统一的 `ensureStore` 入口保护。
+- 风险：
+  - `NodeTrafficList` 直接使用 `store`，在 `store=nil` 时依赖 gin recovery，返回体不稳定。
+  - aggregate 接口虽不会 panic（provider 内部有 nil 检查），但错误语义与其他 API 不一致。
+- 修复：
+  - `NodeTrafficList`、`TrafficNodesSummary`、`TrafficTotalSummary`、`TrafficTimeseries` 统一先执行 `ensureStore`。
+  - 缺失 store 时统一返回 `500 {"error":"store not ready"}`。
+- 覆盖：新增 `traffic_store_guard_test.go`，一次性覆盖 4 个 traffic 接口。

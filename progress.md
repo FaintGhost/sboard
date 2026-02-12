@@ -1119,3 +1119,37 @@
 |------|-------|----------|--------|--------|
 | API 定向测试 | `GOCACHE=/tmp/go-build go test ./panel/internal/api -count=1` | 通过 | 通过 | ✓ |
 | Panel 后端全量 | `GOCACHE=/tmp/go-build go test ./panel/internal/... ./panel/cmd/panel/... -count=1` | 通过 | 通过 | ✓ |
+
+## Session: 2026-02-12 (Traffic Store Guard Consistency)
+
+### Phase 1: 同类缺陷排查
+- **Status:** complete
+- Actions taken:
+  - 审查 traffic 相关 handler 的 store 访问路径。
+  - 识别 4 个接口缺少统一 `ensureStore` 保护。
+- Files created/modified:
+  - `panel/internal/api/traffic.go` (inspected)
+  - `panel/internal/api/traffic_aggregate.go` (inspected)
+
+### Phase 2: 统一修复
+- **Status:** complete
+- Actions taken:
+  - 在 `NodeTrafficList` 增加 store guard。
+  - 在 3 个 traffic aggregate 接口增加 store guard。
+- Files created/modified:
+  - `panel/internal/api/traffic.go` (modified)
+  - `panel/internal/api/traffic_aggregate.go` (modified)
+
+### Phase 3: 回归测试
+- **Status:** complete
+- Actions taken:
+  - 新增 nil store 场景回归测试，覆盖 4 个 traffic 接口。
+  - 运行后端测试通过。
+- Files created/modified:
+  - `panel/internal/api/traffic_store_guard_test.go` (created)
+
+## Test Results (2026-02-12, Traffic)
+| Test | Input | Expected | Actual | Status |
+|------|-------|----------|--------|--------|
+| API 定向测试 | `GOCACHE=/tmp/go-build go test ./panel/internal/api -count=1` | 通过 | 通过 | ✓ |
+| Panel 后端全量 | `GOCACHE=/tmp/go-build go test ./panel/internal/... ./panel/cmd/panel/... -count=1` | 通过 | 通过 | ✓ |
