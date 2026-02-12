@@ -116,6 +116,56 @@ func (s *Store) ListUsers(ctx context.Context, limit, offset int, status string)
 	return out, rows.Err()
 }
 
+// ListUsersByEffectiveStatus returns users by effective status for statuses that can be
+// fully expressed by persisted fields without traffic reset side effects.
+// Currently supported statuses: "disabled", "expired".
+func (s *Store) ListUsersByEffectiveStatus(ctx context.Context, limit, offset int, status string, now time.Time) ([]User, error) {
+	var query string
+	var args []any
+
+	switch status {
+	case "disabled":
+		query = `SELECT id, uuid, username, traffic_limit, traffic_used, traffic_reset_day, traffic_last_reset_at, expire_at, status
+    FROM users WHERE status = ? ORDER BY id DESC LIMIT ? OFFSET ?`
+		args = []any{"disabled", limit, offset}
+	case "expired":
+		query = `SELECT id, uuid, username, traffic_limit, traffic_used, traffic_reset_day, traffic_last_reset_at, expire_at, status
+    FROM users
+    WHERE status = 'expired'
+      OR (
+        status NOT IN ('disabled', 'expired', 'traffic_exceeded')
+        AND expire_at IS NOT NULL
+        AND expire_at <= ?
+      )
+    ORDER BY id DESC LIMIT ? OFFSET ?`
+		if now.IsZero() {
+			now = s.nowUTC()
+		}
+		args = []any{now.UTC().Format(time.RFC3339), limit, offset}
+	default:
+		return nil, fmt.Errorf("unsupported effective status")
+	}
+
+	rows, err := s.DB.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := make([]User, 0)
+	for rows.Next() {
+		u, err := scanUser(rows)
+		if err != nil {
+			return nil, err
+		}
+		if err := s.applyTrafficResetIfNeeded(ctx, &u); err != nil {
+			return nil, err
+		}
+		out = append(out, u)
+	}
+	return out, rows.Err()
+}
+
 func (s *Store) UpdateUser(ctx context.Context, id int64, update UserUpdate) (User, error) {
 	sets := []string{}
 	args := []any{}

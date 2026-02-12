@@ -1046,3 +1046,22 @@
 | Panel API 定向 | `GOCACHE=/tmp/go-build go test ./panel/internal/api -count=1` | 通过 | 通过 | ✓ |
 | Panel 后端回归 | `GOCACHE=/tmp/go-build go test ./panel/internal/... ./panel/cmd/panel/... -count=1` | 通过 | 通过 | ✓ |
 | Node 后端回归 | `GOCACHE=/tmp/go-build go test ./node/internal/... ./node/cmd/node/... -count=1` | 通过 | 通过 | ✓ |
+
+### Phase 8: Users 状态筛选性能优化（增量）
+- **Status:** complete
+- Actions taken:
+  - 新增 `Store.ListUsersByEffectiveStatus`（支持 `disabled|expired`）。
+  - `UsersList` 在上述状态下改走 DB 分页过滤。
+  - `active|traffic_exceeded` 维持增量扫描，保证流量重置语义不被破坏。
+  - 新增 expired 分页回归测试。
+- Files created/modified:
+  - `panel/internal/db/users.go` (modified)
+  - `panel/internal/api/users.go` (modified)
+  - `panel/internal/api/users_test.go` (modified)
+
+## Test Results (Users Status Optimization)
+| Test | Input | Expected | Actual | Status |
+|------|-------|----------|--------|--------|
+| 定向回归 | `GOCACHE=/tmp/go-build go test ./panel/internal/api ./panel/internal/db -count=1` | 通过 | 通过 | ✓ |
+| Panel 后端回归 | `GOCACHE=/tmp/go-build go test ./panel/internal/... ./panel/cmd/panel/... -count=1` | 通过 | 通过 | ✓ |
+| Node 后端回归 | `GOCACHE=/tmp/go-build go test ./node/internal/... ./node/cmd/node/... -count=1` | 通过 | 通过 | ✓ |

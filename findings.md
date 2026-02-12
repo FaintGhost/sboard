@@ -839,3 +839,14 @@
   - 编排主流程保留在 `node_sync_helpers.go`
   - 通用运行时辅助函数迁移到 `node_sync_runtime_helpers.go`
 - 拆分为无行为改动，相关 API 回归与 panel/node 后端全量测试均通过。
+
+### Users 状态筛选优化（2026-02-12，增量）
+- 已覆盖范围：
+  - `disabled`：直接走 DB 状态过滤分页。
+  - `expired`：走 DB 有效状态过滤分页（包含显式 expired + 到期计算）。
+- 未覆盖范围：
+  - `active`、`traffic_exceeded` 仍保留增量扫描。
+- 原因：
+  - 这两类状态与 `traffic_last_reset_at` 的按月重置副作用耦合，直接 SQL 过滤存在语义偏差风险。
+- 后续补齐计划：
+  - 若要继续下沉 DB，需先引入“重置后有效流量”的可查询模型（例如周期批处理或派生列）再切换查询路径。

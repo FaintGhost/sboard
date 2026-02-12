@@ -313,6 +313,51 @@ func TestUsersAPI_StatusFilterPagination(t *testing.T) {
 	require.Equal(t, "disabled", page2.Data[0].Status)
 }
 
+func TestUsersAPI_StatusFilterPagination_Expired(t *testing.T) {
+	cfg := config.Config{JWTSecret: "secret"}
+	store := setupStore(t)
+	r := api.NewRouter(cfg, store)
+	token := mustToken(cfg.JWTSecret)
+
+	expiredOlder, err := store.CreateUser(t.Context(), "expired-older")
+	require.NoError(t, err)
+	_, err = store.DB.Exec("UPDATE users SET status = 'expired' WHERE id = ?", expiredOlder.ID)
+	require.NoError(t, err)
+
+	_, err = store.CreateUser(t.Context(), "active-between")
+	require.NoError(t, err)
+
+	expiredNewer, err := store.CreateUser(t.Context(), "expired-newer")
+	require.NoError(t, err)
+	expiredAt := time.Now().UTC().Add(-1 * time.Hour).Format(time.RFC3339)
+	_, err = store.DB.Exec("UPDATE users SET expire_at = ? WHERE id = ?", expiredAt, expiredNewer.ID)
+	require.NoError(t, err)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/api/users?status=expired&limit=1&offset=0", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	r.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var page1 listResp
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &page1))
+	require.Len(t, page1.Data, 1)
+	require.Equal(t, "expired-newer", page1.Data[0].Username)
+	require.Equal(t, "expired", page1.Data[0].Status)
+
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest(http.MethodGet, "/api/users?status=expired&limit=1&offset=1", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	r.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var page2 listResp
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &page2))
+	require.Len(t, page2.Data, 1)
+	require.Equal(t, "expired-older", page2.Data[0].Username)
+	require.Equal(t, "expired", page2.Data[0].Status)
+}
+
 func TestUsersAPI_UpdateAndDisable_AutoSyncsNodesByUserGroups(t *testing.T) {
 	doer := &usersAPIFakeDoer{}
 	restore := api.SetNodeClientFactoryForTest(func() *node.Client {

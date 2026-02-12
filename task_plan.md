@@ -829,3 +829,9 @@ Complete
 | 先修复 correctness 再做结构重构 | 先消除行为风险，控制改动面 |
 | 使用增量扫描方式修复状态筛选分页 | 保持现有接口语义，同时确保分页正确 |
 | 通过字段级 presence 解析支持 group_id 置空 | 避免大规模改 DTO 绑定模型 |
+
+### Phase 8: Users 状态筛选性能优化（增量）
+- [x] 将 `status=disabled|expired` 下沉为 DB 侧有效状态过滤分页
+- [x] 保留 `status=active|traffic_exceeded` 的增量扫描路径（避免流量重置语义偏差）
+- [x] 增加 expired 分页回归测试
+- **Status:** complete

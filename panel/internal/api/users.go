@@ -284,6 +284,9 @@ func listUsersForStatus(ctx context.Context, store *db.Store, status string, lim
 	if status == "" {
 		return store.ListUsers(ctx, limit, offset, "")
 	}
+	if status == userstate.StatusDisabled || status == userstate.StatusExpired {
+		return store.ListUsersByEffectiveStatus(ctx, limit, offset, status, time.Now().UTC())
+	}
 	if limit == 0 {
 		return []db.User{}, nil
 	}
