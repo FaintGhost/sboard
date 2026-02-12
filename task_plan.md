@@ -935,3 +935,29 @@ Complete
 - [x] 回归群组页面测试
 - [x] 前端构建通过
 - **Status:** complete
+
+---
+
+# Session Plan: Sync Jobs 空态错误跳转修复（2026-02-12）
+
+## Goal
+修复 `sync-jobs` 页面空态按钮文案/跳转不一致导致的交互混乱（"查看同步任务" 按钮却跳回节点页）。
+
+## Current Phase
+Complete
+
+## Phases
+
+### Phase 1: 根因定位
+- [x] 确认节点页入口为 `/sync-jobs?node_id=<id>`，逻辑正常
+- [x] 确认问题在 `sync-jobs-page` 空态按钮错误复用 `nodes.viewSyncJobs`
+- **Status:** complete
+
+### Phase 2: 修复
+- [x] 移除 `sync-jobs` 空态的误导跳转按钮
+- [x] 保留空态文案 `暂无数据`
+- **Status:** complete
+
+### Phase 3: 验证
+- [x] 更新并通过 `sync-jobs-page` 回归测试
+- **Status:** complete

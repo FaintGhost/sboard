@@ -1207,3 +1207,29 @@
 |------|-------|----------|--------|--------|
 | API 聚合 + 群组页回归 | `bun run test -- src/lib/api/users.test.ts src/lib/api/nodes.test.ts src/pages/groups-page.test.tsx` | 通过 | 通过 | ✓ |
 | 前端构建 | `bun run build` | 通过 | 通过（含 chunk size 警告） | ✓ |
+
+## Session: 2026-02-12 (Sync Jobs Empty-State UX Fix)
+
+### Phase 1: 问题定位
+- **Status:** complete
+- Actions taken:
+  - 复核 `nodes-page` 与 `sync-jobs-page` 路由与文案链路。
+  - 定位 `sync-jobs` 空态按钮文案/跳转不一致。
+- Files created/modified:
+  - `panel/web/src/pages/nodes-page.tsx` (inspected)
+  - `panel/web/src/pages/sync-jobs-page.tsx` (inspected)
+
+### Phase 2: 修复与回归
+- **Status:** complete
+- Actions taken:
+  - 删除 `sync-jobs` 空态误导跳转按钮。
+  - 补充测试断言：空态下不再出现“查看同步任务”链接。
+  - 运行页面测试通过。
+- Files created/modified:
+  - `panel/web/src/pages/sync-jobs-page.tsx` (modified)
+  - `panel/web/src/pages/sync-jobs-page.test.tsx` (modified)
+
+## Test Results (2026-02-12, Sync Jobs Empty-State)
+| Test | Input | Expected | Actual | Status |
+|------|-------|----------|--------|--------|
+| 同步任务页回归 | `bun run test -- src/pages/sync-jobs-page.test.tsx` | 通过 | 通过 | ✓ |

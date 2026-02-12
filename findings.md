@@ -902,3 +902,8 @@
   - 不做简单“1000->500”降级（会在大数据量下截断数据）。
   - 改为分批聚合拉取，新增 `listAllByPage` + `listAllUsers` + `listAllNodes`，保持“全量语义”。
 - 验证结果：新增 users/nodes API 单测验证分页聚合调用链；群组页回归测试与前端构建均通过。
+
+## Session Findings (2026-02-12, Sync Jobs Empty-State UX Bug)
+- 用户反馈问题成立：在 `sync-jobs` 表格空态时，按钮文案显示“查看同步任务”，但点击跳转 `/nodes`，形成语义与行为冲突。
+- 根因：`sync-jobs-page` 空态误用了 `nodes.viewSyncJobs` 文案键，并设置了 `actionTo="/nodes"`。
+- 修复策略：移除该空态按钮，仅保留 `暂无数据`，避免误导与页面循环跳转。

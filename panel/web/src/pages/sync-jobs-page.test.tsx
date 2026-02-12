@@ -219,5 +219,6 @@ describe("SyncJobsPage", () => {
 
     resolveRetrySource();
     expect(await screen.findByText("暂无数据")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "查看同步任务" })).not.toBeInTheDocument();
   });
 });
