@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
@@ -13,8 +12,6 @@ import (
 	"sboard/panel/internal/db"
 	"sboard/panel/internal/userstate"
 )
-
-const defaultUserListLimit = 50
 
 var allowedUserStatus = map[string]struct{}{
 	"active":           {},
@@ -291,24 +288,6 @@ func listUsersForStatus(ctx context.Context, store *db.Store, status string, lim
 		return store.ListUsersByEffectiveStatus(ctx, limit, offset, status, time.Now().UTC())
 	}
 	return nil, errors.New("unsupported status")
-}
-
-func parseLimitOffset(c *gin.Context) (int, int, error) {
-	limitStr := c.DefaultQuery("limit", strconv.Itoa(defaultUserListLimit))
-	offsetStr := c.DefaultQuery("offset", "0")
-	limit, err := strconv.Atoi(limitStr)
-	if err != nil || limit < 0 {
-		return 0, 0, errors.New("invalid limit")
-	}
-	offset, err := strconv.Atoi(offsetStr)
-	if err != nil || offset < 0 {
-		return 0, 0, errors.New("invalid offset")
-	}
-	return limit, offset, nil
-}
-
-func parseID(value string) (int64, error) {
-	return strconv.ParseInt(value, 10, 64)
 }
 
 func parseUserUpdate(req updateUserReq) (db.UserUpdate, error) {

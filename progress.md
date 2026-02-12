@@ -1086,3 +1086,36 @@
 | 定向回归 | `GOCACHE=/tmp/go-build go test ./panel/internal/api ./panel/internal/db -count=1` | 通过 | 通过 | ✓ |
 | Panel 后端回归 | `GOCACHE=/tmp/go-build go test ./panel/internal/... ./panel/cmd/panel/... -count=1` | 通过 | 通过 | ✓ |
 | Node 后端回归 | `GOCACHE=/tmp/go-build go test ./node/internal/... ./node/cmd/node/... -count=1` | 通过 | 通过 | ✓ |
+
+## Session: 2026-02-12 (Backend Pagination Hardening)
+
+### Phase 1: 参数解析模块化
+- **Status:** complete
+- Actions taken:
+  - 新增 `panel/internal/api/request_params.go`。
+  - 抽取 `parseID`、`parseLimitOffset`，从 `users.go` 移除通用参数解析实现。
+- Files created/modified:
+  - `panel/internal/api/request_params.go` (created)
+  - `panel/internal/api/users.go` (modified)
+
+### Phase 2: 健壮性增强
+- **Status:** complete
+- Actions taken:
+  - `parseLimitOffset` 新增统一上限 `maxListLimit=500`。
+  - 超限返回 `invalid pagination`，避免超大批量查询。
+- Files created/modified:
+  - `panel/internal/api/request_params.go` (modified)
+
+### Phase 3: 回归测试
+- **Status:** complete
+- Actions taken:
+  - 新增跨接口分页边界测试，覆盖 users/groups/nodes/inbounds/sync-jobs。
+  - 执行后端测试并通过。
+- Files created/modified:
+  - `panel/internal/api/pagination_validation_test.go` (created)
+
+## Test Results (2026-02-12)
+| Test | Input | Expected | Actual | Status |
+|------|-------|----------|--------|--------|
+| API 定向测试 | `GOCACHE=/tmp/go-build go test ./panel/internal/api -count=1` | 通过 | 通过 | ✓ |
+| Panel 后端全量 | `GOCACHE=/tmp/go-build go test ./panel/internal/... ./panel/cmd/panel/... -count=1` | 通过 | 通过 | ✓ |

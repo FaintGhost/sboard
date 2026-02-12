@@ -865,3 +865,18 @@
   - 目前未做专门性能基准（大规模用户下归一化扫描成本待评估）。
 - 后续补齐计划：
   - 新增 `benchmark` 与分页压力测试；若瓶颈明显，再引入批量重置 SQL 或异步周期任务。
+
+## Session Findings (2026-02-12, Backend Robustness + Modularity)
+- 问题确认：通用分页解析函数与 `parseID` 定义在 `panel/internal/api/users.go`，却被多个 handler 复用，模块边界不清。
+- 风险确认：分页解析对 `limit` 仅校验非负，缺少上限，理论上可触发超大查询请求。
+- 修复决策：
+  - 新建 `panel/internal/api/request_params.go` 作为请求参数模块。
+  - 将 `parseID` 与 `parseLimitOffset` 抽离到独立文件，减少 `users` 模块耦合。
+  - 为通用分页增加 `maxListLimit=500`，超限直接返回 `400 invalid pagination`。
+- 覆盖范围（同类统一修复）：
+  - `GET /api/users`
+  - `GET /api/groups`
+  - `GET /api/nodes`
+  - `GET /api/inbounds`
+  - `GET /api/sync-jobs`
+- 测试结论：新增跨接口边界测试，验证超限拒绝与边界值（500）可用。

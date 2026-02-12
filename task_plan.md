@@ -841,3 +841,35 @@ Complete
 - [x] 引入查询前流量重置归一化，保障语义一致
 - [x] 增加 active 与 traffic_exceeded（含重置边界）回归测试
 - **Status:** complete
+
+---
+
+# Session Plan: 后端分页参数模块化与上限防护（2026-02-12）
+
+## Goal
+统一后端列表接口的分页参数解析，消除跨模块散落实现并加上 `limit` 上限防护，提升健壮性与可维护性。
+
+## Current Phase
+Complete
+
+## Phases
+
+### Phase 1: 现状核查
+- [x] 确认 `users/groups/nodes/inbounds/sync-jobs` 共用分页解析逻辑但定义在 `users.go`
+- [x] 确认现有实现缺少 `limit` 上限，存在单次大查询风险
+- **Status:** complete
+
+### Phase 2: 模块化抽取
+- [x] 新增独立请求参数模块 `request_params.go`
+- [x] 抽取 `parseID` 与 `parseLimitOffset`
+- **Status:** complete
+
+### Phase 3: 健壮性增强
+- [x] 为通用分页解析增加 `maxListLimit=500` 上限约束
+- [x] 保持现有默认值与错误语义（`invalid pagination`）
+- **Status:** complete
+
+### Phase 4: 回归验证
+- [x] 新增跨接口分页边界测试（超限拒绝 + 边界值通过）
+- [x] 运行后端相关测试
+- **Status:** complete
