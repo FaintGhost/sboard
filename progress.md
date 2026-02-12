@@ -1065,3 +1065,24 @@
 | 定向回归 | `GOCACHE=/tmp/go-build go test ./panel/internal/api ./panel/internal/db -count=1` | 通过 | 通过 | ✓ |
 | Panel 后端回归 | `GOCACHE=/tmp/go-build go test ./panel/internal/... ./panel/cmd/panel/... -count=1` | 通过 | 通过 | ✓ |
 | Node 后端回归 | `GOCACHE=/tmp/go-build go test ./node/internal/... ./node/cmd/node/... -count=1` | 通过 | 通过 | ✓ |
+
+### Phase 9: Users 状态筛选全量下沉（active/traffic_exceeded）
+- **Status:** complete
+- Actions taken:
+  - `ListUsersByEffectiveStatus` 扩展支持 `active/traffic_exceeded`。
+  - 查询前增加流量重置归一化，复用既有重置逻辑保障语义一致。
+  - 归一化流程改为“先读后写”，规避 SQLite 读写锁冲突。
+  - `UsersList` 改为四种状态统一走 DB 有效状态分页。
+  - 新增 `active` 分页测试与 `traffic_exceeded + due reset` 测试。
+- Files created/modified:
+  - `panel/internal/db/users.go` (modified)
+  - `panel/internal/api/users.go` (modified)
+  - `panel/internal/api/users_test.go` (modified)
+
+## Test Results (Users Status Full Pushdown)
+| Test | Input | Expected | Actual | Status |
+|------|-------|----------|--------|--------|
+| 关键回归 | `GOCACHE=/tmp/go-build go test ./panel/internal/api -run TestUsersAPI_StatusFilterPagination_TrafficExceeded_WithDueReset -count=1` | 通过 | 通过 | ✓ |
+| 定向回归 | `GOCACHE=/tmp/go-build go test ./panel/internal/api ./panel/internal/db -count=1` | 通过 | 通过 | ✓ |
+| Panel 后端回归 | `GOCACHE=/tmp/go-build go test ./panel/internal/... ./panel/cmd/panel/... -count=1` | 通过 | 通过 | ✓ |
+| Node 后端回归 | `GOCACHE=/tmp/go-build go test ./node/internal/... ./node/cmd/node/... -count=1` | 通过 | 通过 | ✓ |

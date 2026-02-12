@@ -358,6 +358,105 @@ func TestUsersAPI_StatusFilterPagination_Expired(t *testing.T) {
 	require.Equal(t, "expired", page2.Data[0].Status)
 }
 
+func TestUsersAPI_StatusFilterPagination_Active(t *testing.T) {
+	cfg := config.Config{JWTSecret: "secret"}
+	store := setupStore(t)
+	r := api.NewRouter(cfg, store)
+	token := mustToken(cfg.JWTSecret)
+
+	activeOlder, err := store.CreateUser(t.Context(), "active-older")
+	require.NoError(t, err)
+
+	disabledMiddle, err := store.CreateUser(t.Context(), "disabled-middle")
+	require.NoError(t, err)
+	require.NoError(t, store.DisableUser(t.Context(), disabledMiddle.ID))
+
+	activeNewer, err := store.CreateUser(t.Context(), "active-newer")
+	require.NoError(t, err)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/api/users?status=active&limit=1&offset=0", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	r.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var page1 listResp
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &page1))
+	require.Len(t, page1.Data, 1)
+	require.Equal(t, activeNewer.Username, page1.Data[0].Username)
+	require.Equal(t, "active", page1.Data[0].Status)
+
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest(http.MethodGet, "/api/users?status=active&limit=1&offset=1", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	r.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var page2 listResp
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &page2))
+	require.Len(t, page2.Data, 1)
+	require.Equal(t, activeOlder.Username, page2.Data[0].Username)
+	require.Equal(t, "active", page2.Data[0].Status)
+}
+
+func TestUsersAPI_StatusFilterPagination_TrafficExceeded_WithDueReset(t *testing.T) {
+	cfg := config.Config{JWTSecret: "secret"}
+	store := setupStore(t)
+	r := api.NewRouter(cfg, store)
+	token := mustToken(cfg.JWTSecret)
+
+	exceededOlder, err := store.CreateUser(t.Context(), "exceeded-older")
+	require.NoError(t, err)
+	_, err = store.DB.Exec("UPDATE users SET traffic_limit = ?, traffic_used = ? WHERE id = ?", int64(100), int64(100), exceededOlder.ID)
+	require.NoError(t, err)
+
+	resetDueUser, err := store.CreateUser(t.Context(), "reset-due-user")
+	require.NoError(t, err)
+	now := time.Now().UTC()
+	resetAtToday := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+	lastResetBeforeToday := resetAtToday.Add(-1 * time.Hour).Format(time.RFC3339)
+	_, err = store.DB.Exec(
+		"UPDATE users SET traffic_limit = ?, traffic_used = ?, traffic_reset_day = ?, traffic_last_reset_at = ? WHERE id = ?",
+		int64(100), int64(100), now.Day(), lastResetBeforeToday, resetDueUser.ID,
+	)
+	require.NoError(t, err)
+
+	exceededNewer, err := store.CreateUser(t.Context(), "exceeded-newer")
+	require.NoError(t, err)
+	_, err = store.DB.Exec("UPDATE users SET traffic_limit = ?, traffic_used = ? WHERE id = ?", int64(200), int64(200), exceededNewer.ID)
+	require.NoError(t, err)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/api/users?status=traffic_exceeded&limit=10&offset=0", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	r.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var listed listResp
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &listed))
+	require.Len(t, listed.Data, 2)
+	require.Equal(t, "exceeded-newer", listed.Data[0].Username)
+	require.Equal(t, "exceeded-older", listed.Data[1].Username)
+
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest(http.MethodGet, "/api/users?status=active&limit=20&offset=0", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	r.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var activeListed listResp
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &activeListed))
+	foundResetDueUser := false
+	for _, item := range activeListed.Data {
+		if item.Username == resetDueUser.Username {
+			foundResetDueUser = true
+			require.Equal(t, "active", item.Status)
+			break
+		}
+	}
+	require.True(t, foundResetDueUser)
+}
+
 func TestUsersAPI_UpdateAndDisable_AutoSyncsNodesByUserGroups(t *testing.T) {
 	doer := &usersAPIFakeDoer{}
 	restore := api.SetNodeClientFactoryForTest(func() *node.Client {

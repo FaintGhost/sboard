@@ -835,3 +835,9 @@ Complete
 - [x] 保留 `status=active|traffic_exceeded` 的增量扫描路径（避免流量重置语义偏差）
 - [x] 增加 expired 分页回归测试
 - **Status:** complete
+
+### Phase 9: Users 状态筛选全量下沉（active/traffic_exceeded）
+- [x] 新增 `ListUsersByEffectiveStatus` 对 `active/traffic_exceeded` 的 DB 分页支持
+- [x] 引入查询前流量重置归一化，保障语义一致
+- [x] 增加 active 与 traffic_exceeded（含重置边界）回归测试
+- **Status:** complete

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -120,6 +121,16 @@ func (s *Store) ListUsers(ctx context.Context, limit, offset int, status string)
 // fully expressed by persisted fields without traffic reset side effects.
 // Currently supported statuses: "disabled", "expired".
 func (s *Store) ListUsersByEffectiveStatus(ctx context.Context, limit, offset int, status string, now time.Time) ([]User, error) {
+	if now.IsZero() {
+		now = s.nowUTC()
+	}
+
+	if slices.Contains([]string{"active", "traffic_exceeded"}, status) {
+		if err := s.normalizeUsersTrafficForEffectiveStatusQuery(ctx, now); err != nil {
+			return nil, err
+		}
+	}
+
 	var query string
 	var args []any
 
@@ -138,9 +149,35 @@ func (s *Store) ListUsersByEffectiveStatus(ctx context.Context, limit, offset in
         AND expire_at <= ?
       )
     ORDER BY id DESC LIMIT ? OFFSET ?`
-		if now.IsZero() {
-			now = s.nowUTC()
-		}
+		args = []any{now.UTC().Format(time.RFC3339), limit, offset}
+	case "active":
+		query = `SELECT id, uuid, username, traffic_limit, traffic_used, traffic_reset_day, traffic_last_reset_at, expire_at, status
+    FROM users
+    WHERE status NOT IN ('disabled', 'expired', 'traffic_exceeded')
+      AND (
+        expire_at IS NULL
+        OR expire_at > ?
+      )
+      AND (
+        traffic_limit <= 0
+        OR traffic_used < traffic_limit
+      )
+    ORDER BY id DESC LIMIT ? OFFSET ?`
+		args = []any{now.UTC().Format(time.RFC3339), limit, offset}
+	case "traffic_exceeded":
+		query = `SELECT id, uuid, username, traffic_limit, traffic_used, traffic_reset_day, traffic_last_reset_at, expire_at, status
+    FROM users
+    WHERE status = 'traffic_exceeded'
+      OR (
+        status NOT IN ('disabled', 'expired', 'traffic_exceeded')
+        AND (
+          expire_at IS NULL
+          OR expire_at > ?
+        )
+        AND traffic_limit > 0
+        AND traffic_used >= traffic_limit
+      )
+    ORDER BY id DESC LIMIT ? OFFSET ?`
 		args = []any{now.UTC().Format(time.RFC3339), limit, offset}
 	default:
 		return nil, fmt.Errorf("unsupported effective status")
@@ -164,6 +201,34 @@ func (s *Store) ListUsersByEffectiveStatus(ctx context.Context, limit, offset in
 		out = append(out, u)
 	}
 	return out, rows.Err()
+}
+
+func (s *Store) normalizeUsersTrafficForEffectiveStatusQuery(ctx context.Context, now time.Time) error {
+	rows, err := s.DB.QueryContext(ctx, `SELECT id, uuid, username, traffic_limit, traffic_used, traffic_reset_day, traffic_last_reset_at, expire_at, status
+    FROM users WHERE traffic_reset_day > 0`)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	users := make([]User, 0)
+	for rows.Next() {
+		u, err := scanUser(rows)
+		if err != nil {
+			return err
+		}
+		users = append(users, u)
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+
+	for i := range users {
+		if err := s.applyTrafficResetIfNeeded(ctx, &users[i]); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (s *Store) UpdateUser(ctx context.Context, id int64, update UserUpdate) (User, error) {

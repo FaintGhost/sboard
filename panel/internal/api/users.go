@@ -284,42 +284,13 @@ func listUsersForStatus(ctx context.Context, store *db.Store, status string, lim
 	if status == "" {
 		return store.ListUsers(ctx, limit, offset, "")
 	}
-	if status == userstate.StatusDisabled || status == userstate.StatusExpired {
+	if status == userstate.StatusActive ||
+		status == userstate.StatusDisabled ||
+		status == userstate.StatusExpired ||
+		status == userstate.StatusTrafficExceeded {
 		return store.ListUsersByEffectiveStatus(ctx, limit, offset, status, time.Now().UTC())
 	}
-	if limit == 0 {
-		return []db.User{}, nil
-	}
-
-	const scanBatchSize = 200
-	out := make([]db.User, 0, limit)
-	scanOffset := 0
-	filteredOffset := 0
-
-	for {
-		batch, err := store.ListUsers(ctx, scanBatchSize, scanOffset, "")
-		if err != nil {
-			return nil, err
-		}
-		if len(batch) == 0 {
-			return out, nil
-		}
-		scanOffset += len(batch)
-
-		for _, user := range batch {
-			if effectiveUserStatus(user) != status {
-				continue
-			}
-			if filteredOffset < offset {
-				filteredOffset++
-				continue
-			}
-			out = append(out, user)
-			if len(out) >= limit {
-				return out, nil
-			}
-		}
-	}
+	return nil, errors.New("unsupported status")
 }
 
 func parseLimitOffset(c *gin.Context) (int, int, error) {
