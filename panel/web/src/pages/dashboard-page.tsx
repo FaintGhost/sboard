@@ -25,12 +25,13 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { listTrafficNodesSummary, getTrafficTotalSummary } from "@/lib/api/traffic";
-import { tableColumnSpacing } from "@/lib/table-spacing";
+import { tableColumnLayout, tableColumnSpacing } from "@/lib/table-spacing";
 import { bytesToGBString } from "@/lib/units";
 
 export function DashboardPage() {
   const { t } = useTranslation();
   const spacing = tableColumnSpacing.three;
+  const layout = tableColumnLayout.threeEven;
   const usersQuery = useQuery({
     queryKey: ["users", "dashboard-preview"],
     queryFn: () => listUsers({ limit: 10, offset: 0 }),
@@ -165,12 +166,18 @@ export function DashboardPage() {
             <CardDescription>{t("dashboard.topNodesSubtitle")}</CardDescription>
           </CardHeader>
           <CardContent className="p-0">
-            <Table>
+            <Table className={layout.tableClass}>
               <TableHeader>
                 <TableRow>
-                  <TableHead className={spacing.headFirst}>{t("nodes.name")}</TableHead>
-                  <TableHead className={spacing.headMiddle}>{t("dashboard.uplink")}</TableHead>
-                  <TableHead className={spacing.headLast}>{t("dashboard.downlink")}</TableHead>
+                  <TableHead className={`${spacing.headFirst} ${layout.headFirst}`}>
+                    {t("nodes.name")}
+                  </TableHead>
+                  <TableHead className={`${spacing.headMiddle} ${layout.headMiddle}`}>
+                    {t("dashboard.uplink")}
+                  </TableHead>
+                  <TableHead className={`${spacing.headLast} ${layout.headLast}`}>
+                    {t("dashboard.downlink")}
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

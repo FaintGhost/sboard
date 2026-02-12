@@ -40,7 +40,7 @@ import {
 import { ApiError } from "@/lib/api/client";
 import { listGroupUsers, replaceGroupUsers } from "@/lib/api/group-users";
 import { createGroup, deleteGroup, listGroups, updateGroup } from "@/lib/api/groups";
-import { tableColumnSpacing } from "@/lib/table-spacing";
+import { tableColumnLayout, tableColumnSpacing } from "@/lib/table-spacing";
 import { listAllUsers } from "@/lib/api/users";
 import type { Group, UserStatus } from "@/lib/api/types";
 import { tableToolbarClass } from "@/lib/table-toolbar";
@@ -94,6 +94,7 @@ export function GroupsPage() {
   const { t } = useTranslation();
   const qc = useQueryClient();
   const spacing = tableColumnSpacing.four;
+  const layout = tableColumnLayout.fourActionIcon;
 
   const [upserting, setUpserting] = useState<EditState | null>(null);
   const [memberSearch, setMemberSearch] = useState("");
@@ -312,13 +313,19 @@ export function GroupsPage() {
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            <Table>
+            <Table className={layout.tableClass}>
               <TableHeader>
                 <TableRow>
-                  <TableHead className={spacing.headFirst}>{t("common.name")}</TableHead>
-                  <TableHead className={spacing.headMiddle}>{t("groups.membersCount")}</TableHead>
-                  <TableHead className={spacing.headMiddle}>{t("common.description")}</TableHead>
-                  <TableHead className={`w-12 ${spacing.headLast}`}>
+                  <TableHead className={`${spacing.headFirst} ${layout.headFirst}`}>
+                    {t("common.name")}
+                  </TableHead>
+                  <TableHead className={`${spacing.headMiddle} ${layout.headMiddle}`}>
+                    {t("groups.membersCount")}
+                  </TableHead>
+                  <TableHead className={`${spacing.headMiddle} ${layout.headMiddle}`}>
+                    {t("common.description")}
+                  </TableHead>
+                  <TableHead className={`${spacing.headLast} ${layout.headLast}`}>
                     <span className="sr-only">{t("common.actions")}</span>
                   </TableHead>
                 </TableRow>

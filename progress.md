@@ -1270,3 +1270,51 @@
 |------|-------|----------|--------|--------|
 | 页面测试 | `bun run test -- src/pages/nodes-page.test.tsx src/pages/sync-jobs-page.test.tsx` | 通过 | 通过 | ✓ |
 | 前端构建 | `bun run build` | 通过 | 通过（含 chunk size 警告） | ✓ |
+
+## Session: 2026-02-12 (BDD Table Layout Extraction)
+
+### Phase 1: RED
+- **Status:** complete
+- Actions taken:
+  - 新增 `panel/web/src/lib/table-layout.test.ts`。
+  - 先运行测试，确认 `tableColumnLayout` 未实现导致失败。
+- Files created/modified:
+  - `panel/web/src/lib/table-layout.test.ts` (created)
+
+### Phase 2: GREEN
+- **Status:** complete
+- Actions taken:
+  - 在 `panel/web/src/lib/table-spacing.ts` 新增 `tableColumnLayout` 统一布局预设。
+- Files created/modified:
+  - `panel/web/src/lib/table-spacing.ts` (modified)
+
+### Phase 3: REFACTOR
+- **Status:** complete
+- Actions taken:
+  - 页面统一接入布局预设，移除分散列宽手写：
+    - `panel/web/src/pages/dashboard-page.tsx`
+    - `panel/web/src/pages/groups-page.tsx`
+    - `panel/web/src/pages/inbounds-page.tsx`
+    - `panel/web/src/pages/nodes-page.tsx`
+    - `panel/web/src/pages/subscriptions-page.tsx`
+    - `panel/web/src/pages/sync-jobs-page.tsx`
+    - `panel/web/src/pages/users-page.tsx`
+- Files created/modified:
+  - 上述页面文件 (modified)
+
+### Phase 4: Verify
+- **Status:** complete
+- Actions taken:
+  - 运行布局与页面测试。
+  - 执行前端门禁：format/lint/typecheck。
+  - 执行前端构建。
+
+## Test Results (2026-02-12, BDD Table Layout)
+| Test | Input | Expected | Actual | Status |
+|------|-------|----------|--------|--------|
+| RED 失败验证 | `bun run test -- src/lib/table-layout.test.ts`（实现前） | 失败 | 失败（符合预期） | ✓ |
+| 布局+页面回归 | `bun run test -- src/lib/table-layout.test.ts src/pages/nodes-page.test.tsx src/pages/sync-jobs-page.test.tsx src/pages/groups-page.test.tsx src/pages/users-page.test.tsx src/pages/subscriptions-page.test.tsx` | 通过 | 通过 | ✓ |
+| 格式化 | `bun run format` | 通过 | 通过 | ✓ |
+| Lint | `bun run lint` | 通过 | 通过 | ✓ |
+| Typecheck | `bunx tsc -b` | 通过 | 通过 | ✓ |
+| Build | `bun run build` | 通过 | 通过（含 chunk size 警告） | ✓ |

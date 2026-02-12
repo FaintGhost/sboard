@@ -914,3 +914,19 @@
   - 移除 `nodes-page` 中该菜单项及 `useNavigate` 依赖。
   - 清理无用文案键：`nodes.viewSyncJobs`（中英文）。
 - 结果：避免重复导航入口与操作歧义，页面入口收敛到侧栏主导航。
+
+## Session Findings (2026-02-12, BDD Table Layout Refactor)
+- 问题确认：`tableColumnSpacing` 仅控制 padding，不控制列宽；在 `table-layout:auto` 下，节点页中“地址类列”会拉大局部宽度，导致表头视觉间距不均。
+- 设计决策：
+  - 保留现有 spacing（内边距）语义；
+  - 新增独立列宽布局预设 `tableColumnLayout`，通过 `table-fixed + 预设宽度` 实现“内容不过长时尽量等距”；
+  - 对操作列使用固定宽度（图标列 3rem、按钮列 7rem、订阅页动作列 140px），其余列按剩余空间等分。
+- 覆盖范围：
+  - `dashboard-page`
+  - `groups-page`
+  - `inbounds-page`
+  - `nodes-page`（含流量弹窗表格）
+  - `subscriptions-page`
+  - `sync-jobs-page`
+  - `users-page`
+- 测试策略（BDD）：先写失败测试约束目标布局，再实现预设并回归页面。

@@ -136,7 +136,8 @@ export function parseInboundTemplateToPayload(input: string): ParseResult {
   }
 
   const rawProtocol =
-    readRequiredString(extracted.inbound, "type") ?? readRequiredString(extracted.inbound, "protocol");
+    readRequiredString(extracted.inbound, "type") ??
+    readRequiredString(extracted.inbound, "protocol");
   if (!rawProtocol) {
     return { ok: false, error: "type/protocol required" };
   }
@@ -156,7 +157,7 @@ export function parseInboundTemplateToPayload(input: string): ParseResult {
   const capability = getInboundProtocolCapability(protocol);
   if (capability.level !== "supported") {
     warnings.push(
-      `protocol \"${protocol}\" compatibility warning: ${capability.reason ?? "unknown reason"}`,
+      `protocol "${protocol}" compatibility warning: ${capability.reason ?? "unknown reason"}`,
     );
   }
 
@@ -255,7 +256,9 @@ export function parseInboundTemplateToPayload(input: string): ParseResult {
               if (host && Number.isInteger(port) && port > 0 && port <= 65535) {
                 handshake = { server: host, server_port: port };
               } else {
-                warnings.push("streamSettings.realitySettings.target is invalid; handshake mapping skipped");
+                warnings.push(
+                  "streamSettings.realitySettings.target is invalid; handshake mapping skipped",
+                );
               }
             } else {
               warnings.push("streamSettings.realitySettings.target should be host:port");

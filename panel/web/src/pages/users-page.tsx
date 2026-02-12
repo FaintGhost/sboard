@@ -36,7 +36,7 @@ import {
 import { listUsers } from "@/lib/api/users";
 import { listGroups } from "@/lib/api/groups";
 import type { User, UserStatus } from "@/lib/api/types";
-import { tableColumnSpacing } from "@/lib/table-spacing";
+import { tableColumnLayout, tableColumnSpacing } from "@/lib/table-spacing";
 import { tableTransitionClass } from "@/lib/table-motion";
 import { useTableQueryTransition } from "@/lib/table-query-transition";
 import { bytesToGBString } from "@/lib/units";
@@ -98,6 +98,7 @@ export function UsersPage() {
   const [disablingUser, setDisablingUser] = useState<User | null>(null);
   const [deletingUser, setDeletingUser] = useState<User | null>(null);
   const spacing = tableColumnSpacing.five;
+  const layout = tableColumnLayout.sixActionIcon;
 
   const updateFilters = (patch: Partial<{ statusFilter: StatusFilter; search: string }>) => {
     const next = {
@@ -292,19 +293,29 @@ export function UsersPage() {
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            <Table className="table-fixed">
+            <Table className={layout.tableClass}>
               <TableHeader>
                 <TableRow>
-                  <TableHead className={spacing.headFirst}>{t("users.username")}</TableHead>
-                  <TableHead className={spacing.headMiddle}>{t("users.groups")}</TableHead>
-                  <TableHead className={spacing.headMiddle}>{t("common.status")}</TableHead>
-                  <TableHead className={`${spacing.headMiddle} hidden md:table-cell`}>
+                  <TableHead className={`${spacing.headFirst} ${layout.headFirst}`}>
+                    {t("users.username")}
+                  </TableHead>
+                  <TableHead className={`${spacing.headMiddle} ${layout.headMiddle}`}>
+                    {t("users.groups")}
+                  </TableHead>
+                  <TableHead className={`${spacing.headMiddle} ${layout.headMiddle}`}>
+                    {t("common.status")}
+                  </TableHead>
+                  <TableHead
+                    className={`${spacing.headMiddle} ${layout.headMiddle} hidden md:table-cell`}
+                  >
                     {t("users.traffic")}
                   </TableHead>
-                  <TableHead className={`${spacing.headMiddle} hidden sm:table-cell`}>
+                  <TableHead
+                    className={`${spacing.headMiddle} ${layout.headMiddle} hidden sm:table-cell`}
+                  >
                     {t("users.expireDate")}
                   </TableHead>
-                  <TableHead className={`${spacing.headLast} w-12`}>
+                  <TableHead className={`${spacing.headLast} ${layout.headLast}`}>
                     <span className="sr-only">{t("common.actions")}</span>
                   </TableHead>
                 </TableRow>

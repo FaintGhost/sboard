@@ -62,7 +62,7 @@ import {
   readTemplateProtocol,
   type InboundTemplatePresetProtocol,
 } from "@/lib/inbound-template";
-import { tableColumnSpacing } from "@/lib/table-spacing";
+import { tableColumnLayout, tableColumnSpacing } from "@/lib/table-spacing";
 import { tableTransitionClass } from "@/lib/table-motion";
 import { useTableQueryTransition } from "@/lib/table-query-transition";
 import { tableToolbarClass } from "@/lib/table-toolbar";
@@ -185,11 +185,13 @@ export function InboundsPage() {
   const { t } = useTranslation();
   const qc = useQueryClient();
   const spacing = tableColumnSpacing.five;
+  const layout = tableColumnLayout.fiveActionIcon;
   const [nodeFilter, setNodeFilter] = useState<number | "all">("all");
   const [upserting, setUpserting] = useState<EditState | null>(null);
-  const [toolMessage, setToolMessage] = useState<
-    { tone: "ok" | "error" | "warn"; text: string } | null
-  >(null);
+  const [toolMessage, setToolMessage] = useState<{
+    tone: "ok" | "error" | "warn";
+    text: string;
+  } | null>(null);
   const [generateCommand, setGenerateCommand] = useState<SingBoxGenerateCommand>("uuid");
   const [generateOutput, setGenerateOutput] = useState<string>("");
 
@@ -355,14 +357,22 @@ export function InboundsPage() {
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            <Table>
+            <Table className={layout.tableClass}>
               <TableHeader>
                 <TableRow>
-                  <TableHead className={spacing.headFirst}>{t("inbounds.node")}</TableHead>
-                  <TableHead className={spacing.headMiddle}>{t("inbounds.tag")}</TableHead>
-                  <TableHead className={spacing.headMiddle}>{t("inbounds.protocol")}</TableHead>
-                  <TableHead className={spacing.headMiddle}>{t("inbounds.port")}</TableHead>
-                  <TableHead className={`w-12 ${spacing.headLast}`}>
+                  <TableHead className={`${spacing.headFirst} ${layout.headFirst}`}>
+                    {t("inbounds.node")}
+                  </TableHead>
+                  <TableHead className={`${spacing.headMiddle} ${layout.headMiddle}`}>
+                    {t("inbounds.tag")}
+                  </TableHead>
+                  <TableHead className={`${spacing.headMiddle} ${layout.headMiddle}`}>
+                    {t("inbounds.protocol")}
+                  </TableHead>
+                  <TableHead className={`${spacing.headMiddle} ${layout.headMiddle}`}>
+                    {t("inbounds.port")}
+                  </TableHead>
+                  <TableHead className={`${spacing.headLast} ${layout.headLast}`}>
                     <span className="sr-only">{t("common.actions")}</span>
                   </TableHead>
                 </TableRow>
@@ -563,7 +573,9 @@ export function InboundsPage() {
                       pending={formatMutation.isPending}
                       pendingText={t("common.loading")}
                       onClick={() => {
-                        const normalized = buildSingBoxConfigTextFromTemplate(upserting.templateText);
+                        const normalized = buildSingBoxConfigTextFromTemplate(
+                          upserting.templateText,
+                        );
                         if (!normalized.ok) {
                           setToolMessage({
                             tone: "error",
@@ -573,7 +585,9 @@ export function InboundsPage() {
                         }
                         formatMutation.mutate(normalized.text, {
                           onSuccess: () => {
-                            const parsedForTemplate = parseInboundTemplateToPayload(upserting.templateText);
+                            const parsedForTemplate = parseInboundTemplateToPayload(
+                              upserting.templateText,
+                            );
                             const nextTemplateText = parsedForTemplate.ok
                               ? buildTemplateTextFromPayload(parsedForTemplate.payload)
                               : normalized.text;
@@ -616,7 +630,9 @@ export function InboundsPage() {
                       pending={checkMutation.isPending}
                       pendingText={t("common.loading")}
                       onClick={() => {
-                        const normalized = buildSingBoxConfigTextFromTemplate(upserting.templateText);
+                        const normalized = buildSingBoxConfigTextFromTemplate(
+                          upserting.templateText,
+                        );
                         if (!normalized.ok) {
                           setToolMessage({
                             tone: "error",
@@ -725,7 +741,9 @@ export function InboundsPage() {
                   {currentTemplateFeedback.warnings.length > 0 ? (
                     <div className="space-y-1 text-xs text-amber-700">
                       {currentTemplateFeedback.warnings.map((warning, index) => (
-                        <p key={`${warning}-${index}`}>{`${t("inbounds.templateWarning")}: ${warning}`}</p>
+                        <p
+                          key={`${warning}-${index}`}
+                        >{`${t("inbounds.templateWarning")}: ${warning}`}</p>
                       ))}
                     </div>
                   ) : null}

@@ -52,7 +52,7 @@ import { createNode, deleteNode, listNodeTraffic, listNodes, updateNode } from "
 import type { Group, Node, NodeTrafficSample } from "@/lib/api/types";
 import { listTrafficNodesSummary, type TrafficNodeSummary } from "@/lib/api/traffic";
 import { buildNodeDockerCompose, generateNodeSecretKey } from "@/lib/node-compose";
-import { tableColumnSpacing } from "@/lib/table-spacing";
+import { tableColumnLayout, tableColumnSpacing } from "@/lib/table-spacing";
 import { formatDateTimeByTimezone } from "@/lib/datetime";
 import { bytesToGBString } from "@/lib/units";
 import { tableToolbarClass } from "@/lib/table-toolbar";
@@ -106,6 +106,9 @@ export function NodesPage() {
   const timezone = useSystemStore((state) => state.timezone);
   const qc = useQueryClient();
   const spacing = tableColumnSpacing.seven;
+  const layout = tableColumnLayout.sevenActionIcon;
+  const trafficSpacing = tableColumnSpacing.three;
+  const trafficLayout = tableColumnLayout.threeEven;
   const [upserting, setUpserting] = useState<EditState | null>(null);
   const [trafficNode, setTrafficNode] = useState<Node | null>(null);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
@@ -356,16 +359,28 @@ export function NodesPage() {
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            <Table>
+            <Table className={layout.tableClass}>
               <TableHeader>
                 <TableRow>
-                  <TableHead className={spacing.headFirst}>{t("nodes.name")}</TableHead>
-                  <TableHead className={spacing.headMiddle}>{t("nodes.group")}</TableHead>
-                  <TableHead className={spacing.headMiddle}>{t("nodes.apiAddress")}</TableHead>
-                  <TableHead className={spacing.headMiddle}>{t("nodes.publicAddress")}</TableHead>
-                  <TableHead className={spacing.headMiddle}>{t("nodes.status")}</TableHead>
-                  <TableHead className={spacing.headMiddle}>{t("nodes.lastSeen")}</TableHead>
-                  <TableHead className={`w-12 ${spacing.headLast}`}>
+                  <TableHead className={`${spacing.headFirst} ${layout.headFirst}`}>
+                    {t("nodes.name")}
+                  </TableHead>
+                  <TableHead className={`${spacing.headMiddle} ${layout.headMiddle}`}>
+                    {t("nodes.group")}
+                  </TableHead>
+                  <TableHead className={`${spacing.headMiddle} ${layout.headMiddle}`}>
+                    {t("nodes.apiAddress")}
+                  </TableHead>
+                  <TableHead className={`${spacing.headMiddle} ${layout.headMiddle}`}>
+                    {t("nodes.publicAddress")}
+                  </TableHead>
+                  <TableHead className={`${spacing.headMiddle} ${layout.headMiddle}`}>
+                    {t("nodes.status")}
+                  </TableHead>
+                  <TableHead className={`${spacing.headMiddle} ${layout.headMiddle}`}>
+                    {t("nodes.lastSeen")}
+                  </TableHead>
+                  <TableHead className={`${spacing.headLast} ${layout.headLast}`}>
                     <span className="sr-only">{t("common.actions")}</span>
                   </TableHead>
                 </TableRow>
@@ -862,30 +877,43 @@ export function NodesPage() {
                   : null}
               </div>
 
-              <Table>
+              <Table className={trafficLayout.tableClass}>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>{t("inbounds.tag")}</TableHead>
-                    <TableHead>{t("users.traffic")}</TableHead>
-                    <TableHead>{t("nodes.lastUpdatedAt")}</TableHead>
+                    <TableHead className={`${trafficSpacing.headFirst} ${trafficLayout.headFirst}`}>
+                      {t("inbounds.tag")}
+                    </TableHead>
+                    <TableHead
+                      className={`${trafficSpacing.headMiddle} ${trafficLayout.headMiddle}`}
+                    >
+                      {t("users.traffic")}
+                    </TableHead>
+                    <TableHead className={`${trafficSpacing.headLast} ${trafficLayout.headLast}`}>
+                      {t("nodes.lastUpdatedAt")}
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {trafficByInbound.map((r) => (
                     <TableRow key={r.inbound}>
-                      <TableCell className="font-medium">{r.inbound}</TableCell>
-                      <TableCell className="text-muted-foreground">
+                      <TableCell className={`${trafficSpacing.cellFirst} font-medium`}>
+                        {r.inbound}
+                      </TableCell>
+                      <TableCell className={`${trafficSpacing.cellMiddle} text-muted-foreground`}>
                         ↑ {(r.upload / 1024 ** 3).toFixed(3)} GB
                         {"  "}↓ {(r.download / 1024 ** 3).toFixed(3)} GB
                       </TableCell>
-                      <TableCell className="text-muted-foreground">
+                      <TableCell className={`${trafficSpacing.cellLast} text-muted-foreground`}>
                         {formatDateTime(r.last, i18n.language, timezone)}
                       </TableCell>
                     </TableRow>
                   ))}
                   {!trafficQuery.isLoading && trafficByInbound.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={3} className="py-8 text-center text-muted-foreground">
+                      <TableCell
+                        colSpan={3}
+                        className={`${trafficSpacing.cellFirst} py-8 text-center text-muted-foreground`}
+                      >
                         {t("common.noData")}
                       </TableCell>
                     </TableRow>

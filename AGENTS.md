@@ -12,6 +12,13 @@
   - `bun run format` / `bun run format:check`
 - 对前端代码风格和格式的改动，优先走 `oxfmt`；不要再引入新的 ESLint 配置或 ESLint 指令注释。
 
+## 前端交付门禁（新增）
+- 前端开发相关改动在交付前必须通过以下检查：
+  - `bun run lint`
+  - `bun run format`（或 `bun run format:check`）
+  - `bunx tsc -b`（typecheck）
+- 任一检查未通过时，不应标记为完成交付。
+
 ## GitHub 操作
 - 当前环境已配置 GitHub CLI（`gh`）
 - 如需 GitHub 仓库相关操作，优先使用 `gh`（例如 PR、release、issue 等）

@@ -989,3 +989,48 @@ Complete
 - [x] 运行节点页与同步任务页相关测试
 - [x] 执行前端构建验证
 - **Status:** complete
+
+---
+
+# Session Plan: Table 布局逻辑抽取与等距优化（BDD，2026-02-12）
+
+## Goal
+抽取前端页面表格列宽分配逻辑，在内容不过长场景下让表头尽量等距，修复节点列表列间距不一致问题，并统一应用到各页面表格。
+
+## Current Phase
+Complete
+
+## BDD Scenarios
+1. Given 七列表格且最后一列为操作列，When 使用节点列表布局，Then 前六列应等分，操作列固定宽度。
+2. Given 三列表格且无操作列，When 使用等距布局，Then 三列应等宽。
+3. Given 多页面表格，When 接入统一布局预设，Then 不再在页面中手写分散列宽逻辑。
+
+## Phases
+
+### Phase 1: RED（失败测试）
+- [x] 新增 `table-layout.test.ts`，先约束节点表/三列表的目标布局行为
+- [x] 运行测试确认失败（`tableColumnLayout` 尚未实现）
+- **Status:** complete
+
+### Phase 2: GREEN（最小实现）
+- [x] 在 `table-spacing.ts` 新增统一布局预设 `tableColumnLayout`
+- [x] 覆盖以下场景：
+  - 三列等距
+  - 四列+图标操作列
+  - 四列+宽操作列
+  - 五列+图标操作列
+  - 六列+图标操作列
+  - 七列+图标操作列
+  - 七列+按钮操作列
+- **Status:** complete
+
+### Phase 3: REFACTOR（页面接入）
+- [x] 接入页面：`dashboard/groups/inbounds/nodes/subscriptions/sync-jobs/users`
+- [x] 节点页流量弹窗三列表同步接入统一布局
+- **Status:** complete
+
+### Phase 4: 验证
+- [x] 通过布局单测与页面回归测试
+- [x] 通过前端门禁：format/lint/typecheck
+- [x] 前端构建通过
+- **Status:** complete

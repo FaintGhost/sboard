@@ -31,7 +31,7 @@ import { Badge } from "@/components/ui/badge";
 import { listUsers } from "@/lib/api/users";
 import { getSystemSettings } from "@/lib/api/system";
 import type { User, UserStatus } from "@/lib/api/types";
-import { tableColumnSpacing } from "@/lib/table-spacing";
+import { tableColumnLayout, tableColumnSpacing } from "@/lib/table-spacing";
 import { tableTransitionClass } from "@/lib/table-motion";
 import { useTableQueryTransition } from "@/lib/table-query-transition";
 import { buildUserListSearchParams, parseUserListSearchParams } from "@/lib/user-list-filters";
@@ -108,6 +108,7 @@ function StatusBadge({ status }: { status: UserStatus }) {
 export function SubscriptionsPage() {
   const { t } = useTranslation();
   const spacing = tableColumnSpacing.four;
+  const layout = tableColumnLayout.fourActionWide;
   const [searchParams, setSearchParams] = useSearchParams();
   const filters = useMemo(() => parseUserListSearchParams(searchParams, "active"), [searchParams]);
   const statusFilter = filters.statusFilter as StatusFilter;
@@ -253,15 +254,19 @@ export function SubscriptionsPage() {
       </div>
 
       <div className="rounded-md border">
-        <Table>
+        <Table className={layout.tableClass}>
           <TableHeader>
             <TableRow>
-              <TableHead className={spacing.headFirst}>{t("users.username")}</TableHead>
-              <TableHead className={spacing.headMiddle}>{t("common.status")}</TableHead>
-              <TableHead className={spacing.headMiddle}>
+              <TableHead className={`${spacing.headFirst} ${layout.headFirst}`}>
+                {t("users.username")}
+              </TableHead>
+              <TableHead className={`${spacing.headMiddle} ${layout.headMiddle}`}>
+                {t("common.status")}
+              </TableHead>
+              <TableHead className={`${spacing.headMiddle} ${layout.headMiddle}`}>
                 {t("subscriptions.subscriptionUrl")}
               </TableHead>
-              <TableHead className={`${spacing.headLast} w-[140px] text-right`}>
+              <TableHead className={`${spacing.headLast} ${layout.headLast} text-right`}>
                 {t("common.actions")}
               </TableHead>
             </TableRow>

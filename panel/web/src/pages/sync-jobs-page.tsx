@@ -44,7 +44,7 @@ import {
   type SyncJobsPageFilters,
   type SyncJobsTimeRange,
 } from "@/lib/sync-jobs-filters";
-import { tableColumnSpacing } from "@/lib/table-spacing";
+import { tableColumnLayout, tableColumnSpacing } from "@/lib/table-spacing";
 import { tableTransitionClass } from "@/lib/table-motion";
 import { useTableQueryTransition } from "@/lib/table-query-transition";
 import { tableToolbarClass } from "@/lib/table-toolbar";
@@ -119,6 +119,7 @@ export function SyncJobsPage() {
   const timezone = useSystemStore((state) => state.timezone);
   const qc = useQueryClient();
   const spacing = tableColumnSpacing.seven;
+  const layout = tableColumnLayout.sevenActionButton;
   const [searchParams, setSearchParams] = useSearchParams();
 
   const filters = useMemo(() => parseSyncJobsSearchParams(searchParams), [searchParams]);
@@ -296,16 +297,30 @@ export function SyncJobsPage() {
           </CardHeader>
 
           <CardContent className="p-0">
-            <Table>
+            <Table className={layout.tableClass}>
               <TableHeader>
                 <TableRow>
-                  <TableHead className={spacing.headFirst}>{t("syncJobs.colTime")}</TableHead>
-                  <TableHead className={spacing.headMiddle}>{t("syncJobs.colNode")}</TableHead>
-                  <TableHead className={spacing.headMiddle}>{t("syncJobs.colSource")}</TableHead>
-                  <TableHead className={spacing.headMiddle}>{t("syncJobs.colStatus")}</TableHead>
-                  <TableHead className={spacing.headMiddle}>{t("syncJobs.colDuration")}</TableHead>
-                  <TableHead className={spacing.headMiddle}>{t("syncJobs.colRetries")}</TableHead>
-                  <TableHead className={spacing.headLast}>{t("common.actions")}</TableHead>
+                  <TableHead className={`${spacing.headFirst} ${layout.headFirst}`}>
+                    {t("syncJobs.colTime")}
+                  </TableHead>
+                  <TableHead className={`${spacing.headMiddle} ${layout.headMiddle}`}>
+                    {t("syncJobs.colNode")}
+                  </TableHead>
+                  <TableHead className={`${spacing.headMiddle} ${layout.headMiddle}`}>
+                    {t("syncJobs.colSource")}
+                  </TableHead>
+                  <TableHead className={`${spacing.headMiddle} ${layout.headMiddle}`}>
+                    {t("syncJobs.colStatus")}
+                  </TableHead>
+                  <TableHead className={`${spacing.headMiddle} ${layout.headMiddle}`}>
+                    {t("syncJobs.colDuration")}
+                  </TableHead>
+                  <TableHead className={`${spacing.headMiddle} ${layout.headMiddle}`}>
+                    {t("syncJobs.colRetries")}
+                  </TableHead>
+                  <TableHead className={`${spacing.headLast} ${layout.headLast}`}>
+                    {t("common.actions")}
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody className={tableTransitionClass(jobsTable.isTransitioning)}>
