@@ -41,7 +41,7 @@ import { ApiError } from "@/lib/api/client";
 import { listGroupUsers, replaceGroupUsers } from "@/lib/api/group-users";
 import { createGroup, deleteGroup, listGroups, updateGroup } from "@/lib/api/groups";
 import { tableColumnSpacing } from "@/lib/table-spacing";
-import { listUsers } from "@/lib/api/users";
+import { listAllUsers } from "@/lib/api/users";
 import type { Group, UserStatus } from "@/lib/api/types";
 import { tableToolbarClass } from "@/lib/table-toolbar";
 
@@ -109,8 +109,8 @@ export function GroupsPage() {
   });
 
   const usersQuery = useQuery({
-    queryKey: ["users", "groups-page", { limit: 1000, offset: 0 }],
-    queryFn: () => listUsers({ limit: 1000, offset: 0 }),
+    queryKey: ["users", "groups-page", "all"],
+    queryFn: () => listAllUsers(),
     enabled: !!upserting,
   });
 

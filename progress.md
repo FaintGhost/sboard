@@ -1168,3 +1168,42 @@
 |------|-------|----------|--------|--------|
 | API 定向测试 | `GOCACHE=/tmp/go-build go test ./panel/internal/api -count=1` | 通过 | 通过 | ✓ |
 | Panel 后端全量 | `GOCACHE=/tmp/go-build go test ./panel/internal/... ./panel/cmd/panel/... -count=1` | 通过 | 通过 | ✓ |
+
+## Session: 2026-02-12 (Frontend/Backend Pagination Alignment)
+
+### Phase 1: 影响面核查
+- **Status:** complete
+- Actions taken:
+  - 核查前端请求参数，定位 `limit=1000` 兼容性风险点。
+  - 明确不能直接降为 500（会在大数据量下丢数据）。
+- Files created/modified:
+  - `panel/web/src/pages/groups-page.tsx` (inspected)
+  - `panel/web/src/pages/dashboard-page.tsx` (inspected)
+
+### Phase 2: 对齐实现
+- **Status:** complete
+- Actions taken:
+  - 新增分页聚合工具 `panel/web/src/lib/api/pagination.ts`。
+  - `users.ts` 增加 `listAllUsers`；`nodes.ts` 增加 `listAllNodes`。
+  - 群组页和仪表盘改用全量聚合 API。
+- Files created/modified:
+  - `panel/web/src/lib/api/pagination.ts` (created)
+  - `panel/web/src/lib/api/users.ts` (modified)
+  - `panel/web/src/lib/api/nodes.ts` (modified)
+  - `panel/web/src/pages/groups-page.tsx` (modified)
+  - `panel/web/src/pages/dashboard-page.tsx` (modified)
+
+### Phase 3: 验证
+- **Status:** complete
+- Actions taken:
+  - 新增 users/nodes API 分页聚合测试。
+  - 跑群组页回归测试与前端构建。
+- Files created/modified:
+  - `panel/web/src/lib/api/users.test.ts` (created)
+  - `panel/web/src/lib/api/nodes.test.ts` (created)
+
+## Test Results (2026-02-12, Frontend Alignment)
+| Test | Input | Expected | Actual | Status |
+|------|-------|----------|--------|--------|
+| API 聚合 + 群组页回归 | `bun run test -- src/lib/api/users.test.ts src/lib/api/nodes.test.ts src/pages/groups-page.test.tsx` | 通过 | 通过 | ✓ |
+| 前端构建 | `bun run build` | 通过 | 通过（含 chunk size 警告） | ✓ |

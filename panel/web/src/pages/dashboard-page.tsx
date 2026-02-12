@@ -11,7 +11,7 @@ import {
 } from "@tabler/icons-react";
 
 import { listUsers } from "@/lib/api/users";
-import { listNodes } from "@/lib/api/nodes";
+import { listAllNodes } from "@/lib/api/nodes";
 import { ChartAreaInteractive } from "@/components/chart-area-interactive";
 import { SectionCards } from "@/components/section-cards";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -38,7 +38,7 @@ export function DashboardPage() {
 
   const nodesQuery = useQuery({
     queryKey: ["nodes", "dashboard"],
-    queryFn: () => listNodes({ limit: 1000, offset: 0 }),
+    queryFn: () => listAllNodes(),
     refetchInterval: 10_000,
   });
 

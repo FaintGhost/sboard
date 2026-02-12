@@ -1,4 +1,5 @@
 import { apiRequest } from "./client";
+import { listAllByPage } from "./pagination";
 import type { ListUsersParams, User } from "./types";
 
 export function createUser(payload: { username: string }) {
@@ -56,4 +57,13 @@ export function listUsers(params: ListUsersParams = {}) {
 
   const suffix = query.toString() ? `?${query.toString()}` : "";
   return apiRequest<User[]>(`/api/users${suffix}`);
+}
+
+export function listAllUsers(params: Omit<ListUsersParams, "limit" | "offset"> = {}) {
+  return listAllByPage<User>((page) =>
+    listUsers({
+      ...params,
+      ...page,
+    }),
+  );
 }

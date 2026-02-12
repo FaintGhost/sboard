@@ -1,4 +1,5 @@
 import { apiRequest } from "./client";
+import { listAllByPage } from "./pagination";
 import type { ListNodesParams, Node, NodeTrafficSample } from "./types";
 
 export function listNodes(params: ListNodesParams = {}) {
@@ -7,6 +8,10 @@ export function listNodes(params: ListNodesParams = {}) {
   if (typeof params.offset === "number") query.set("offset", String(params.offset));
   const suffix = query.toString() ? `?${query.toString()}` : "";
   return apiRequest<Node[]>(`/api/nodes${suffix}`);
+}
+
+export function listAllNodes() {
+  return listAllByPage<Node>((page) => listNodes(page));
 }
 
 export function createNode(payload: {

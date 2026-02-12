@@ -906,3 +906,32 @@ Complete
 - [x] 移除该接口独立分页解析分支，统一错误语义为 `invalid pagination`
 - [x] 补分页边界测试（非法值拒绝、500 上限通过）
 - **Status:** complete
+
+---
+
+# Session Plan: 前后端分页上限对齐（2026-02-12）
+
+## Goal
+消除前端 `limit=1000` 与后端 `maxListLimit=500` 的不兼容，确保页面功能不回退（尤其全量成员/节点场景）。
+
+## Current Phase
+Complete
+
+## Phases
+
+### Phase 1: 影响面核查
+- [x] 定位前端仍使用 `limit=1000` 的调用点
+- [x] 评估功能影响（群组成员编辑、仪表盘节点概览）
+- **Status:** complete
+
+### Phase 2: 对齐实现
+- [x] 新增分页聚合工具 `listAllByPage`（按 500 分批拉取）
+- [x] 新增 `listAllUsers` / `listAllNodes` API
+- [x] 群组页与仪表盘改为使用全量聚合 API
+- **Status:** complete
+
+### Phase 3: 验证
+- [x] 新增 API 分页聚合测试（users/nodes）
+- [x] 回归群组页面测试
+- [x] 前端构建通过
+- **Status:** complete

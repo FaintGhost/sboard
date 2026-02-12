@@ -892,3 +892,13 @@
 - 覆盖：新增 `traffic_store_guard_test.go`，一次性覆盖 4 个 traffic 接口。
 - 增量统一：`/api/nodes/:id/traffic` 改为复用通用请求参数解析模块，避免继续维护单独分页分支。
 - 行为变化：该接口对非法分页参数从“静默回退默认值”收敛为“明确返回 400 invalid pagination”，便于客户端快速发现参数错误。
+
+## Session Findings (2026-02-12, Frontend/Backend Pagination Alignment)
+- 兼容性问题确认：后端已限制 `limit<=500`，但前端仍存在 `limit=1000` 请求，来源于：
+  - `panel/web/src/pages/groups-page.tsx`（编辑分组时拉取用户候选）
+  - `panel/web/src/pages/dashboard-page.tsx`（系统概览拉取节点）
+- 风险：请求被后端拒绝 `400 invalid pagination`，导致页面关键数据加载失败。
+- 修复决策：
+  - 不做简单“1000->500”降级（会在大数据量下截断数据）。
+  - 改为分批聚合拉取，新增 `listAllByPage` + `listAllUsers` + `listAllNodes`，保持“全量语义”。
+- 验证结果：新增 users/nodes API 单测验证分页聚合调用链；群组页回归测试与前端构建均通过。
