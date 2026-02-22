@@ -62,7 +62,7 @@ describe("UsersPage", () => {
     expect(
       screen.queryByText("已过期/流量超限通常由系统自动判定，无需手动切换。"),
     ).not.toBeInTheDocument();
-    expect(screen.getByRole("table")).toHaveClass("table-fixed");
+    expect(screen.getByRole("table")).toHaveClass("md:table-fixed");
   });
 
   it("can edit user via PUT and shows updated status", async () => {

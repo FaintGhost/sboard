@@ -1,25 +1,20 @@
-import { apiRequest } from "./client";
-import type { ListSyncJobsParams, SyncJob, SyncJobDetail } from "./types";
+import "./client";
+import {
+  listSyncJobs as _listSyncJobs,
+  getSyncJob as _getSyncJob,
+  retrySyncJob as _retrySyncJob,
+} from "./gen";
+import type { SyncJobListItem, SyncJobDetail } from "./gen";
+import type { ListSyncJobsParams } from "./types";
 
-export function listSyncJobs(params: ListSyncJobsParams = {}) {
-  const query = new URLSearchParams();
-
-  if (typeof params.limit === "number") query.set("limit", String(params.limit));
-  if (typeof params.offset === "number") query.set("offset", String(params.offset));
-  if (typeof params.node_id === "number") query.set("node_id", String(params.node_id));
-  if (params.status) query.set("status", params.status);
-  if (params.trigger_source) query.set("trigger_source", params.trigger_source);
-  if (params.from) query.set("from", params.from);
-  if (params.to) query.set("to", params.to);
-
-  const suffix = query.toString() ? `?${query.toString()}` : "";
-  return apiRequest<SyncJob[]>(`/api/sync-jobs${suffix}`);
+export function listSyncJobs(params: ListSyncJobsParams = {}): Promise<SyncJobListItem[]> {
+  return _listSyncJobs({ query: params as Record<string, unknown> }).then((r) => r.data!.data);
 }
 
-export function getSyncJob(id: number) {
-  return apiRequest<SyncJobDetail>(`/api/sync-jobs/${id}`);
+export function getSyncJob(id: number): Promise<SyncJobDetail> {
+  return _getSyncJob({ path: { id } }).then((r) => r.data!.data);
 }
 
-export function retrySyncJob(id: number) {
-  return apiRequest<SyncJob>(`/api/sync-jobs/${id}/retry`, { method: "POST" });
+export function retrySyncJob(id: number): Promise<SyncJobListItem> {
+  return _retrySyncJob({ path: { id } }).then((r) => r.data!.data!);
 }

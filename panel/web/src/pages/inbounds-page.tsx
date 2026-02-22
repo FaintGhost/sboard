@@ -88,8 +88,8 @@ const defaultNewInbound: Inbound = {
   listen_port: 443,
   public_port: 0,
   settings: {},
-  tls_settings: null,
-  transport_settings: null,
+  tls_settings: {},
+  transport_settings: {},
 };
 
 const defaultPreset: InboundTemplatePresetProtocol = "vless";

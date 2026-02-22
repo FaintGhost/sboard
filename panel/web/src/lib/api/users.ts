@@ -1,15 +1,20 @@
-import { apiRequest } from "./client";
+import "./client";
+import {
+  listUsers as _listUsers,
+  createUser as _createUser,
+  updateUser as _updateUser,
+  deleteUser as _deleteUser,
+} from "./gen";
+import type { User } from "./gen";
 import { listAllByPage } from "./pagination";
-import type { ListUsersParams, User } from "./types";
+import type { ListUsersParams } from "./types";
 
-export function createUser(payload: { username: string }) {
-  return apiRequest<User>("/api/users", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
+export function listUsers(params: ListUsersParams = {}): Promise<User[]> {
+  return _listUsers({ query: params as Record<string, unknown> }).then((r) => r.data!.data);
+}
+
+export function createUser(payload: { username: string }): Promise<User> {
+  return _createUser({ body: payload }).then((r) => r.data!.data);
 }
 
 export function updateUser(
@@ -21,45 +26,23 @@ export function updateUser(
     traffic_limit: number;
     traffic_reset_day: number;
   }>,
-) {
-  return apiRequest<User>(`/api/users/${id}`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
+): Promise<User> {
+  return _updateUser({ path: { id }, body: payload }).then((r) => r.data!.data);
 }
 
-export function disableUser(id: number) {
-  return apiRequest<User>(`/api/users/${id}`, {
-    method: "DELETE",
-  });
+export function disableUser(id: number): Promise<User> {
+  return _deleteUser({ path: { id } }).then((r) => r.data!.data!);
 }
 
-export function deleteUser(id: number) {
-  return apiRequest<{ message: string }>(`/api/users/${id}?hard=true`, {
-    method: "DELETE",
-  });
+export function deleteUser(id: number): Promise<{ message: string }> {
+  return _deleteUser({ path: { id }, query: { hard: "true" } }).then(
+    (r) => r.data! as unknown as { message: string },
+  );
 }
 
-export function listUsers(params: ListUsersParams = {}) {
-  const query = new URLSearchParams();
-  if (typeof params.limit === "number") {
-    query.set("limit", String(params.limit));
-  }
-  if (typeof params.offset === "number") {
-    query.set("offset", String(params.offset));
-  }
-  if (params.status) {
-    query.set("status", params.status);
-  }
-
-  const suffix = query.toString() ? `?${query.toString()}` : "";
-  return apiRequest<User[]>(`/api/users${suffix}`);
-}
-
-export function listAllUsers(params: Omit<ListUsersParams, "limit" | "offset"> = {}) {
+export function listAllUsers(
+  params: Omit<ListUsersParams, "limit" | "offset"> = {},
+): Promise<User[]> {
   return listAllByPage<User>((page) =>
     listUsers({
       ...params,

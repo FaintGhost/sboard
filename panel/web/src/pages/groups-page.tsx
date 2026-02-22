@@ -42,7 +42,7 @@ import { listGroupUsers, replaceGroupUsers } from "@/lib/api/group-users";
 import { createGroup, deleteGroup, listGroups, updateGroup } from "@/lib/api/groups";
 import { tableColumnLayout, tableColumnSpacing } from "@/lib/table-spacing";
 import { listAllUsers } from "@/lib/api/users";
-import type { Group, UserStatus } from "@/lib/api/types";
+import type { Group } from "@/lib/api/types";
 import { tableToolbarClass } from "@/lib/table-toolbar";
 
 type EditState = {
@@ -62,7 +62,7 @@ const defaultNewGroup: Group = {
   member_count: 0,
 };
 
-function StatusBadge({ status }: { status: UserStatus }) {
+function StatusBadge({ status }: { status: string }) {
   const { t } = useTranslation();
   const variant =
     status === "active" ? "default" : status === "disabled" ? "secondary" : "destructive";

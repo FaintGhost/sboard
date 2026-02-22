@@ -1,30 +1,28 @@
-import { apiRequest } from "./client";
-import type { Group, ListGroupsParams } from "./types";
+import "./client";
+import {
+  listGroups as _listGroups,
+  createGroup as _createGroup,
+  updateGroup as _updateGroup,
+  deleteGroup as _deleteGroup,
+} from "./gen";
+import type { Group } from "./gen";
+import type { ListGroupsParams } from "./types";
 
-export function listGroups(params: ListGroupsParams = {}) {
-  const query = new URLSearchParams();
-  if (typeof params.limit === "number") query.set("limit", String(params.limit));
-  if (typeof params.offset === "number") query.set("offset", String(params.offset));
-  const suffix = query.toString() ? `?${query.toString()}` : "";
-  return apiRequest<Group[]>(`/api/groups${suffix}`);
+export function listGroups(params: ListGroupsParams = {}): Promise<Group[]> {
+  return _listGroups({ query: params }).then((r) => r.data!.data);
 }
 
-export function createGroup(payload: { name: string; description: string }) {
-  return apiRequest<Group>("/api/groups", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
+export function createGroup(payload: { name: string; description: string }): Promise<Group> {
+  return _createGroup({ body: payload }).then((r) => r.data!.data);
 }
 
-export function updateGroup(id: number, payload: Partial<{ name: string; description: string }>) {
-  return apiRequest<Group>(`/api/groups/${id}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
+export function updateGroup(
+  id: number,
+  payload: Partial<{ name: string; description: string }>,
+): Promise<Group> {
+  return _updateGroup({ path: { id }, body: payload }).then((r) => r.data!.data);
 }
 
-export function deleteGroup(id: number) {
-  return apiRequest<{ status: string }>(`/api/groups/${id}`, { method: "DELETE" });
+export function deleteGroup(id: number): Promise<{ status: string }> {
+  return _deleteGroup({ path: { id } }).then((r) => r.data!);
 }

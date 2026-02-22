@@ -90,7 +90,7 @@ function CopyButton({ text, label }: { text: string; label?: string }) {
   );
 }
 
-function StatusBadge({ status }: { status: UserStatus }) {
+function StatusBadge({ status }: { status: string }) {
   const { t } = useTranslation();
   const variants: Record<UserStatus, "default" | "destructive" | "secondary" | "outline"> = {
     active: "default",
@@ -102,7 +102,7 @@ function StatusBadge({ status }: { status: UserStatus }) {
   const label =
     status === "traffic_exceeded" ? t("users.status.trafficExceeded") : t(`users.status.${status}`);
 
-  return <Badge variant={variants[status]}>{label}</Badge>;
+  return <Badge variant={variants[status as UserStatus]}>{label}</Badge>;
 }
 
 export function SubscriptionsPage() {

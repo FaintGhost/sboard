@@ -1,16 +1,22 @@
-import { apiRequest } from "./client";
+import "./client";
+import {
+  listNodes as _listNodes,
+  createNode as _createNode,
+  updateNode as _updateNode,
+  deleteNode as _deleteNode,
+  getNodeHealth as _getNodeHealth,
+  syncNode as _syncNode,
+  listNodeTraffic as _listNodeTraffic,
+} from "./gen";
+import type { Node, NodeTrafficSample } from "./gen";
 import { listAllByPage } from "./pagination";
-import type { ListNodesParams, Node, NodeTrafficSample } from "./types";
+import type { ListNodesParams } from "./types";
 
-export function listNodes(params: ListNodesParams = {}) {
-  const query = new URLSearchParams();
-  if (typeof params.limit === "number") query.set("limit", String(params.limit));
-  if (typeof params.offset === "number") query.set("offset", String(params.offset));
-  const suffix = query.toString() ? `?${query.toString()}` : "";
-  return apiRequest<Node[]>(`/api/nodes${suffix}`);
+export function listNodes(params: ListNodesParams = {}): Promise<Node[]> {
+  return _listNodes({ query: params }).then((r) => r.data!.data);
 }
 
-export function listAllNodes() {
+export function listAllNodes(): Promise<Node[]> {
   return listAllByPage<Node>((page) => listNodes(page));
 }
 
@@ -21,12 +27,8 @@ export function createNode(payload: {
   secret_key: string;
   public_address: string;
   group_id: number | null;
-}) {
-  return apiRequest<Node>("/api/nodes", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
+}): Promise<Node> {
+  return _createNode({ body: payload }).then((r) => r.data!.data);
 }
 
 export function updateNode(
@@ -39,38 +41,31 @@ export function updateNode(
     public_address: string;
     group_id: number | null;
   }>,
-) {
-  return apiRequest<Node>(`/api/nodes/${id}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
+): Promise<Node> {
+  return _updateNode({ path: { id }, body: payload }).then((r) => r.data!.data);
 }
 
-export function deleteNode(id: number, options: { force?: boolean } = {}) {
-  const query = new URLSearchParams();
-  if (options.force) query.set("force", "true");
-  const suffix = query.toString() ? `?${query.toString()}` : "";
-  return apiRequest<{ status: string; force?: boolean; deleted_inbounds?: number }>(
-    `/api/nodes/${id}${suffix}`,
-    { method: "DELETE" },
-  );
+export function deleteNode(
+  id: number,
+  options: { force?: boolean } = {},
+): Promise<{ status: string; force?: boolean; deleted_inbounds?: number }> {
+  return _deleteNode({
+    path: { id },
+    query: options.force ? { force: "true" } : undefined,
+  }).then((r) => r.data!);
 }
 
-export function nodeHealth(id: number) {
-  return apiRequest<{ status: string }>(`/api/nodes/${id}/health`);
+export function nodeHealth(id: number): Promise<{ status: string }> {
+  return _getNodeHealth({ path: { id } }).then((r) => r.data!);
 }
 
-export function nodeSync(id: number) {
-  return apiRequest<{ status: string }>(`/api/nodes/${id}/sync`, { method: "POST" });
+export function nodeSync(id: number): Promise<{ status: string }> {
+  return _syncNode({ path: { id } }).then((r) => r.data!);
 }
 
-export function listNodeTraffic(id: number, params: { limit?: number; offset?: number } = {}) {
-  const query = new URLSearchParams();
-  if (typeof params.limit === "number") query.set("limit", String(params.limit));
-  if (typeof params.offset === "number") query.set("offset", String(params.offset));
-  const suffix = query.toString() ? `?${query.toString()}` : "";
-  // apiRequest() already unwraps the SuccessEnvelope { data: T }.
-  // The backend returns { data: NodeTrafficSample[] }, so here we request T = NodeTrafficSample[].
-  return apiRequest<NodeTrafficSample[]>(`/api/nodes/${id}/traffic${suffix}`);
+export function listNodeTraffic(
+  id: number,
+  params: { limit?: number; offset?: number } = {},
+): Promise<NodeTrafficSample[]> {
+  return _listNodeTraffic({ path: { id }, query: params }).then((r) => r.data!.data);
 }

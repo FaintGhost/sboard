@@ -1,41 +1,23 @@
-import { apiRequest } from "./client";
+import "./client";
+import {
+  getTrafficNodesSummary as _getTrafficNodesSummary,
+  getTrafficTotalSummary as _getTrafficTotalSummary,
+  getTrafficTimeseries as _getTrafficTimeseries,
+} from "./gen";
+import type { TrafficNodeSummary, TrafficTotalSummary, TrafficTimeseriesPoint } from "./gen";
 
-export type TrafficNodeSummary = {
-  node_id: number;
-  upload: number;
-  download: number;
-  last_recorded_at: string;
-  samples: number;
-  inbounds: number;
-};
+export type { TrafficNodeSummary, TrafficTotalSummary, TrafficTimeseriesPoint };
 
-export type TrafficTotalSummary = {
-  upload: number;
-  download: number;
-  last_recorded_at: string;
-  samples: number;
-  nodes: number;
-  inbounds: number;
-};
-
-export type TrafficTimeseriesPoint = {
-  bucket_start: string;
-  upload: number;
-  download: number;
-};
-
-export function listTrafficNodesSummary(params: { window?: string } = {}) {
-  const qs = new URLSearchParams();
-  if (params.window) qs.set("window", params.window);
-  const suffix = qs.toString() ? `?${qs.toString()}` : "";
-  return apiRequest<TrafficNodeSummary[]>(`/api/traffic/nodes/summary${suffix}`);
+export function listTrafficNodesSummary(
+  params: { window?: string } = {},
+): Promise<TrafficNodeSummary[]> {
+  return _getTrafficNodesSummary({ query: params }).then((r) => r.data!.data);
 }
 
-export function getTrafficTotalSummary(params: { window?: string } = {}) {
-  const qs = new URLSearchParams();
-  if (params.window) qs.set("window", params.window);
-  const suffix = qs.toString() ? `?${qs.toString()}` : "";
-  return apiRequest<TrafficTotalSummary>(`/api/traffic/total/summary${suffix}`);
+export function getTrafficTotalSummary(
+  params: { window?: string } = {},
+): Promise<TrafficTotalSummary> {
+  return _getTrafficTotalSummary({ query: params }).then((r) => r.data!.data);
 }
 
 export function listTrafficTimeseries(
@@ -44,11 +26,6 @@ export function listTrafficTimeseries(
     bucket?: "minute" | "hour" | "day";
     node_id?: number;
   } = {},
-) {
-  const qs = new URLSearchParams();
-  if (params.window) qs.set("window", params.window);
-  if (params.bucket) qs.set("bucket", params.bucket);
-  if (typeof params.node_id === "number") qs.set("node_id", String(params.node_id));
-  const suffix = qs.toString() ? `?${qs.toString()}` : "";
-  return apiRequest<TrafficTimeseriesPoint[]>(`/api/traffic/timeseries${suffix}`);
+): Promise<TrafficTimeseriesPoint[]> {
+  return _getTrafficTimeseries({ query: params }).then((r) => r.data!.data);
 }

@@ -1,14 +1,14 @@
-import { apiRequest } from "./client";
-import type { User } from "./types";
+import "./client";
+import { listGroupUsers as _listGroupUsers, replaceGroupUsers as _replaceGroupUsers } from "./gen";
+import type { GroupUsersListItem } from "./gen";
 
-export function listGroupUsers(groupId: number) {
-  return apiRequest<User[]>(`/api/groups/${groupId}/users`);
+export function listGroupUsers(groupId: number): Promise<GroupUsersListItem[]> {
+  return _listGroupUsers({ path: { id: groupId } }).then((r) => r.data!.data);
 }
 
-export function replaceGroupUsers(groupId: number, payload: { user_ids: number[] }) {
-  return apiRequest<{ user_ids: number[] }>(`/api/groups/${groupId}/users`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
+export function replaceGroupUsers(
+  groupId: number,
+  payload: { user_ids: number[] },
+): Promise<{ user_ids: number[] }> {
+  return _replaceGroupUsers({ path: { id: groupId }, body: payload }).then((r) => r.data!.data);
 }

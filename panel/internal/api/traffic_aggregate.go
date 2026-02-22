@@ -66,7 +66,7 @@ func TrafficNodesSummary(store *db.Store) gin.HandlerFunc {
 	}
 }
 
-func TrafficTotalSummary(store *db.Store) gin.HandlerFunc {
+func LegacyTrafficTotalSummary(store *db.Store) gin.HandlerFunc {
 	p := traffic.NewSQLiteProvider(store)
 	return func(c *gin.Context) {
 		if !ensureStore(c, store) {

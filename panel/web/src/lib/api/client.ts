@@ -1,12 +1,34 @@
+import { client } from "./gen/client.gen";
 import { useAuthStore } from "@/store/auth";
 
-type SuccessEnvelope<T> = {
-  data: T;
-};
+// Configure base URL from environment if set.
+const envBase = import.meta.env.VITE_API_BASE_URL?.trim();
+if (envBase) {
+  const base = envBase.replace(/\/+$/, "");
+  client.setConfig({ baseUrl: `${base}/api` });
+}
 
-type ErrorEnvelope = {
-  error?: string;
-};
+// Configure auth: provide JWT token for authenticated endpoints.
+client.setConfig({
+  auth: () => useAuthStore.getState().token ?? undefined,
+});
+
+// Error interceptor: always throws ApiError on HTTP errors.
+// This preserves the same error-handling pattern as the old apiRequest().
+client.interceptors.error.use((error, response) => {
+  if (response?.status === 401) {
+    useAuthStore.getState().clearToken();
+  }
+  let msg: string;
+  if (typeof error === "object" && error !== null && "error" in error) {
+    msg = (error as { error: string }).error;
+  } else if (typeof error === "string") {
+    msg = error;
+  } else {
+    msg = `request failed with status ${response?.status ?? 0}`;
+  }
+  throw new ApiError(response?.status ?? 0, msg);
+});
 
 export class ApiError extends Error {
   status: number;
@@ -16,54 +38,4 @@ export class ApiError extends Error {
     this.name = "ApiError";
     this.status = status;
   }
-}
-
-function buildURL(path: string): string {
-  if (/^https?:\/\//.test(path)) {
-    return path;
-  }
-
-  const base = import.meta.env.VITE_API_BASE_URL?.trim() ?? "";
-  if (base) {
-    return new URL(path, base).toString();
-  }
-
-  if (typeof window !== "undefined") {
-    return new URL(path, window.location.origin).toString();
-  }
-
-  return new URL(path, "http://localhost").toString();
-}
-
-export async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
-  const headers = new Headers(init?.headers);
-  headers.set("Accept", "application/json");
-
-  const token = useAuthStore.getState().token;
-  if (token) {
-    headers.set("Authorization", `Bearer ${token}`);
-  }
-
-  const response = await fetch(
-    new Request(buildURL(path), {
-      ...init,
-      headers,
-    }),
-  );
-
-  const contentType = response.headers.get("Content-Type") ?? "";
-  const isJSON = contentType.includes("application/json");
-  const payload = isJSON ? ((await response.json()) as SuccessEnvelope<T> & ErrorEnvelope) : null;
-
-  if (!response.ok) {
-    if (response.status === 401) {
-      useAuthStore.getState().clearToken();
-    }
-    throw new ApiError(
-      response.status,
-      payload?.error ?? `request failed with status ${response.status}`,
-    );
-  }
-
-  return payload?.data as T;
 }

@@ -1,32 +1,33 @@
-import { apiRequest } from "./client";
+import "./client";
+import {
+  formatSingBox as _formatSingBox,
+  checkSingBox as _checkSingBox,
+  generateSingBox as _generateSingBox,
+} from "./gen";
 import type {
-  SingBoxCheckResponse,
+  SingBoxToolMode,
   SingBoxFormatResponse,
+  SingBoxCheckResponse,
   SingBoxGenerateCommand,
   SingBoxGenerateResponse,
-  SingBoxToolMode,
 } from "./types";
 
-export function formatSingBoxConfig(payload: { config: string; mode?: SingBoxToolMode }) {
-  return apiRequest<SingBoxFormatResponse>("/api/sing-box/format", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
+export function formatSingBoxConfig(payload: {
+  config: string;
+  mode?: SingBoxToolMode;
+}): Promise<SingBoxFormatResponse> {
+  return _formatSingBox({ body: payload }).then((r) => r.data!.data);
 }
 
-export function checkSingBoxConfig(payload: { config: string; mode?: SingBoxToolMode }) {
-  return apiRequest<SingBoxCheckResponse>("/api/sing-box/check", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
+export function checkSingBoxConfig(payload: {
+  config: string;
+  mode?: SingBoxToolMode;
+}): Promise<SingBoxCheckResponse> {
+  return _checkSingBox({ body: payload }).then((r) => r.data!.data);
 }
 
-export function generateSingBoxValue(command: SingBoxGenerateCommand) {
-  return apiRequest<SingBoxGenerateResponse>("/api/sing-box/generate", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ command }),
-  });
+export function generateSingBoxValue(
+  command: SingBoxGenerateCommand,
+): Promise<SingBoxGenerateResponse> {
+  return _generateSingBox({ body: { command } }).then((r) => r.data!.data);
 }

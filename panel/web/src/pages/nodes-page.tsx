@@ -86,6 +86,7 @@ const defaultNewNode: Node = {
   public_address: "",
   group_id: null,
   status: "offline",
+  last_seen_at: null,
 };
 
 const motionEase: [number, number, number, number] = [0.22, 1, 0.36, 1];

@@ -53,7 +53,11 @@ import { useSystemStore } from "@/store/system";
 
 const pageSize = 20;
 
-function formatDateTime(value: string | undefined, locale: string, timezone: string): string {
+function formatDateTime(
+  value: string | null | undefined,
+  locale: string,
+  timezone: string,
+): string {
   return formatDateTimeByTimezone(value, locale, timezone);
 }
 

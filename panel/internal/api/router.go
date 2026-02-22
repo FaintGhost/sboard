@@ -1,75 +1,93 @@
 package api
 
 import (
-	"context"
+  "context"
+  "fmt"
+  "net/http"
+  "strings"
 
-	"github.com/gin-gonic/gin"
-	"sboard/panel/internal/config"
-	"sboard/panel/internal/db"
+  "github.com/gin-gonic/gin"
+  "github.com/golang-jwt/jwt/v5"
+  "sboard/panel/internal/config"
+  "sboard/panel/internal/db"
 )
 
+// publicOperations lists operations that do NOT require authentication.
+var publicOperations = map[string]bool{
+  "GetHealth":          true,
+  "GetBootstrapStatus": true,
+  "Bootstrap":          true,
+  "Login":              true,
+  "GetSubscription":    true,
+}
+
+// authStrictMiddleware returns a StrictMiddlewareFunc that enforces JWT
+// authentication for all operations except those in publicOperations.
+func authStrictMiddleware(secret string) StrictMiddlewareFunc {
+  return func(f StrictHandlerFunc, operationID string) StrictHandlerFunc {
+    if publicOperations[operationID] {
+      return f
+    }
+    return func(ctx *gin.Context, request any) (any, error) {
+      auth := ctx.GetHeader("Authorization")
+      if !strings.HasPrefix(auth, "Bearer ") {
+        ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+        ctx.Abort()
+        return nil, nil
+      }
+      tokenStr := strings.TrimPrefix(auth, "Bearer ")
+      claims := &jwt.RegisteredClaims{}
+      token, err := jwt.ParseWithClaims(tokenStr, claims, func(t *jwt.Token) (any, error) {
+        if t.Method != jwt.SigningMethodHS256 {
+          return nil, fmt.Errorf("unexpected signing method")
+        }
+        return []byte(secret), nil
+      })
+      if err != nil || !token.Valid || claims.Subject != "admin" {
+        ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+        ctx.Abort()
+        return nil, nil
+      }
+      return f(ctx, request)
+    }
+  }
+}
+
 func NewRouter(cfg config.Config, store *db.Store) *gin.Engine {
-	if store != nil {
-		_ = InitSystemTimezone(context.Background(), store)
-	}
-	r := gin.New()
-	r.Use(RequestLogger(cfg.LogRequests))
-	r.Use(gin.Recovery())
-	r.Use(CORSMiddleware(cfg.CORSAllowOrigins))
-	r.GET("/api/health", Health)
-	r.GET("/api/admin/bootstrap", AdminBootstrapGet(store))
-	r.POST("/api/admin/bootstrap", AdminBootstrapPost(cfg, store))
-	r.POST("/api/admin/login", AdminLogin(cfg, store))
-	r.GET("/api/sub/:user_uuid", SubscriptionGet(store))
+  if store != nil {
+    _ = InitSystemTimezone(context.Background(), store)
+  }
 
-	singBoxTools := singBoxToolsFactory()
+  r := gin.New()
+  r.Use(RequestLogger(cfg.LogRequests))
+  r.Use(gin.Recovery())
+  r.Use(CORSMiddleware(cfg.CORSAllowOrigins))
 
-	auth := r.Group("/api")
-	auth.Use(AuthMiddleware(cfg.JWTSecret))
-	auth.GET("/admin/profile", AdminProfileGet(store))
-	auth.PUT("/admin/profile", AdminProfilePut(store))
-	auth.GET("/users", UsersList(store))
-	auth.POST("/users", UsersCreate(store))
-	auth.GET("/users/:id", UsersGet(store))
-	auth.PUT("/users/:id", UsersUpdate(store))
-	auth.DELETE("/users/:id", UsersDelete(store))
-	auth.GET("/users/:id/groups", UserGroupsGet(store))
-	auth.PUT("/users/:id/groups", UserGroupsPut(store))
-	auth.GET("/groups", GroupsList(store))
-	auth.POST("/groups", GroupsCreate(store))
-	auth.GET("/groups/:id", GroupsGet(store))
-	auth.PUT("/groups/:id", GroupsUpdate(store))
-	auth.DELETE("/groups/:id", GroupsDelete(store))
-	auth.GET("/groups/:id/users", GroupUsersList(store))
-	auth.PUT("/groups/:id/users", GroupUsersReplace(store))
-	auth.GET("/nodes", NodesList(store))
-	auth.POST("/nodes", NodesCreate(store))
-	auth.GET("/nodes/:id", NodesGet(store))
-	auth.PUT("/nodes/:id", NodesUpdate(store))
-	auth.DELETE("/nodes/:id", NodesDelete(store))
-	auth.GET("/nodes/:id/health", NodeHealth(store))
-	auth.POST("/nodes/:id/sync", NodeSync(store))
-	auth.GET("/nodes/:id/traffic", NodeTrafficList(store))
-	auth.GET("/traffic/nodes/summary", TrafficNodesSummary(store))
-	auth.GET("/traffic/total/summary", TrafficTotalSummary(store))
-	auth.GET("/traffic/timeseries", TrafficTimeseries(store))
-	auth.GET("/system/info", SystemInfoGet())
-	auth.GET("/system/settings", SystemSettingsGet(store))
-	auth.PUT("/system/settings", SystemSettingsPut(store))
-	auth.GET("/sync-jobs", SyncJobsList(store))
-	auth.GET("/sync-jobs/:id", SyncJobsGet(store))
-	auth.POST("/sync-jobs/:id/retry", SyncJobsRetry(store))
-	auth.GET("/inbounds", InboundsList(store))
-	auth.POST("/inbounds", InboundsCreate(store))
-	auth.GET("/inbounds/:id", InboundsGet(store))
-	auth.PUT("/inbounds/:id", InboundsUpdate(store))
-	auth.DELETE("/inbounds/:id", InboundsDelete(store))
-	auth.POST("/sing-box/format", SingBoxFormat(singBoxTools))
-	auth.POST("/sing-box/check", SingBoxCheck(singBoxTools))
-	auth.POST("/sing-box/generate", SingBoxGenerate(singBoxTools))
+  singBoxTools := singBoxToolsFactory()
 
-	if cfg.ServeWeb {
-		ServeWebUI(r, cfg.WebDir)
-	}
-	return r
+  server := NewServer(store, cfg, singBoxTools)
+  strictHandler := NewStrictHandler(server, []StrictMiddlewareFunc{
+    authStrictMiddleware(cfg.JWTSecret),
+  })
+
+  RegisterHandlersWithOptions(r, strictHandler, GinServerOptions{
+    BaseURL: "/api",
+    ErrorHandler: func(c *gin.Context, err error, statusCode int) {
+      msg := err.Error()
+      // Normalize generated parameter validation errors.
+      if statusCode == http.StatusBadRequest && strings.Contains(msg, "Invalid format for parameter") {
+        if strings.Contains(msg, "limit") || strings.Contains(msg, "offset") {
+          msg = "invalid pagination"
+        } else {
+          msg = "invalid parameter"
+        }
+      }
+      c.JSON(statusCode, gin.H{"error": msg})
+    },
+  })
+
+  if cfg.ServeWeb {
+    ServeWebUI(r, cfg.WebDir)
+  }
+  return r
 }

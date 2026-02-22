@@ -1,33 +1,42 @@
 # SBoard
 
-SBoard 是一个基于 sing-box 的订阅管理面板与节点管理系统。当前实现为阶段 1 基础框架，支持 Panel 与 Node 的最小可运行链路，以及 Node 配置下发与入站创建。
+SBoard 是一个基于 sing-box 的订阅管理面板与节点管理系统。
 
 **架构概览**
-- Panel：管理面板后端（Gin + SQLite），提供健康检查与后续扩展入口
-- Node：实际承载入站的节点服务（内嵌 sing-box），接收 Panel 下发的入站配置
+- **Panel**：管理面板（Go/Gin + SQLite + React 前端），提供用户/分组/节点/入站的全功能管理
+- **Node**：实际承载入站的节点服务（内嵌 sing-box），接收 Panel 下发的入站配置
 
-**前置条件**
+**功能概览**
+- 完整的管理面板：登录、仪表盘、用户、分组、节点、入站、订阅、设置
+- 分组驱动的订阅与下发：用户通过分组获取节点入站
+- 支持多种协议：vless、vmess、trojan、shadowsocks（含 2022）、socks、http、mixed
+- 订阅格式：sing-box JSON、v2ray（Base64 分享链接），按 User-Agent 自动选择
+- 入站配置通过 sing-box 模板编辑，支持 TLS/Reality/Transport
+- 入站新增/更新/删除后自动触发节点同步
+- OpenAPI 3.0 驱动的前后端 API 对接，代码生成保证类型一致性
+
+## 前置条件
+
 - Go 1.25+
+- Bun（前端构建）
 - Linux 服务器（推荐）
-- 可写目录用于 SQLite 数据库与运行时文件
 
-**快速开始（裸机）**
+## 快速开始（裸机）
+
 1. 启动 Panel
 ```bash
-cd /root/workspace/sboard/panel
+cd panel
 PANEL_HTTP_ADDR=:8080 \
 PANEL_DB_PATH=panel.db \
 PANEL_CORS_ALLOW_ORIGINS=http://localhost:5173 \
 PANEL_JWT_SECRET=change-me-in-prod \
-# 可选：自定义 onboarding token；不设置会在首次启动日志里生成并打印
-PANEL_SETUP_TOKEN= \
 GOFLAGS='-tags=with_utls' \
 go run ./cmd/panel
 ```
 
 2. 启动 Node
 ```bash
-cd /root/workspace/sboard/node
+cd node
 NODE_HTTP_ADDR=:3000 \
 NODE_SECRET_KEY=secret \
 NODE_LOG_LEVEL=info \
@@ -35,145 +44,145 @@ GOFLAGS='-tags=with_utls' \
 go run ./cmd/node
 ```
 
-3. 配置下发（示例）
+3. 启动前端（开发模式）
 ```bash
-curl -X POST http://127.0.0.1:3000/api/config/sync \
-  -H "Authorization: Bearer secret" \
-  -d '{"inbounds":[{"type":"mixed","tag":"m1","listen":"0.0.0.0","listen_port":1080}]}'
+cd panel/web
+bun run dev
+```
+Vite 会把 `/api/*` 代理到 Panel（默认 `http://127.0.0.1:8080`）。自定义目标：
+```bash
+VITE_PROXY_TARGET=http://127.0.0.1:8080 bun run dev
 ```
 
-**Docker 部署**
-仓库内置：
-- `panel/Dockerfile`、`panel/docker-compose.yml`、`panel/docker-compose.build.yml`
-- `node/Dockerfile`、`node/docker-compose.yml`、`node/docker-compose.build.yml`
+4. 首次访问：浏览器打开 `http://localhost:5173`，如果还未初始化管理员，会出现 onboarding 页面，要求输入 Setup Token 并创建管理员账号密码。Setup Token 默认在 Panel 启动日志中打印（或通过 `PANEL_SETUP_TOKEN` 自定义）。
 
-说明：
-- `panel/docker-compose.yml` 与 `node/docker-compose.yml` 默认拉取 Docker Hub 预构建镜像（适配低配 VPS）
-- 如需自建镜像，请在本地 build 后 push，再通过 `SBOARD_PANEL_IMAGE` / `SBOARD_NODE_IMAGE` 指定
+## Docker 部署
 
-## Panel Docker Compose（推荐）
+仓库内置 Docker Compose 配置，默认拉取 Docker Hub 预构建镜像。
 
-仓库已内置 `panel/docker-compose.yml` 与 `panel/Dockerfile`（用于构建镜像）。  
-在 VPS 上建议直接拉取预构建镜像（避免低配机器构建失败），并挂载数据目录保存 SQLite。
-
-在服务器上：
-
+**Panel**
 ```bash
-cd sboard/panel
+cd panel
 export PANEL_JWT_SECRET='change-me'
-export PANEL_SETUP_TOKEN='' # 可选：不设置会在首次启动日志里生成并打印
 docker compose up -d
 ```
-
 说明：
-  - 默认镜像为 `faintghost/sboard-panel:latest`，可用 `SBOARD_PANEL_IMAGE` 覆盖
-  - Panel 默认会在同一进程内静态托管前端（`PANEL_SERVE_WEB=true`）
-  - 数据库默认路径为 `/data/panel.db`（通过 volume 映射到宿主机 `panel/data/`）
+- 默认镜像为 `faintghost/sboard-panel:latest`，可用 `SBOARD_PANEL_IMAGE` 覆盖
+- Panel 会在同一进程内静态托管前端（`PANEL_SERVE_WEB=true`）
+- 数据库默认路径为 `/data/panel.db`（通过 volume 映射到宿主机 `panel/data/`）
 
-**Node Docker Compose（推荐，海外 VPS）**
-仓库已内置 `node/docker-compose.yml` 与 `node/Dockerfile`。默认 compose 直接拉取预构建镜像：
+**Node**
 ```bash
 cd node
 export NODE_SECRET_KEY='change-me'
 docker compose up -d
 ```
 说明：
-- compose 使用 `network_mode: host`，方便入站直接监听宿主机端口（例如 443）
-- 这会让 Node API（默认 `:3000`）暴露在公网：请用防火墙只允许 Panel 服务器 IP 访问 3000
+- compose 使用 `network_mode: host`，入站直接监听宿主机端口
+- Node API（默认 `:3000`）会暴露在公网，请用防火墙只允许 Panel 服务器 IP 访问
 
-如果你希望在本机 build 并推送（推荐）：
+**自建镜像**
 ```bash
-# Node（从仓库构建并推送）
-cd sboard/node
-export SBOARD_NODE_IMAGE="faintghost/sboard-node:latest"
-docker compose -f docker-compose.yml -f docker-compose.build.yml build
-docker push "$SBOARD_NODE_IMAGE"
-
-# Panel（会同时构建 web 前端 dist 并打包进镜像）
-cd ../panel
-export SBOARD_PANEL_IMAGE="faintghost/sboard-panel:latest"
-docker compose -f docker-compose.yml -f docker-compose.build.yml build
-docker push "$SBOARD_PANEL_IMAGE"
-```
-
-构建加速建议：
-- 建议开启 BuildKit：`export DOCKER_BUILDKIT=1`
-- 日常增量构建尽量不要加 `--no-cache`，仅在需要强制全量重建时使用
-
-一键构建并推送（Node + Panel）：
-```bash
+# 一键构建并推送
 ./scripts/docker-build-push.sh --namespace faintghost --tag latest
+
+# 或分别构建
+cd node
+SBOARD_NODE_IMAGE="faintghost/sboard-node:latest" \
+  docker compose -f docker-compose.yml -f docker-compose.build.yml build
+
+cd ../panel
+SBOARD_PANEL_IMAGE="faintghost/sboard-panel:latest" \
+  docker compose -f docker-compose.yml -f docker-compose.build.yml build
 ```
 
-**配置说明**
-- Panel
-  - `PANEL_HTTP_ADDR`：监听地址，默认 `:8080`
-  - `PANEL_DB_PATH`：SQLite 路径，默认 `panel.db`
-  - `PANEL_SERVE_WEB`：是否由 Panel 静态托管前端，默认 `false`
-  - `PANEL_WEB_DIR`：前端构建产物目录（`dist`），默认 `web/dist`
-  - `PANEL_JWT_SECRET`：JWT 签名密钥（必填）
-  - `PANEL_SETUP_TOKEN`：首次初始化管理员所需的一次性 token（可选；为空时首次启动会生成并打印）
-  - `PANEL_CORS_ALLOW_ORIGINS`：允许的前端 Origin（逗号分隔或 `*`），默认 `http://localhost:5173`
-  - `PANEL_LOG_REQUESTS`：是否打印每个 HTTP 请求（`true/false`），默认 `true`
-- Node
-  - `NODE_HTTP_ADDR`：监听地址，默认 `:3000`
-  - `NODE_SECRET_KEY`：API 密钥，用于 `Authorization: Bearer <secret>`
-  - `NODE_LOG_LEVEL`：日志级别，默认 `info`
+## 配置说明
 
+**Panel**
+| 环境变量 | 说明 | 默认值 |
+|---------|------|-------|
+| `PANEL_HTTP_ADDR` | 监听地址 | `:8080` |
+| `PANEL_DB_PATH` | SQLite 路径 | `panel.db` |
+| `PANEL_JWT_SECRET` | JWT 签名密钥（必填） | - |
+| `PANEL_SETUP_TOKEN` | 首次初始化 token（可选） | 自动生成 |
+| `PANEL_SERVE_WEB` | 是否托管前端 | `false` |
+| `PANEL_WEB_DIR` | 前端产物目录 | `web/dist` |
+| `PANEL_CORS_ALLOW_ORIGINS` | 允许的 Origin | `http://localhost:5173` |
+| `PANEL_LOG_REQUESTS` | 打印 HTTP 请求 | `true` |
 
+**Node**
+| 环境变量 | 说明 | 默认值 |
+|---------|------|-------|
+| `NODE_HTTP_ADDR` | 监听地址 | `:3000` |
+| `NODE_SECRET_KEY` | API 密钥 | - |
+| `NODE_LOG_LEVEL` | 日志级别 | `info` |
 
-**前端代码质量（Oxc）**
-- `panel/web` 已从 ESLint 迁移到 Oxc（`oxlint` + `oxfmt`）。
-- 推荐使用 `bun`：
-  - `cd /root/workspace/sboard/panel/web`
-  - `bun run lint`
-  - `bun run lint:fix`
-  - `bun run format`
-  - `bun run format:check`
-- 兼容 `npm run` 同名脚本。
+## API
 
+所有 API 端点定义在 `panel/openapi.yaml`（OpenAPI 3.0.3 spec）。
 
-**前后端联调（本地）**
-1. 启动 Panel（如上，确保设置 `PANEL_JWT_SECRET`）
-2. 启动前端：
-```bash
-cd /root/workspace/sboard/panel/web
-npm run dev
-```
-3. Vite 会把 `/api/*` 代理到 Panel（默认 `http://127.0.0.1:8080`）。如需自定义目标：
-```bash
-VITE_PROXY_TARGET=http://127.0.0.1:8080 npm run dev
-```
-3. 首次访问前端：
-  - 如果还未初始化管理员，会出现 onboarding 页面，要求输入 Setup Token 并创建管理员账号密码
-  - Setup Token 默认会在 Panel 启动日志中打印（或你也可以通过 `PANEL_SETUP_TOKEN` 自定义）
-
-**基础 API**
-- `GET /api/health`：Panel 与 Node 均提供健康检查
-- `POST /api/config/sync`：Node 接收入站配置并创建入站
-- `GET /api/sub/:user_uuid`：订阅链接（sing-box）
-- `GET /api/groups`：分组列表（需要管理员 JWT）
-- `PUT /api/users/:id/groups`：设置用户所属分组（需要管理员 JWT）
+**主要端点**
+- 健康检查：`GET /api/health`
+- 管理员登录：`POST /api/admin/login`
+- 订阅：`GET /api/sub/:user_uuid`
+- Users：`GET/POST /api/users`，`GET/PUT/DELETE /api/users/:id`
+- Groups：`GET/POST /api/groups`，`GET/PUT/DELETE /api/groups/:id`
+- Nodes：`GET/POST /api/nodes`，`GET/PUT/DELETE /api/nodes/:id`
+- Inbounds：`GET/POST /api/inbounds`，`GET/PUT/DELETE /api/inbounds/:id`
 
 **订阅行为**
 - `?format=singbox`：返回 sing-box JSON
-- `?format=v2ray`：返回 v2ray 风格订阅（Base64(多行分享链接)）
-- 未指定 `format`：
-  - User-Agent 命中 `sing-box`/`SFA`/`SFI` 返回 sing-box JSON
-  - 其他 User-Agent 返回 v2ray 风格订阅
+- `?format=v2ray`：返回 v2ray 风格订阅（Base64 分享链接）
+- 未指定 format：按 User-Agent 自动选择
 
-**节点与入站字段**
-- `nodes.api_address/api_port`：Panel ↔ Node 通信地址
-- `nodes.public_address`：订阅中使用的对外地址
-- `inbounds.public_port`：订阅中使用的对外端口（为空时回退 `listen_port`）
-- `nodes.group_id`：节点所属分组（订阅按分组下发）
+## 开发
 
 **目录结构**
-- `panel/`：Panel 后端（Gin + SQLite）
-- `node/`：Node 服务（嵌入 sing-box）
-- `docs/`：设计与规划文档
+```
+panel/               # Panel 后端（Gin + SQLite）+ 前端
+  cmd/panel/         # 入口
+  internal/api/      # HTTP handlers（oapi-codegen 生成的接口）
+  web/               # React 前端（Vite + TailwindCSS v4 + shadcn/ui）
+  openapi.yaml       # OpenAPI 3.0.3 spec（API 的 Single Source of Truth）
+node/                # Node 服务（嵌入 sing-box）
+  cmd/node/          # 入口
+  internal/api/      # Node HTTP API
+  internal/sync/     # sing-box 配置解析/校验
+  internal/core/     # sing-box 实例管理
+docs/                # 设计与规划文档
+Makefile             # 代码生成与检查
+```
 
-**Roadmap**
-- 用户与节点管理 API
-- 入站配置管理与订阅生成
-- 前端管理面板
+**OpenAPI 工作流**
+
+API 变更流程：修改 `panel/openapi.yaml` → `make generate` → 更新 handler/页面 → 测试
+
+```bash
+# 生成 Go + TS 代码
+make generate
+
+# 检查生成代码是否与 spec 同步
+make check-generate
+```
+
+工具链：
+- Go 后端：[oapi-codegen](https://github.com/oapi-codegen/oapi-codegen)（生成 Gin server interface + 类型）
+- TS 前端：[@hey-api/openapi-ts](https://heyapi.dev/)（生成 SDK + 类型 + Zod schemas）
+
+**代码质量**
+
+前端使用 Oxc（`oxlint` + `oxfmt`）：
+```bash
+cd panel/web
+bun run lint        # 代码检查
+bun run format      # 格式化
+bunx tsc -b         # 类型检查
+bun run test        # 单元测试
+```
+
+**交付门禁**
+- `bun run lint`
+- `bun run format`
+- `bunx tsc -b`
+- `bun run test`
+- `make check-generate`

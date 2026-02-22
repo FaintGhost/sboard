@@ -208,8 +208,8 @@ describe("inbound template", () => {
           route: { final: "direct" },
         },
       },
-      tls_settings: null,
-      transport_settings: null,
+      tls_settings: {},
+      transport_settings: {},
     };
 
     const text = buildInboundTemplateText(inbound);

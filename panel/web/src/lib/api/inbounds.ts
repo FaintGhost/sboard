@@ -1,13 +1,15 @@
-import { apiRequest } from "./client";
-import type { Inbound, ListInboundsParams } from "./types";
+import "./client";
+import {
+  listInbounds as _listInbounds,
+  createInbound as _createInbound,
+  updateInbound as _updateInbound,
+  deleteInbound as _deleteInbound,
+} from "./gen";
+import type { Inbound } from "./gen";
+import type { ListInboundsParams } from "./types";
 
-export function listInbounds(params: ListInboundsParams = {}) {
-  const query = new URLSearchParams();
-  if (typeof params.limit === "number") query.set("limit", String(params.limit));
-  if (typeof params.offset === "number") query.set("offset", String(params.offset));
-  if (typeof params.node_id === "number") query.set("node_id", String(params.node_id));
-  const suffix = query.toString() ? `?${query.toString()}` : "";
-  return apiRequest<Inbound[]>(`/api/inbounds${suffix}`);
+export function listInbounds(params: ListInboundsParams = {}): Promise<Inbound[]> {
+  return _listInbounds({ query: params }).then((r) => r.data!.data);
 }
 
 export function createInbound(payload: {
@@ -19,12 +21,10 @@ export function createInbound(payload: {
   settings: unknown;
   tls_settings?: unknown;
   transport_settings?: unknown;
-}) {
-  return apiRequest<Inbound>("/api/inbounds", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
+}): Promise<Inbound> {
+  return _createInbound({
+    body: payload as Parameters<typeof _createInbound>[0]["body"],
+  }).then((r) => r.data!.data);
 }
 
 export function updateInbound(
@@ -39,14 +39,13 @@ export function updateInbound(
     tls_settings: unknown;
     transport_settings: unknown;
   }>,
-) {
-  return apiRequest<Inbound>(`/api/inbounds/${id}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
+): Promise<Inbound> {
+  return _updateInbound({
+    path: { id },
+    body: payload as Parameters<typeof _updateInbound>[0]["body"],
+  }).then((r) => r.data!.data);
 }
 
-export function deleteInbound(id: number) {
-  return apiRequest<{ status: string }>(`/api/inbounds/${id}`, { method: "DELETE" });
+export function deleteInbound(id: number): Promise<{ status: string }> {
+  return _deleteInbound({ path: { id } }).then((r) => r.data!);
 }

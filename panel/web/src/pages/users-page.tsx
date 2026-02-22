@@ -56,7 +56,7 @@ import {
   type StatusFilter,
 } from "./users";
 
-function StatusBadge({ status }: { status: UserStatus }) {
+function StatusBadge({ status }: { status: string }) {
   const { t } = useTranslation();
   const variant =
     status === "active" ? "default" : status === "disabled" ? "secondary" : "destructive";
@@ -190,7 +190,7 @@ export function UsersPage() {
       mode: "edit",
       user: u,
       username: u.username,
-      status: u.status,
+      status: u.status as UserStatus,
       trafficLimit: bytesToGBString(u.traffic_limit ?? 0),
       trafficResetDay: u.traffic_reset_day ?? 0,
       expireDate: parsedExpire,

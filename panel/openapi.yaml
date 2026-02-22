@@ -1,0 +1,2131 @@
+openapi: "3.0.3"
+info:
+  title: SBoard Panel API
+  version: "1.0.0"
+  description: SBoard panel management API
+
+servers:
+  - url: /api
+
+security:
+  - BearerAuth: []
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    LimitParam:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 0
+        maximum: 500
+        default: 50
+    OffsetParam:
+      name: offset
+      in: query
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+    IdPath:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+
+  schemas:
+    Error:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+
+    StatusOk:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+
+    # ── Entity schemas ──────────────────────────────────────
+
+    User:
+      type: object
+      required:
+        - id
+        - uuid
+        - username
+        - group_ids
+        - traffic_limit
+        - traffic_used
+        - traffic_reset_day
+        - expire_at
+        - status
+      properties:
+        id:
+          type: integer
+          format: int64
+        uuid:
+          type: string
+        username:
+          type: string
+        group_ids:
+          type: array
+          items:
+            type: integer
+            format: int64
+        traffic_limit:
+          type: integer
+          format: int64
+        traffic_used:
+          type: integer
+          format: int64
+        traffic_reset_day:
+          type: integer
+        expire_at:
+          type: string
+          nullable: true
+          format: date-time
+        status:
+          type: string
+
+    Node:
+      type: object
+      required:
+        - id
+        - uuid
+        - name
+        - api_address
+        - api_port
+        - secret_key
+        - public_address
+        - group_id
+        - status
+        - last_seen_at
+      properties:
+        id:
+          type: integer
+          format: int64
+        uuid:
+          type: string
+        name:
+          type: string
+        api_address:
+          type: string
+        api_port:
+          type: integer
+        secret_key:
+          type: string
+        public_address:
+          type: string
+        group_id:
+          type: integer
+          nullable: true
+          format: int64
+        status:
+          type: string
+        last_seen_at:
+          type: string
+          nullable: true
+          format: date-time
+
+    Group:
+      type: object
+      required:
+        - id
+        - name
+        - description
+        - member_count
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        description:
+          type: string
+        member_count:
+          type: integer
+          format: int64
+
+    Inbound:
+      type: object
+      required:
+        - id
+        - uuid
+        - tag
+        - node_id
+        - protocol
+        - listen_port
+        - public_port
+        - settings
+        - tls_settings
+        - transport_settings
+      properties:
+        id:
+          type: integer
+          format: int64
+        uuid:
+          type: string
+        tag:
+          type: string
+        node_id:
+          type: integer
+          format: int64
+        protocol:
+          type: string
+        listen_port:
+          type: integer
+        public_port:
+          type: integer
+        settings:
+          type: object
+        tls_settings:
+          type: object
+        transport_settings:
+          type: object
+
+    SyncResult:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+        error:
+          type: string
+
+    SyncJobListItem:
+      type: object
+      required:
+        - id
+        - node_id
+        - trigger_source
+        - status
+        - inbound_count
+        - active_user_count
+        - payload_hash
+        - attempt_count
+        - duration_ms
+        - error_summary
+        - created_at
+      properties:
+        id:
+          type: integer
+          format: int64
+        node_id:
+          type: integer
+          format: int64
+        parent_job_id:
+          type: integer
+          nullable: true
+          format: int64
+        trigger_source:
+          type: string
+        status:
+          type: string
+        inbound_count:
+          type: integer
+        active_user_count:
+          type: integer
+        payload_hash:
+          type: string
+        attempt_count:
+          type: integer
+        duration_ms:
+          type: integer
+          format: int64
+        error_summary:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        started_at:
+          type: string
+          nullable: true
+          format: date-time
+        finished_at:
+          type: string
+          nullable: true
+          format: date-time
+
+    SyncAttempt:
+      type: object
+      required:
+        - id
+        - attempt_no
+        - status
+        - http_status
+        - duration_ms
+        - error_summary
+        - backoff_ms
+        - started_at
+      properties:
+        id:
+          type: integer
+          format: int64
+        attempt_no:
+          type: integer
+        status:
+          type: string
+        http_status:
+          type: integer
+        duration_ms:
+          type: integer
+          format: int64
+        error_summary:
+          type: string
+        backoff_ms:
+          type: integer
+          format: int64
+        started_at:
+          type: string
+          format: date-time
+        finished_at:
+          type: string
+          nullable: true
+          format: date-time
+
+    SyncJobDetail:
+      type: object
+      required:
+        - job
+        - attempts
+      properties:
+        job:
+          $ref: "#/components/schemas/SyncJobListItem"
+        attempts:
+          type: array
+          items:
+            $ref: "#/components/schemas/SyncAttempt"
+
+    GroupUsersListItem:
+      type: object
+      required:
+        - id
+        - uuid
+        - username
+        - traffic_limit
+        - traffic_used
+        - status
+      properties:
+        id:
+          type: integer
+          format: int64
+        uuid:
+          type: string
+        username:
+          type: string
+        traffic_limit:
+          type: integer
+          format: int64
+        traffic_used:
+          type: integer
+          format: int64
+        status:
+          type: string
+
+    AdminProfile:
+      type: object
+      required:
+        - username
+      properties:
+        username:
+          type: string
+
+    LoginResponse:
+      type: object
+      required:
+        - token
+        - expires_at
+      properties:
+        token:
+          type: string
+        expires_at:
+          type: string
+
+    BootstrapStatus:
+      type: object
+      required:
+        - needs_setup
+      properties:
+        needs_setup:
+          type: boolean
+
+    BootstrapResponse:
+      type: object
+      required:
+        - ok
+      properties:
+        ok:
+          type: boolean
+
+    SystemInfo:
+      type: object
+      required:
+        - panel_version
+        - panel_commit_id
+        - sing_box_version
+      properties:
+        panel_version:
+          type: string
+        panel_commit_id:
+          type: string
+        sing_box_version:
+          type: string
+
+    SystemSettings:
+      type: object
+      required:
+        - subscription_base_url
+        - timezone
+      properties:
+        subscription_base_url:
+          type: string
+        timezone:
+          type: string
+
+    TrafficNodeSummary:
+      type: object
+      required:
+        - node_id
+        - upload
+        - download
+        - last_recorded_at
+        - samples
+        - inbounds
+      properties:
+        node_id:
+          type: integer
+          format: int64
+        upload:
+          type: integer
+          format: int64
+        download:
+          type: integer
+          format: int64
+        last_recorded_at:
+          type: string
+        samples:
+          type: integer
+          format: int64
+        inbounds:
+          type: integer
+          format: int64
+
+    TrafficTotalSummary:
+      type: object
+      required:
+        - upload
+        - download
+        - last_recorded_at
+        - samples
+        - nodes
+        - inbounds
+      properties:
+        upload:
+          type: integer
+          format: int64
+        download:
+          type: integer
+          format: int64
+        last_recorded_at:
+          type: string
+        samples:
+          type: integer
+          format: int64
+        nodes:
+          type: integer
+          format: int64
+        inbounds:
+          type: integer
+          format: int64
+
+    TrafficTimeseriesPoint:
+      type: object
+      required:
+        - bucket_start
+        - upload
+        - download
+      properties:
+        bucket_start:
+          type: string
+        upload:
+          type: integer
+          format: int64
+        download:
+          type: integer
+          format: int64
+
+    NodeTrafficSample:
+      type: object
+      required:
+        - id
+        - inbound_tag
+        - upload
+        - download
+        - recorded_at
+      properties:
+        id:
+          type: integer
+          format: int64
+        inbound_tag:
+          type: string
+          nullable: true
+        upload:
+          type: integer
+          format: int64
+        download:
+          type: integer
+          format: int64
+        recorded_at:
+          type: string
+
+    # ── Request schemas ─────────────────────────────────────
+
+    CreateUserRequest:
+      type: object
+      required:
+        - username
+      properties:
+        username:
+          type: string
+
+    UpdateUserRequest:
+      type: object
+      properties:
+        username:
+          type: string
+        status:
+          type: string
+        expire_at:
+          type: string
+        traffic_limit:
+          type: integer
+          format: int64
+        traffic_reset_day:
+          type: integer
+
+    CreateNodeRequest:
+      type: object
+      required:
+        - name
+        - api_address
+        - api_port
+        - secret_key
+        - public_address
+      properties:
+        name:
+          type: string
+        api_address:
+          type: string
+        api_port:
+          type: integer
+        secret_key:
+          type: string
+        public_address:
+          type: string
+        group_id:
+          type: integer
+          nullable: true
+          format: int64
+
+    UpdateNodeRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        api_address:
+          type: string
+        api_port:
+          type: integer
+        secret_key:
+          type: string
+        public_address:
+          type: string
+        group_id:
+          type: integer
+          nullable: true
+          format: int64
+
+    CreateGroupRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+
+    UpdateGroupRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+
+    CreateInboundRequest:
+      type: object
+      required:
+        - tag
+        - node_id
+        - protocol
+        - listen_port
+        - settings
+      properties:
+        tag:
+          type: string
+        node_id:
+          type: integer
+          format: int64
+        protocol:
+          type: string
+        listen_port:
+          type: integer
+        public_port:
+          type: integer
+        settings:
+          type: object
+        tls_settings:
+          type: object
+        transport_settings:
+          type: object
+
+    UpdateInboundRequest:
+      type: object
+      properties:
+        tag:
+          type: string
+        protocol:
+          type: string
+        listen_port:
+          type: integer
+        public_port:
+          type: integer
+        settings:
+          type: object
+        tls_settings:
+          type: object
+        transport_settings:
+          type: object
+
+    LoginRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+
+    BootstrapRequest:
+      type: object
+      required:
+        - username
+        - password
+        - confirm_password
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+        confirm_password:
+          type: string
+        setup_token:
+          type: string
+
+    UpdateAdminProfileRequest:
+      type: object
+      required:
+        - old_password
+      properties:
+        new_username:
+          type: string
+        old_password:
+          type: string
+        new_password:
+          type: string
+        confirm_password:
+          type: string
+
+    UpdateSystemSettingsRequest:
+      type: object
+      properties:
+        subscription_base_url:
+          type: string
+        timezone:
+          type: string
+
+    UserGroupsRequest:
+      type: object
+      required:
+        - group_ids
+      properties:
+        group_ids:
+          type: array
+          items:
+            type: integer
+            format: int64
+
+    GroupUsersReplaceRequest:
+      type: object
+      required:
+        - user_ids
+      properties:
+        user_ids:
+          type: array
+          items:
+            type: integer
+            format: int64
+
+    SingBoxConfigRequest:
+      type: object
+      required:
+        - config
+      properties:
+        config:
+          type: string
+        mode:
+          type: string
+
+    SingBoxGenerateRequest:
+      type: object
+      required:
+        - command
+      properties:
+        command:
+          type: string
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Conflict:
+      description: Resource conflict
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    BadGateway:
+      description: Bad gateway (node unreachable)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+paths:
+  # ── Health ──────────────────────────────────────────────
+
+  /health:
+    get:
+      operationId: getHealth
+      summary: Health check
+      security: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusOk"
+
+  # ── Bootstrap ───────────────────────────────────────────
+
+  /admin/bootstrap:
+    get:
+      operationId: getBootstrapStatus
+      summary: Check if admin setup is needed
+      security: []
+      responses:
+        "200":
+          description: Bootstrap status
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: "#/components/schemas/BootstrapStatus"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      operationId: bootstrap
+      summary: Create initial admin account
+      security: []
+      parameters:
+        - name: X-Setup-Token
+          in: header
+          required: false
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BootstrapRequest"
+      responses:
+        "200":
+          description: Admin created
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: "#/components/schemas/BootstrapResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # ── Auth ────────────────────────────────────────────────
+
+  /admin/login:
+    post:
+      operationId: login
+      summary: Admin login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: "#/components/schemas/LoginResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "428":
+          description: Needs setup
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # ── Admin Profile ───────────────────────────────────────
+
+  /admin/profile:
+    get:
+      operationId: getAdminProfile
+      summary: Get admin profile
+      responses:
+        "200":
+          description: Admin profile
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: "#/components/schemas/AdminProfile"
+        "428":
+          description: Needs setup
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    put:
+      operationId: updateAdminProfile
+      summary: Update admin profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateAdminProfileRequest"
+      responses:
+        "200":
+          description: Updated admin profile
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: "#/components/schemas/AdminProfile"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "428":
+          description: Needs setup
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # ── Subscription ────────────────────────────────────────
+
+  /sub/{user_uuid}:
+    get:
+      operationId: getSubscription
+      summary: Get user subscription
+      security: []
+      parameters:
+        - name: user_uuid
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum:
+              - singbox
+              - v2ray
+      responses:
+        "200":
+          description: Subscription content
+          content:
+            application/json:
+              schema:
+                type: object
+                description: sing-box configuration
+            text/plain:
+              schema:
+                type: string
+                description: v2ray subscription (base64 encoded links)
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # ── Users ───────────────────────────────────────────────
+
+  /users:
+    get:
+      operationId: listUsers
+      summary: List users
+      parameters:
+        - $ref: "#/components/parameters/LimitParam"
+        - $ref: "#/components/parameters/OffsetParam"
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum:
+              - active
+              - disabled
+              - expired
+              - traffic_exceeded
+      responses:
+        "200":
+          description: User list
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/User"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      operationId: createUser
+      summary: Create a user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateUserRequest"
+      responses:
+        "201":
+          description: User created
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: "#/components/schemas/User"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /users/{id}:
+    get:
+      operationId: getUser
+      summary: Get a user
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      responses:
+        "200":
+          description: User detail
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: "#/components/schemas/User"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    put:
+      operationId: updateUser
+      summary: Update a user
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserRequest"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: "#/components/schemas/User"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    delete:
+      operationId: deleteUser
+      summary: Delete a user (soft or hard)
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+        - name: hard
+          in: query
+          description: Hard delete (permanent removal)
+          schema:
+            type: string
+            enum:
+              - "true"
+      responses:
+        "200":
+          description: User deleted or disabled
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/User"
+                  message:
+                    type: string
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # ── User Groups ─────────────────────────────────────────
+
+  /users/{id}/groups:
+    get:
+      operationId: getUserGroups
+      summary: Get user's group IDs
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      responses:
+        "200":
+          description: User's group IDs
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: object
+                    required:
+                      - group_ids
+                    properties:
+                      group_ids:
+                        type: array
+                        items:
+                          type: integer
+                          format: int64
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    put:
+      operationId: replaceUserGroups
+      summary: Replace user's groups
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserGroupsRequest"
+      responses:
+        "200":
+          description: Updated user groups
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: object
+                    required:
+                      - group_ids
+                    properties:
+                      group_ids:
+                        type: array
+                        items:
+                          type: integer
+                          format: int64
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # ── Groups ──────────────────────────────────────────────
+
+  /groups:
+    get:
+      operationId: listGroups
+      summary: List groups
+      parameters:
+        - $ref: "#/components/parameters/LimitParam"
+        - $ref: "#/components/parameters/OffsetParam"
+      responses:
+        "200":
+          description: Group list
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Group"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      operationId: createGroup
+      summary: Create a group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateGroupRequest"
+      responses:
+        "201":
+          description: Group created
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Group"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /groups/{id}:
+    get:
+      operationId: getGroup
+      summary: Get a group
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      responses:
+        "200":
+          description: Group detail
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Group"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    put:
+      operationId: updateGroup
+      summary: Update a group
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateGroupRequest"
+      responses:
+        "200":
+          description: Updated group
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Group"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    delete:
+      operationId: deleteGroup
+      summary: Delete a group
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      responses:
+        "200":
+          description: Group deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusOk"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # ── Group Users ─────────────────────────────────────────
+
+  /groups/{id}/users:
+    get:
+      operationId: listGroupUsers
+      summary: List users in a group
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      responses:
+        "200":
+          description: Group users
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/GroupUsersListItem"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    put:
+      operationId: replaceGroupUsers
+      summary: Replace users in a group
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GroupUsersReplaceRequest"
+      responses:
+        "200":
+          description: Updated group users
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: object
+                    required:
+                      - user_ids
+                    properties:
+                      user_ids:
+                        type: array
+                        items:
+                          type: integer
+                          format: int64
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # ── Nodes ───────────────────────────────────────────────
+
+  /nodes:
+    get:
+      operationId: listNodes
+      summary: List nodes
+      parameters:
+        - $ref: "#/components/parameters/LimitParam"
+        - $ref: "#/components/parameters/OffsetParam"
+      responses:
+        "200":
+          description: Node list
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Node"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      operationId: createNode
+      summary: Create a node
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateNodeRequest"
+      responses:
+        "201":
+          description: Node created
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Node"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /nodes/{id}:
+    get:
+      operationId: getNode
+      summary: Get a node
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      responses:
+        "200":
+          description: Node detail
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Node"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    put:
+      operationId: updateNode
+      summary: Update a node
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateNodeRequest"
+      responses:
+        "200":
+          description: Updated node
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Node"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    delete:
+      operationId: deleteNode
+      summary: Delete a node (optionally force with inbound drain)
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+        - name: force
+          in: query
+          description: Force delete with inbound drain
+          schema:
+            type: string
+            enum:
+              - "true"
+      responses:
+        "200":
+          description: Node deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - status
+                properties:
+                  status:
+                    type: string
+                  force:
+                    type: boolean
+                  deleted_inbounds:
+                    type: integer
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+
+  # ── Node Health & Sync ──────────────────────────────────
+
+  /nodes/{id}/health:
+    get:
+      operationId: getNodeHealth
+      summary: Check node health
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      responses:
+        "200":
+          description: Node is healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusOk"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+
+  /nodes/{id}/sync:
+    post:
+      operationId: syncNode
+      summary: Trigger node sync
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      responses:
+        "200":
+          description: Sync successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusOk"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+
+  # ── Node Traffic ────────────────────────────────────────
+
+  /nodes/{id}/traffic:
+    get:
+      operationId: listNodeTraffic
+      summary: List node traffic samples
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+        - $ref: "#/components/parameters/LimitParam"
+        - $ref: "#/components/parameters/OffsetParam"
+      responses:
+        "200":
+          description: Traffic samples
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/NodeTrafficSample"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # ── Traffic Aggregates ──────────────────────────────────
+
+  /traffic/nodes/summary:
+    get:
+      operationId: getTrafficNodesSummary
+      summary: Traffic summary per node
+      parameters:
+        - name: window
+          in: query
+          description: "Time window (e.g. 24h, 7d, 30d, all)"
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Per-node traffic summary
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/TrafficNodeSummary"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /traffic/total/summary:
+    get:
+      operationId: getTrafficTotalSummary
+      summary: Total traffic summary
+      parameters:
+        - name: window
+          in: query
+          description: "Time window (e.g. 24h, 7d, 30d, all)"
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Total traffic summary
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: "#/components/schemas/TrafficTotalSummary"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /traffic/timeseries:
+    get:
+      operationId: getTrafficTimeseries
+      summary: Traffic timeseries
+      parameters:
+        - name: window
+          in: query
+          description: "Time window (e.g. 24h, 7d, 30d, all)"
+          schema:
+            type: string
+        - name: bucket
+          in: query
+          description: Time bucket granularity
+          schema:
+            type: string
+            enum:
+              - minute
+              - hour
+              - day
+        - name: node_id
+          in: query
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Traffic timeseries
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/TrafficTimeseriesPoint"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # ── System ──────────────────────────────────────────────
+
+  /system/info:
+    get:
+      operationId: getSystemInfo
+      summary: Get system info
+      responses:
+        "200":
+          description: System info
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: "#/components/schemas/SystemInfo"
+
+  /system/settings:
+    get:
+      operationId: getSystemSettings
+      summary: Get system settings
+      responses:
+        "200":
+          description: System settings
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: "#/components/schemas/SystemSettings"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    put:
+      operationId: updateSystemSettings
+      summary: Update system settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSystemSettingsRequest"
+      responses:
+        "200":
+          description: Updated settings
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: "#/components/schemas/SystemSettings"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # ── Sync Jobs ───────────────────────────────────────────
+
+  /sync-jobs:
+    get:
+      operationId: listSyncJobs
+      summary: List sync jobs
+      parameters:
+        - $ref: "#/components/parameters/LimitParam"
+        - $ref: "#/components/parameters/OffsetParam"
+        - name: node_id
+          in: query
+          schema:
+            type: integer
+            format: int64
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum:
+              - queued
+              - running
+              - success
+              - failed
+        - name: trigger_source
+          in: query
+          schema:
+            type: string
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date-time
+      responses:
+        "200":
+          description: Sync job list
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/SyncJobListItem"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /sync-jobs/{id}:
+    get:
+      operationId: getSyncJob
+      summary: Get sync job detail
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      responses:
+        "200":
+          description: Sync job detail with attempts
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: "#/components/schemas/SyncJobDetail"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /sync-jobs/{id}/retry:
+    post:
+      operationId: retrySyncJob
+      summary: Retry a sync job
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      responses:
+        "200":
+          description: Retry result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/SyncJobListItem"
+                  status:
+                    type: string
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+
+  # ── Inbounds ────────────────────────────────────────────
+
+  /inbounds:
+    get:
+      operationId: listInbounds
+      summary: List inbounds
+      parameters:
+        - $ref: "#/components/parameters/LimitParam"
+        - $ref: "#/components/parameters/OffsetParam"
+        - name: node_id
+          in: query
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Inbound list
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Inbound"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      operationId: createInbound
+      summary: Create an inbound (triggers node sync)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateInboundRequest"
+      responses:
+        "201":
+          description: Inbound created with sync result
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                  - sync
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Inbound"
+                  sync:
+                    $ref: "#/components/schemas/SyncResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /inbounds/{id}:
+    get:
+      operationId: getInbound
+      summary: Get an inbound
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      responses:
+        "200":
+          description: Inbound detail
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Inbound"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    put:
+      operationId: updateInbound
+      summary: Update an inbound (triggers node sync)
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateInboundRequest"
+      responses:
+        "200":
+          description: Updated inbound with sync result
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                  - sync
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Inbound"
+                  sync:
+                    $ref: "#/components/schemas/SyncResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    delete:
+      operationId: deleteInbound
+      summary: Delete an inbound (triggers node sync)
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      responses:
+        "200":
+          description: Inbound deleted with sync result
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - status
+                  - sync
+                properties:
+                  status:
+                    type: string
+                  sync:
+                    $ref: "#/components/schemas/SyncResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # ── SingBox Tools ───────────────────────────────────────
+
+  /sing-box/format:
+    post:
+      operationId: formatSingBox
+      summary: Format sing-box configuration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SingBoxConfigRequest"
+      responses:
+        "200":
+          description: Formatted config
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: object
+                    required:
+                      - formatted
+                    properties:
+                      formatted:
+                        type: string
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /sing-box/check:
+    post:
+      operationId: checkSingBox
+      summary: Check sing-box configuration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SingBoxConfigRequest"
+      responses:
+        "200":
+          description: Check result
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: object
+                    required:
+                      - ok
+                      - output
+                    properties:
+                      ok:
+                        type: boolean
+                      output:
+                        type: string
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /sing-box/generate:
+    post:
+      operationId: generateSingBox
+      summary: Generate sing-box configuration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SingBoxGenerateRequest"
+      responses:
+        "200":
+          description: Generated config
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: object
+                    required:
+                      - output
+                    properties:
+                      output:
+                        type: string
+        "400":
+          $ref: "#/components/responses/BadRequest"
