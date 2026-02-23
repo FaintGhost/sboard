@@ -1,0 +1,14 @@
+{
+  "name": "sboard-e2e",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "playwright test",
+    "test:smoke": "playwright test --project=smoke",
+    "test:e2e": "playwright test --project=e2e",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.50.1"
+  }
+}

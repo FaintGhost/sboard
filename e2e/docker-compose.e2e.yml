@@ -1,0 +1,57 @@
+services:
+  panel:
+    build:
+      context: ../panel
+      dockerfile: Dockerfile
+    environment:
+      PANEL_JWT_SECRET: "e2e-test-jwt-secret-key-32chars!!"
+      PANEL_SETUP_TOKEN: "e2e-test-setup-token"
+      PANEL_DB_PATH: "/data/panel.db"
+      PANEL_SERVE_WEB: "true"
+      PANEL_WEB_DIR: "/app/web/dist"
+      PANEL_LOG_REQUESTS: "true"
+      PANEL_NODE_MONITOR_INTERVAL: "5s"
+      PANEL_TRAFFIC_MONITOR_INTERVAL: "10s"
+    volumes:
+      - panel-data:/data
+    networks:
+      - e2e-net
+
+  node:
+    build:
+      context: ../node
+      dockerfile: Dockerfile
+    environment:
+      NODE_SECRET_KEY: "e2e-test-node-secret"
+      NODE_LOG_LEVEL: "debug"
+    volumes:
+      - node-data:/data
+    networks:
+      - e2e-net
+
+  playwright:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      CI: "true"
+      BASE_URL: "http://panel:8080"
+      NODE_API_URL: "http://node:3000"
+      SETUP_TOKEN: "e2e-test-setup-token"
+    volumes:
+      - ./playwright-report:/app/playwright-report
+      - ./test-results:/app/test-results
+    depends_on:
+      - panel
+      - node
+    ipc: host
+    networks:
+      - e2e-net
+
+volumes:
+  panel-data:
+  node-data:
+
+networks:
+  e2e-net:
+    driver: bridge
