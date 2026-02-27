@@ -8,6 +8,11 @@ import { resetAuthStore, useAuthStore } from "@/store/auth";
 
 import { NodesPage } from "./nodes-page";
 
+function asRequest(input: RequestInfo | URL, init?: RequestInit): Request {
+  if (input instanceof Request) return input;
+  return new Request(input, init);
+}
+
 describe("NodesPage", () => {
   beforeEach(() => {
     localStorage.clear();
@@ -32,35 +37,43 @@ describe("NodesPage", () => {
     ];
     const deletedIDs: number[] = [];
 
-    vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
-      const req = input as Request;
-      const url = new URL(req.url);
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+      const req = asRequest(input, init);
+      const url = new URL(req.url, "http://localhost");
 
-      if (req.method === "GET" && url.pathname === "/api/nodes") {
+      if (req.method === "POST" && url.pathname === "/rpc/sboard.panel.v1.NodeService/ListNodes") {
         return new Response(JSON.stringify({ data: nodes }), {
           status: 200,
           headers: { "Content-Type": "application/json" },
         });
       }
 
-      if (req.method === "GET" && url.pathname === "/api/groups") {
+      if (
+        req.method === "POST" &&
+        url.pathname === "/rpc/sboard.panel.v1.GroupService/ListGroups"
+      ) {
         return new Response(JSON.stringify({ data: [] }), {
           status: 200,
           headers: { "Content-Type": "application/json" },
         });
       }
 
-      if (req.method === "GET" && url.pathname === "/api/traffic/nodes/summary") {
+      if (
+        req.method === "POST" &&
+        url.pathname === "/rpc/sboard.panel.v1.TrafficService/GetTrafficNodesSummary"
+      ) {
         return new Response(JSON.stringify({ data: [] }), {
           status: 200,
           headers: { "Content-Type": "application/json" },
         });
       }
 
-      if (req.method === "DELETE" && url.pathname === "/api/nodes/1") {
+      if (req.method === "POST" && url.pathname === "/rpc/sboard.panel.v1.NodeService/DeleteNode") {
+        const body = (await req.json()) as { id: string; force?: boolean };
+        expect(body.id).toBe("1");
         deletedIDs.push(1);
         nodes = [];
-        return new Response(JSON.stringify({ data: { status: "ok" } }), {
+        return new Response(JSON.stringify({ status: "ok" }), {
           status: 200,
           headers: { "Content-Type": "application/json" },
         });

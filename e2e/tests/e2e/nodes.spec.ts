@@ -33,7 +33,9 @@ test.describe.serial("节点管理", () => {
 
     // Dialog should close and node should appear
     await expect(page.getByRole("dialog", { name: "Create Node" })).not.toBeVisible({ timeout: 10_000 });
-    await expect(page.getByText(createdNodeName)).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByRole("cell", { name: createdNodeName }).first()).toBeVisible({
+      timeout: 5_000,
+    });
   });
 
   test("查看节点健康状态", async ({ authenticatedPage }) => {

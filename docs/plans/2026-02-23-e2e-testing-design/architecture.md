@@ -12,8 +12,8 @@
    Dockerfile     │  │   GO + SPA   │   │  GO+sing-box │        │
                   │  │   :8080      │   │   :3000      │        │
                   │  │              │   │              │        │
-                  │  │ healthcheck: │   │ healthcheck: │        │
-                  │  │ /api/health  │   │ /api/health  │        │
+                  │  │ rpc health   │   │ healthcheck: │        │
+                  │  │ (entrypoint) │   │ /api/health  │        │
                   │  └──────┬───────┘   └──────┬───────┘        │
                   │         │                  │                │
                   │         │   e2e-net        │                │
@@ -47,10 +47,10 @@
 
 ```
 1. panel + node 并行构建和启动
-2. Docker 引擎轮询 healthcheck
-3. panel /api/health 返回 200 → panel healthy
-4. node  /api/health 返回 200 → node  healthy
-5. playwright 容器启动
+2. panel + node 进入 running
+3. playwright 容器启动
+4. entrypoint 等待 panel RPC 健康检查通过
+5. entrypoint 等待 node /api/health 通过
 6. Playwright 执行测试套件
 7. 退出码传播到 docker compose
 ```
@@ -72,7 +72,7 @@
 
 ```
 1. API 检查 Panel/Node 健康
-2. 检查 Bootstrap 状态 → 执行 Bootstrap（POST /api/admin/bootstrap）
+2. 检查 Bootstrap 状态 → 执行 Bootstrap（AuthService RPC）
 3. 浏览器访问登录页 → 输入凭据 → 验证跳转到 Dashboard
 4. 验证核心路由可加载（/users, /nodes, /subscriptions 等）
 ```
@@ -120,7 +120,7 @@ base Playwright test
        ├─ authenticatedPage  → Bootstrap + Login + 注入 token
        └─ apiContext         → 带认证的 API 请求上下文
   └─ api.fixture.ts
-       ├─ panelAPI          → Panel REST API 封装
+       ├─ panelAPI          → Panel RPC API 封装
        └─ nodeAPI           → Node REST API 封装
   └─ test-data.fixture.ts
        └─ testData          → 测试数据工厂（唯一名称生成等）

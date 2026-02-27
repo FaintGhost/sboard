@@ -8,6 +8,11 @@ import { MemoryRouter } from "react-router-dom";
 
 import { UsersPage } from "./users-page";
 
+function asRequest(input: RequestInfo | URL, init?: RequestInit): Request {
+  if (input instanceof Request) return input;
+  return new Request(input, init);
+}
+
 describe("UsersPage", () => {
   beforeEach(() => {
     localStorage.clear();
@@ -16,21 +21,22 @@ describe("UsersPage", () => {
   });
 
   it("renders users returned by API", async () => {
-    vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
-      const req = input as Request;
-      const url = new URL(req.url);
-      if (req.method === "GET" && url.pathname === "/api/users") {
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+      const req = asRequest(input, init);
+      const url = new URL(req.url, "http://localhost");
+      if (req.method === "POST" && url.pathname === "/rpc/sboard.panel.v1.UserService/ListUsers") {
         return new Response(
           JSON.stringify({
             data: [
               {
-                id: 1,
+                id: "1",
                 uuid: "u-1",
                 username: "alice",
-                traffic_limit: 0,
-                traffic_used: 0,
-                traffic_reset_day: 0,
-                expire_at: null,
+                groupIds: [],
+                trafficLimit: "0",
+                trafficUsed: "0",
+                trafficResetDay: 0,
+                expireAt: null,
                 status: "active",
               },
             ],
@@ -38,7 +44,10 @@ describe("UsersPage", () => {
           { status: 200, headers: { "Content-Type": "application/json" } },
         );
       }
-      if (req.method === "GET" && url.pathname === "/api/groups") {
+      if (
+        req.method === "POST" &&
+        url.pathname === "/rpc/sboard.panel.v1.GroupService/ListGroups"
+      ) {
         return new Response(JSON.stringify({ data: [] }), {
           status: 200,
           headers: { "Content-Type": "application/json" },
@@ -71,23 +80,24 @@ describe("UsersPage", () => {
     let currentTrafficResetDay = 0;
     const unexpectedRequests: Array<{ method: string; pathname: string }> = [];
 
-    const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
-      const req = input as Request;
-      const url = new URL(req.url);
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+      const req = asRequest(input, init);
+      const url = new URL(req.url, "http://localhost");
       const pathname = url.pathname;
 
-      if (req.method === "GET" && pathname === "/api/users") {
+      if (req.method === "POST" && pathname === "/rpc/sboard.panel.v1.UserService/ListUsers") {
         return new Response(
           JSON.stringify({
             data: [
               {
-                id: 1,
+                id: "1",
                 uuid: "u-1",
                 username: "alice",
-                traffic_limit: currentTrafficLimit,
-                traffic_used: 0,
-                traffic_reset_day: currentTrafficResetDay,
-                expire_at: null,
+                groupIds: [],
+                trafficLimit: String(currentTrafficLimit),
+                trafficUsed: "0",
+                trafficResetDay: currentTrafficResetDay,
+                expireAt: null,
                 status: currentStatus,
               },
             ],
@@ -96,34 +106,38 @@ describe("UsersPage", () => {
         );
       }
 
-      if (req.method === "GET" && pathname === "/api/groups") {
+      if (req.method === "POST" && pathname === "/rpc/sboard.panel.v1.GroupService/ListGroups") {
         return new Response(JSON.stringify({ data: [] }), {
           status: 200,
           headers: { "Content-Type": "application/json" },
         });
       }
 
-      if (req.method === "GET" && pathname === "/api/users/1/groups") {
-        return new Response(JSON.stringify({ data: { group_ids: [] } }), {
+      if (req.method === "POST" && pathname === "/rpc/sboard.panel.v1.UserService/GetUserGroups") {
+        return new Response(JSON.stringify({ groupIds: [] }), {
           status: 200,
           headers: { "Content-Type": "application/json" },
         });
       }
 
-      if (req.method === "PUT" && pathname === "/api/users/1/groups") {
+      if (
+        req.method === "POST" &&
+        pathname === "/rpc/sboard.panel.v1.UserService/ReplaceUserGroups"
+      ) {
         const body = (await req.json()) as Record<string, unknown>;
-        expect(body.group_ids).toEqual([]);
-        return new Response(JSON.stringify({ data: { group_ids: [] } }), {
+        const groupIds = Array.isArray(body.groupIds) ? body.groupIds : [];
+        expect(groupIds).toEqual([]);
+        return new Response(JSON.stringify({ groupIds: [] }), {
           status: 200,
           headers: { "Content-Type": "application/json" },
         });
       }
 
-      if (req.method === "PUT" && pathname === "/api/users/1") {
+      if (req.method === "POST" && pathname === "/rpc/sboard.panel.v1.UserService/UpdateUser") {
         const body = (await req.json()) as Record<string, unknown>;
         expect(body.status).toBe("expired");
-        expect(body.traffic_limit).toBe(1024 * 1024 * 1024);
-        expect(body.traffic_reset_day).toBe(1);
+        expect(Number(body.trafficLimit)).toBe(1024 * 1024 * 1024);
+        expect(body.trafficResetDay).toBe(1);
 
         currentStatus = "expired";
         currentTrafficLimit = 1024 * 1024 * 1024;
@@ -132,13 +146,14 @@ describe("UsersPage", () => {
         return new Response(
           JSON.stringify({
             data: {
-              id: 1,
+              id: "1",
               uuid: "u-1",
               username: "alice",
-              traffic_limit: 1024 * 1024 * 1024,
-              traffic_used: 0,
-              traffic_reset_day: 1,
-              expire_at: null,
+              groupIds: [],
+              trafficLimit: String(1024 * 1024 * 1024),
+              trafficUsed: "0",
+              trafficResetDay: 1,
+              expireAt: null,
               status: "expired",
             },
           }),
@@ -184,38 +199,30 @@ describe("UsersPage", () => {
   });
 
   it("creates user and binds selected groups", async () => {
-    let users = [] as Array<{
-      id: number;
-      uuid: string;
-      username: string;
-      traffic_limit: number;
-      traffic_used: number;
-      traffic_reset_day: number;
-      expire_at: string | null;
-      status: "active";
-    }>;
+    let users: Array<Record<string, unknown>> = [];
     const unexpectedRequests: Array<{ method: string; pathname: string }> = [];
 
-    vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
-      const req = input as Request;
-      const url = new URL(req.url);
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+      const req = asRequest(input, init);
+      const url = new URL(req.url, "http://localhost");
       const pathname = url.pathname;
 
-      if (req.method === "GET" && pathname === "/api/users") {
+      if (req.method === "POST" && pathname === "/rpc/sboard.panel.v1.UserService/ListUsers") {
         return new Response(JSON.stringify({ data: users }), {
           status: 200,
           headers: { "Content-Type": "application/json" },
         });
       }
 
-      if (req.method === "GET" && pathname === "/api/groups") {
+      if (req.method === "POST" && pathname === "/rpc/sboard.panel.v1.GroupService/ListGroups") {
         return new Response(
           JSON.stringify({
             data: [
               {
-                id: 11,
+                id: "11",
                 name: "VIP",
                 description: "vip users",
+                memberCount: "0",
               },
             ],
           }),
@@ -226,19 +233,20 @@ describe("UsersPage", () => {
         );
       }
 
-      if (req.method === "POST" && pathname === "/api/users") {
+      if (req.method === "POST" && pathname === "/rpc/sboard.panel.v1.UserService/CreateUser") {
         const body = (await req.json()) as Record<string, unknown>;
-        expect(body).toEqual({ username: "bob" });
+        expect(body.username).toBe("bob");
 
         users = [
           {
-            id: 99,
+            id: "99",
             uuid: "u-99",
             username: "bob",
-            traffic_limit: 0,
-            traffic_used: 0,
-            traffic_reset_day: 0,
-            expire_at: null,
+            groupIds: [],
+            trafficLimit: "0",
+            trafficUsed: "0",
+            trafficResetDay: 0,
+            expireAt: null,
             status: "active",
           },
         ];
@@ -246,40 +254,14 @@ describe("UsersPage", () => {
         return new Response(
           JSON.stringify({
             data: {
-              id: 99,
+              id: "99",
               uuid: "u-99",
               username: "bob",
-              traffic_limit: 0,
-              traffic_used: 0,
-              traffic_reset_day: 0,
-              expire_at: null,
-              status: "active",
-            },
-          }),
-          {
-            status: 201,
-            headers: { "Content-Type": "application/json" },
-          },
-        );
-      }
-
-      if (req.method === "PUT" && pathname === "/api/users/99") {
-        const body = (await req.json()) as Record<string, unknown>;
-        expect(body.status).toBe("active");
-        expect(body.traffic_limit).toBe(2 * 1024 * 1024 * 1024);
-        expect(body.traffic_reset_day).toBe(5);
-        expect(typeof body.expire_at).toBe("string");
-        expect(String(body.expire_at)).toMatch(/-15T00:00:00(?:\.000)?Z$/);
-        return new Response(
-          JSON.stringify({
-            data: {
-              id: 99,
-              uuid: "u-99",
-              username: "bob",
-              traffic_limit: 2 * 1024 * 1024 * 1024,
-              traffic_used: 0,
-              traffic_reset_day: 5,
-              expire_at: "2030-01-15T00:00:00Z",
+              groupIds: [],
+              trafficLimit: "0",
+              trafficUsed: "0",
+              trafficResetDay: 0,
+              expireAt: null,
               status: "active",
             },
           }),
@@ -290,10 +272,51 @@ describe("UsersPage", () => {
         );
       }
 
-      if (req.method === "PUT" && pathname === "/api/users/99/groups") {
+      if (req.method === "POST" && pathname === "/rpc/sboard.panel.v1.UserService/UpdateUser") {
         const body = (await req.json()) as Record<string, unknown>;
-        expect(body.group_ids).toEqual([11]);
-        return new Response(JSON.stringify({ data: { group_ids: [11] } }), {
+        expect(body.status).toBe("active");
+        expect(Number(body.trafficLimit)).toBe(2 * 1024 * 1024 * 1024);
+        expect(body.trafficResetDay).toBe(5);
+        expect(typeof body.expireAt).toBe("string");
+        expect(String(body.expireAt)).toMatch(/-15T00:00:00(?:\.000)?Z$/);
+        return new Response(
+          JSON.stringify({
+            data: {
+              id: "99",
+              uuid: "u-99",
+              username: "bob",
+              groupIds: [],
+              trafficLimit: String(2 * 1024 * 1024 * 1024),
+              trafficUsed: "0",
+              trafficResetDay: 5,
+              expireAt: "2030-01-15T00:00:00Z",
+              status: "active",
+            },
+          }),
+          {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          },
+        );
+      }
+
+      if (
+        req.method === "POST" &&
+        pathname === "/rpc/sboard.panel.v1.UserService/ReplaceUserGroups"
+      ) {
+        const body = (await req.json()) as Record<string, unknown>;
+        const groupIds = Array.isArray(body.groupIds)
+          ? (body.groupIds as Array<string | number>)
+          : [];
+        expect(groupIds.map((v) => Number(v))).toEqual([11]);
+        return new Response(JSON.stringify({ groupIds: ["11"] }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      if (req.method === "POST" && pathname === "/rpc/sboard.panel.v1.UserService/GetUserGroups") {
+        return new Response(JSON.stringify({ groupIds: ["11"] }), {
           status: 200,
           headers: { "Content-Type": "application/json" },
         });

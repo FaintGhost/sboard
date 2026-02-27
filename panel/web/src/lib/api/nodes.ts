@@ -1,19 +1,28 @@
-import "./client";
+import { toApiError } from "@/lib/api/client";
+import { i64, rpcCall } from "@/lib/rpc/client";
 import {
-  listNodes as _listNodes,
-  createNode as _createNode,
-  updateNode as _updateNode,
-  deleteNode as _deleteNode,
-  getNodeHealth as _getNodeHealth,
-  syncNode as _syncNode,
-  listNodeTraffic as _listNodeTraffic,
-} from "./gen";
-import type { Node, NodeTrafficSample } from "./gen";
+  createNode as createNodeRPC,
+  deleteNode as deleteNodeRPC,
+  getNodeHealth as getNodeHealthRPC,
+  listNodeTraffic as listNodeTrafficRPC,
+  listNodes as listNodesRPC,
+  syncNode as syncNodeRPC,
+  updateNode as updateNodeRPC,
+} from "@/lib/rpc/gen/sboard/panel/v1/panel-NodeService_connectquery";
+import { toNode, toNodeTrafficSample } from "@/lib/rpc/mappers";
 import { listAllByPage } from "./pagination";
 import type { ListNodesParams } from "./types";
+import type { Node, NodeTrafficSample } from "./types";
 
 export function listNodes(params: ListNodesParams = {}): Promise<Node[]> {
-  return _listNodes({ query: params }).then((r) => r.data!.data);
+  return rpcCall(listNodesRPC, {
+    limit: params.limit,
+    offset: params.offset,
+  })
+    .then((r) => (r.data ?? []).map(toNode))
+    .catch((e) => {
+      throw toApiError(e);
+    });
 }
 
 export function listAllNodes(): Promise<Node[]> {
@@ -28,7 +37,18 @@ export function createNode(payload: {
   public_address: string;
   group_id: number | null;
 }): Promise<Node> {
-  return _createNode({ body: payload }).then((r) => r.data!.data);
+  return rpcCall(createNodeRPC, {
+    name: payload.name,
+    apiAddress: payload.api_address,
+    apiPort: payload.api_port,
+    secretKey: payload.secret_key,
+    publicAddress: payload.public_address,
+    groupId: i64(payload.group_id),
+  })
+    .then((r) => toNode(r.data!))
+    .catch((e) => {
+      throw toApiError(e);
+    });
 }
 
 export function updateNode(
@@ -42,30 +62,64 @@ export function updateNode(
     group_id: number | null;
   }>,
 ): Promise<Node> {
-  return _updateNode({ path: { id }, body: payload }).then((r) => r.data!.data);
+  return rpcCall(updateNodeRPC, {
+    id: BigInt(id),
+    name: payload.name,
+    apiAddress: payload.api_address,
+    apiPort: payload.api_port,
+    secretKey: payload.secret_key,
+    publicAddress: payload.public_address,
+    groupId: i64(payload.group_id),
+    clearGroupId: payload.group_id === null,
+  })
+    .then((r) => toNode(r.data!))
+    .catch((e) => {
+      throw toApiError(e);
+    });
 }
 
 export function deleteNode(
   id: number,
   options: { force?: boolean } = {},
 ): Promise<{ status: string; force?: boolean; deleted_inbounds?: number }> {
-  return _deleteNode({
-    path: { id },
-    query: options.force ? { force: "true" } : undefined,
-  }).then((r) => r.data!);
+  return rpcCall(deleteNodeRPC, { id: BigInt(id), force: !!options.force })
+    .then((r) => ({
+      status: r.status,
+      force: r.force,
+      deleted_inbounds: r.deletedInbounds,
+    }))
+    .catch((e) => {
+      throw toApiError(e);
+    });
 }
 
 export function nodeHealth(id: number): Promise<{ status: string }> {
-  return _getNodeHealth({ path: { id } }).then((r) => r.data!);
+  return rpcCall(getNodeHealthRPC, { id: BigInt(id) })
+    .then((r) => ({ status: r.status }))
+    .catch((e) => {
+      throw toApiError(e);
+    });
 }
 
 export function nodeSync(id: number): Promise<{ status: string }> {
-  return _syncNode({ path: { id } }).then((r) => r.data!);
+  return rpcCall(syncNodeRPC, { id: BigInt(id) })
+    .then((r) => ({ status: r.status }))
+    .catch((e) => {
+      throw toApiError(e);
+    });
 }
 
 export function listNodeTraffic(
   id: number,
   params: { limit?: number; offset?: number } = {},
 ): Promise<NodeTrafficSample[]> {
-  return _listNodeTraffic({ path: { id }, query: params }).then((r) => r.data!.data);
+  return rpcCall(listNodeTrafficRPC, {
+    id: BigInt(id),
+    limit: params.limit,
+    offset: params.offset,
+  })
+    .then((r) => (r.data ?? []).map(toNodeTrafficSample))
+    .catch((e) => {
+      throw toApiError(e);
+    });
 }

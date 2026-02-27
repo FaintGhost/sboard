@@ -3,6 +3,7 @@ module sboard/panel
 go 1.25
 
 require (
+	connectrpc.com/connect v1.19.1
 	github.com/gin-gonic/gin v1.11.0
 	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/golang-migrate/migrate/v4 v4.18.1
@@ -171,3 +172,5 @@ require (
 )
 
 tool github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen
+tool google.golang.org/protobuf/cmd/protoc-gen-go
+tool connectrpc.com/connect/cmd/protoc-gen-connect-go

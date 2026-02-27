@@ -11,7 +11,7 @@ Feature: 系统健康检查
   以确认部署成功
 
   Scenario: Panel 健康检查
-    When 发送 GET 请求到 /api/health
+    When 发送 POST 请求到 /rpc/sboard.panel.v1.HealthService/GetHealth
     Then 返回状态码 200
     And 响应体包含 status "ok"
 

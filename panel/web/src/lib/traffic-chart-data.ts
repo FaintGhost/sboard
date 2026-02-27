@@ -1,4 +1,4 @@
-import type { TrafficTimeseriesPoint } from "@/lib/api/traffic";
+import type { TrafficTimeseriesPoint } from "@/lib/rpc/types";
 
 export function resolveTrafficChartRows(
   queryRows: TrafficTimeseriesPoint[] | undefined,

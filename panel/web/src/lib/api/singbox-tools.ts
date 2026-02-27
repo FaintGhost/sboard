@@ -1,9 +1,10 @@
-import "./client";
+import { toApiError } from "@/lib/api/client";
+import { rpcCall } from "@/lib/rpc/client";
 import {
-  formatSingBox as _formatSingBox,
-  checkSingBox as _checkSingBox,
-  generateSingBox as _generateSingBox,
-} from "./gen";
+  checkSingBox as checkSingBoxRPC,
+  formatSingBox as formatSingBoxRPC,
+  generateSingBox as generateSingBoxRPC,
+} from "@/lib/rpc/gen/sboard/panel/v1/panel-SingBoxToolService_connectquery";
 import type {
   SingBoxToolMode,
   SingBoxFormatResponse,
@@ -16,18 +17,40 @@ export function formatSingBoxConfig(payload: {
   config: string;
   mode?: SingBoxToolMode;
 }): Promise<SingBoxFormatResponse> {
-  return _formatSingBox({ body: payload }).then((r) => r.data!.data);
+  return rpcCall(formatSingBoxRPC, {
+    data: {
+      config: payload.config,
+      mode: payload.mode,
+    },
+  })
+    .then((r) => ({ formatted: r.data?.formatted ?? "" }))
+    .catch((e) => {
+      throw toApiError(e);
+    });
 }
 
 export function checkSingBoxConfig(payload: {
   config: string;
   mode?: SingBoxToolMode;
 }): Promise<SingBoxCheckResponse> {
-  return _checkSingBox({ body: payload }).then((r) => r.data!.data);
+  return rpcCall(checkSingBoxRPC, {
+    data: {
+      config: payload.config,
+      mode: payload.mode,
+    },
+  })
+    .then((r) => ({ ok: !!r.data?.ok, output: r.data?.output ?? "" }))
+    .catch((e) => {
+      throw toApiError(e);
+    });
 }
 
 export function generateSingBoxValue(
   command: SingBoxGenerateCommand,
 ): Promise<SingBoxGenerateResponse> {
-  return _generateSingBox({ body: { command } }).then((r) => r.data!.data);
+  return rpcCall(generateSingBoxRPC, { command })
+    .then((r) => ({ output: r.data?.output ?? "" }))
+    .catch((e) => {
+      throw toApiError(e);
+    });
 }

@@ -140,7 +140,7 @@ services:
     volumes:
       - panel-data:/data
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8080/api/health || exit 1"]
+      # panel 由 playwright entrypoint 通过 RPC 健康检查等待
       interval: 3s
       timeout: 5s
       retries: 15
@@ -287,12 +287,12 @@ export const test = base.extend<AuthFixtures>({
     const setupToken = process.env.SETUP_TOKEN || 'e2e-test-setup-token';
 
     // 检查是否需要 Bootstrap
-    const status = await request.get(`${baseURL}/api/admin/bootstrap`);
+    const status = await request.post(`${baseURL}/rpc/sboard.panel.v1.AuthService/GetBootstrapStatus`, { data: {} });
     const { data } = await status.json();
 
     if (data.needs_setup) {
       // 执行 Bootstrap
-      await request.post(`${baseURL}/api/admin/bootstrap`, {
+      await request.post(`${baseURL}/rpc/sboard.panel.v1.AuthService/Bootstrap`, {
         data: {
           username: 'admin',
           password: 'admin1234',
@@ -303,7 +303,7 @@ export const test = base.extend<AuthFixtures>({
     }
 
     // 登录获取 token
-    const loginResp = await request.post(`${baseURL}/api/admin/login`, {
+    const loginResp = await request.post(`${baseURL}/rpc/sboard.panel.v1.AuthService/Login`, {
       data: { username: 'admin', password: 'admin1234' },
     });
     const loginData = await loginResp.json();
@@ -327,7 +327,7 @@ export const test = base.extend<AuthFixtures>({
 });
 ```
 
-**API Fixture**：直接调用 Panel/Node REST API
+**API Fixture**：调用 Panel RPC + Node REST API
 
 ```typescript
 // e2e/tests/fixtures/api.fixture.ts
@@ -344,7 +344,7 @@ export const test = base.extend<AuthFixtures>({
 
 | 文件 | 测试点 |
 |------|--------|
-| `health.smoke.spec.ts` | Panel `/api/health` 返回 200；Node `/api/health` 返回 200 |
+| `health.smoke.spec.ts` | Panel `HealthService/GetHealth` 返回 200；Node `/api/health` 返回 200 |
 | `bootstrap.smoke.spec.ts` | Bootstrap 流程 → 创建 admin → 登录成功 → 重定向到 Dashboard |
 | `navigation.smoke.spec.ts` | 已登录状态下，所有核心路由可正常加载（/, /users, /nodes, /subscriptions 等） |
 

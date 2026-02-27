@@ -1,20 +1,30 @@
-import "./client";
+import { rpcCall } from "@/lib/rpc/client";
+import { toApiError } from "@/lib/api/client";
 import {
-  login as _login,
-  getBootstrapStatus as _getBootstrapStatus,
-  bootstrap as _bootstrap,
-} from "./gen";
-import type { LoginResponse, BootstrapStatus, BootstrapResponse } from "./gen";
+  login as loginRPC,
+  getBootstrapStatus as getBootstrapStatusRPC,
+  bootstrap as bootstrapRPC,
+} from "@/lib/rpc/gen/sboard/panel/v1/panel-AuthService_connectquery";
+import type { BootstrapResponse, BootstrapStatus, LoginResponse } from "./types";
+import { toBootstrapResponse, toBootstrapStatus, toLoginResponse } from "@/lib/rpc/mappers";
 
 export function loginAdmin(payload: {
   username: string;
   password: string;
 }): Promise<LoginResponse> {
-  return _login({ body: payload }).then((r) => r.data!.data);
+  return rpcCall(loginRPC, payload)
+    .then((r) => toLoginResponse(r))
+    .catch((e) => {
+      throw toApiError(e);
+    });
 }
 
 export function getBootstrapStatus(): Promise<BootstrapStatus> {
-  return _getBootstrapStatus().then((r) => r.data!.data);
+  return rpcCall(getBootstrapStatusRPC, {})
+    .then((r) => toBootstrapStatus(r.data!))
+    .catch((e) => {
+      throw toApiError(e);
+    });
 }
 
 export function bootstrapAdmin(payload: {
@@ -23,9 +33,16 @@ export function bootstrapAdmin(payload: {
   password: string;
   confirm_password: string;
 }): Promise<BootstrapResponse> {
-  const { setup_token, ...body } = payload;
-  return _bootstrap({
-    body,
-    headers: setup_token ? { "X-Setup-Token": setup_token } : undefined,
-  }).then((r) => r.data!.data);
+  const req = {
+    setupToken: payload.setup_token,
+    xSetupToken: payload.setup_token,
+    username: payload.username,
+    password: payload.password,
+    confirmPassword: payload.confirm_password,
+  };
+  return rpcCall(bootstrapRPC, req)
+    .then((r) => toBootstrapResponse(r))
+    .catch((e) => {
+      throw toApiError(e);
+    });
 }

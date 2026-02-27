@@ -7,6 +7,11 @@ import { resetAuthStore, useAuthStore } from "@/store/auth";
 
 import { GroupsPage } from "./groups-page";
 
+function asRequest(input: RequestInfo | URL, init?: RequestInit): Request {
+  if (input instanceof Request) return input;
+  return new Request(input, init);
+}
+
 describe("GroupsPage", () => {
   beforeEach(() => {
     localStorage.clear();
@@ -18,19 +23,22 @@ describe("GroupsPage", () => {
     let updateCalls = 0;
     let replaceCalls = 0;
 
-    vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
-      const req = input as Request;
-      const url = new URL(req.url);
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+      const req = asRequest(input, init);
+      const url = new URL(req.url, "http://localhost");
 
-      if (req.method === "GET" && url.pathname === "/api/groups") {
+      if (
+        req.method === "POST" &&
+        url.pathname === "/rpc/sboard.panel.v1.GroupService/ListGroups"
+      ) {
         return new Response(
           JSON.stringify({
             data: [
               {
-                id: 1,
+                id: "1",
                 name: "miot",
                 description: "desc",
-                member_count: 1,
+                memberCount: "1",
               },
             ],
           }),
@@ -38,19 +46,19 @@ describe("GroupsPage", () => {
         );
       }
 
-      if (req.method === "GET" && url.pathname === "/api/users") {
+      if (req.method === "POST" && url.pathname === "/rpc/sboard.panel.v1.UserService/ListUsers") {
         return new Response(
           JSON.stringify({
             data: [
               {
-                id: 10,
+                id: "10",
                 uuid: "u-10",
                 username: "admin",
-                group_ids: [1],
-                traffic_limit: 0,
-                traffic_used: 0,
-                traffic_reset_day: 1,
-                expire_at: null,
+                groupIds: ["1"],
+                trafficLimit: "0",
+                trafficUsed: "0",
+                trafficResetDay: 1,
+                expireAt: null,
                 status: "active",
               },
             ],
@@ -59,16 +67,19 @@ describe("GroupsPage", () => {
         );
       }
 
-      if (req.method === "GET" && url.pathname === "/api/groups/1/users") {
+      if (
+        req.method === "POST" &&
+        url.pathname === "/rpc/sboard.panel.v1.GroupService/ListGroupUsers"
+      ) {
         return new Response(
           JSON.stringify({
             data: [
               {
-                id: 10,
+                id: "10",
                 uuid: "u-10",
                 username: "admin",
-                traffic_limit: 0,
-                traffic_used: 0,
+                trafficLimit: "0",
+                trafficUsed: "0",
                 status: "active",
               },
             ],
@@ -77,23 +88,30 @@ describe("GroupsPage", () => {
         );
       }
 
-      if (req.method === "PUT" && url.pathname === "/api/groups/1") {
+      if (
+        req.method === "POST" &&
+        url.pathname === "/rpc/sboard.panel.v1.GroupService/UpdateGroup"
+      ) {
         updateCalls += 1;
-        const body = (await req.json()) as { name?: string; description?: string };
+        const body = (await req.json()) as { name?: string; description?: string; id?: string };
+        expect(body.id).toBe("1");
         return new Response(
           JSON.stringify({
             data: {
-              id: 1,
+              id: "1",
               name: body.name ?? "miot",
               description: body.description ?? "desc",
-              member_count: 1,
+              memberCount: "1",
             },
           }),
           { status: 200, headers: { "Content-Type": "application/json" } },
         );
       }
 
-      if (req.method === "PUT" && url.pathname === "/api/groups/1/users") {
+      if (
+        req.method === "POST" &&
+        url.pathname === "/rpc/sboard.panel.v1.GroupService/ReplaceGroupUsers"
+      ) {
         replaceCalls += 1;
         return new Promise<Response>(() => {
           // keep pending to expose bug: unnecessary membership replace causes endless saving

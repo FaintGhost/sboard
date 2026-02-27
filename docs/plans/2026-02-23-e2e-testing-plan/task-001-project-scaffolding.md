@@ -77,12 +77,11 @@ e2e/
 ### Step 5: 创建 docker-compose.e2e.yml
 
 三个服务：
-- `panel`: 从 `../panel/Dockerfile` 构建，设置测试环境变量（JWT_SECRET, SETUP_TOKEN, DB_PATH, SERVE_WEB 等），healthcheck `/api/health`
-- `node`: 从 `../node/Dockerfile` 构建，设置 NODE_SECRET_KEY，healthcheck `/api/health`
-- `playwright`: 从当前 Dockerfile 构建，`depends_on` panel+node 的 `service_healthy`，`ipc: host`，volume mount 报告目录
+- `panel`: 从 `../panel/Dockerfile` 构建，设置测试环境变量（JWT_SECRET, SETUP_TOKEN, DB_PATH, SERVE_WEB 等）
+- `node`: 从 `../node/Dockerfile` 构建，设置 NODE_SECRET_KEY
+- `playwright`: 从当前 Dockerfile 构建，`depends_on` panel+node，`ipc: host`，volume mount 报告目录；通过 `entrypoint.sh` 等待 Panel RPC 健康检查（`POST /rpc/sboard.panel.v1.HealthService/GetHealth`）和 Node 健康检查（`GET /api/health`）
 
-注意：Panel healthcheck 需确认 curl 是否可用（debian:stable-slim 可能需要安装），如不可用改用其他方式。
-检查 Panel 和 Node 的 Dockerfile，确认运行时镜像是否自带 curl。如果没有，healthcheck 改为使用 `/app/sboard-panel` 或 `wget` 或 shell 内置方式。
+注意：优先复用 Playwright 侧 `entrypoint.sh` 的等待逻辑，避免将服务就绪判断分散到多个位置。
 
 ### Step 6: 创建 .gitignore
 

@@ -1,4 +1,4 @@
-import type { Inbound } from "@/lib/api/types";
+import type { Inbound } from "@/lib/rpc/types";
 
 import {
   buildSingBoxConfigTextFromTemplate as convertTemplateToSingBoxConfig,

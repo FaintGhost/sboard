@@ -1,0 +1,679 @@
+syntax = "proto3";
+
+package sboard.panel.v1;
+
+option go_package = "sboard/panel/internal/rpc/gen/sboard/panel/v1;panelv1";
+
+service HealthService {
+  rpc GetHealth(GetHealthRequest) returns (GetHealthResponse);
+}
+
+service AuthService {
+  rpc GetBootstrapStatus(GetBootstrapStatusRequest) returns (GetBootstrapStatusResponse);
+  rpc Bootstrap(BootstrapRequest) returns (BootstrapResponse);
+  rpc Login(LoginRequest) returns (LoginResponseEnvelope);
+  rpc GetAdminProfile(GetAdminProfileRequest) returns (GetAdminProfileResponse);
+  rpc UpdateAdminProfile(UpdateAdminProfileRequest) returns (UpdateAdminProfileResponse);
+}
+
+service SystemService {
+  rpc GetSystemInfo(GetSystemInfoRequest) returns (GetSystemInfoResponse);
+  rpc GetSystemSettings(GetSystemSettingsRequest) returns (GetSystemSettingsResponse);
+  rpc UpdateSystemSettings(UpdateSystemSettingsRequest) returns (UpdateSystemSettingsResponse);
+}
+
+service UserService {
+  rpc ListUsers(ListUsersRequest) returns (ListUsersResponse);
+  rpc CreateUser(CreateUserRequest) returns (CreateUserResponse);
+  rpc GetUser(GetUserRequest) returns (GetUserResponse);
+  rpc UpdateUser(UpdateUserRequest) returns (UpdateUserResponse);
+  rpc DisableUser(DisableUserRequest) returns (DisableUserResponse);
+  rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse);
+  rpc GetUserGroups(GetUserGroupsRequest) returns (GetUserGroupsResponse);
+  rpc ReplaceUserGroups(ReplaceUserGroupsRequest) returns (ReplaceUserGroupsResponse);
+}
+
+service GroupService {
+  rpc ListGroups(ListGroupsRequest) returns (ListGroupsResponse);
+  rpc CreateGroup(CreateGroupRequest) returns (CreateGroupResponse);
+  rpc GetGroup(GetGroupRequest) returns (GetGroupResponse);
+  rpc UpdateGroup(UpdateGroupRequest) returns (UpdateGroupResponse);
+  rpc DeleteGroup(DeleteGroupRequest) returns (DeleteGroupResponse);
+  rpc ListGroupUsers(ListGroupUsersRequest) returns (ListGroupUsersResponse);
+  rpc ReplaceGroupUsers(ReplaceGroupUsersRequest) returns (ReplaceGroupUsersResponse);
+}
+
+service NodeService {
+  rpc ListNodes(ListNodesRequest) returns (ListNodesResponse);
+  rpc CreateNode(CreateNodeRequest) returns (CreateNodeResponse);
+  rpc GetNode(GetNodeRequest) returns (GetNodeResponse);
+  rpc UpdateNode(UpdateNodeRequest) returns (UpdateNodeResponse);
+  rpc DeleteNode(DeleteNodeRequest) returns (DeleteNodeResponse);
+  rpc GetNodeHealth(GetNodeHealthRequest) returns (GetNodeHealthResponse);
+  rpc SyncNode(SyncNodeRequest) returns (SyncNodeResponse);
+  rpc ListNodeTraffic(ListNodeTrafficRequest) returns (ListNodeTrafficResponse);
+}
+
+service TrafficService {
+  rpc GetTrafficNodesSummary(GetTrafficNodesSummaryRequest) returns (GetTrafficNodesSummaryResponse);
+  rpc GetTrafficTotalSummary(GetTrafficTotalSummaryRequest) returns (GetTrafficTotalSummaryResponse);
+  rpc GetTrafficTimeseries(GetTrafficTimeseriesRequest) returns (GetTrafficTimeseriesResponse);
+}
+
+service InboundService {
+  rpc ListInbounds(ListInboundsRequest) returns (ListInboundsResponse);
+  rpc CreateInbound(CreateInboundRequest) returns (CreateInboundResponse);
+  rpc GetInbound(GetInboundRequest) returns (GetInboundResponse);
+  rpc UpdateInbound(UpdateInboundRequest) returns (UpdateInboundResponse);
+  rpc DeleteInbound(DeleteInboundRequest) returns (DeleteInboundResponse);
+}
+
+service SyncJobService {
+  rpc ListSyncJobs(ListSyncJobsRequest) returns (ListSyncJobsResponse);
+  rpc GetSyncJob(GetSyncJobRequest) returns (GetSyncJobResponse);
+  rpc RetrySyncJob(RetrySyncJobRequest) returns (RetrySyncJobResponse);
+}
+
+service SingBoxToolService {
+  rpc FormatSingBox(FormatSingBoxRequest) returns (FormatSingBoxResponse);
+  rpc CheckSingBox(CheckSingBoxRequest) returns (CheckSingBoxResponse);
+  rpc GenerateSingBox(GenerateSingBoxRequest) returns (GenerateSingBoxResponse);
+}
+
+message User {
+  int64 id = 1;
+  string uuid = 2;
+  string username = 3;
+  repeated int64 group_ids = 4;
+  int64 traffic_limit = 5;
+  int64 traffic_used = 6;
+  int32 traffic_reset_day = 7;
+  optional string expire_at = 8;
+  string status = 9;
+}
+
+message Group {
+  int64 id = 1;
+  string name = 2;
+  string description = 3;
+  int64 member_count = 4;
+}
+
+message Node {
+  int64 id = 1;
+  string uuid = 2;
+  string name = 3;
+  string api_address = 4;
+  int32 api_port = 5;
+  string secret_key = 6;
+  string public_address = 7;
+  optional int64 group_id = 8;
+  string status = 9;
+  optional string last_seen_at = 10;
+}
+
+message NodeTrafficSample {
+  int64 id = 1;
+  optional string inbound_tag = 2;
+  int64 upload = 3;
+  int64 download = 4;
+  string recorded_at = 5;
+}
+
+message GroupUsersListItem {
+  int64 id = 1;
+  string uuid = 2;
+  string username = 3;
+  int64 traffic_limit = 4;
+  int64 traffic_used = 5;
+  string status = 6;
+}
+
+message AdminProfile {
+  string username = 1;
+}
+
+message BootstrapStatus {
+  bool needs_setup = 1;
+}
+
+message BootstrapResult {
+  bool ok = 1;
+}
+
+message LoginResult {
+  string token = 1;
+  string expires_at = 2;
+}
+
+message SystemInfo {
+  string panel_version = 1;
+  string panel_commit_id = 2;
+  string sing_box_version = 3;
+}
+
+message SystemSettings {
+  string subscription_base_url = 1;
+  string timezone = 2;
+}
+
+message TrafficNodeSummary {
+  int64 node_id = 1;
+  int64 upload = 2;
+  int64 download = 3;
+  string last_recorded_at = 4;
+  int64 samples = 5;
+  int64 inbounds = 6;
+}
+
+message TrafficTotalSummary {
+  int64 upload = 1;
+  int64 download = 2;
+  string last_recorded_at = 3;
+  int64 samples = 4;
+  int64 nodes = 5;
+  int64 inbounds = 6;
+}
+
+message TrafficTimeseriesPoint {
+  string bucket_start = 1;
+  int64 upload = 2;
+  int64 download = 3;
+}
+
+message SyncResult {
+  string status = 1;
+  optional string error = 2;
+}
+
+message Inbound {
+  int64 id = 1;
+  string uuid = 2;
+  int64 node_id = 3;
+  string tag = 4;
+  string protocol = 5;
+  int32 listen_port = 6;
+  int32 public_port = 7;
+  string settings_json = 8;
+  string tls_settings_json = 9;
+  string transport_settings_json = 10;
+}
+
+message SyncJobListItem {
+  int64 id = 1;
+  int64 node_id = 2;
+  optional int64 parent_job_id = 3;
+  string trigger_source = 4;
+  string status = 5;
+  int32 inbound_count = 6;
+  int32 active_user_count = 7;
+  string payload_hash = 8;
+  int32 attempt_count = 9;
+  int64 duration_ms = 10;
+  string error_summary = 11;
+  string created_at = 12;
+  optional string started_at = 13;
+  optional string finished_at = 14;
+}
+
+message SyncAttempt {
+  int64 id = 1;
+  int32 attempt_no = 2;
+  string status = 3;
+  int32 http_status = 4;
+  int64 duration_ms = 5;
+  string error_summary = 6;
+  int64 backoff_ms = 7;
+  string started_at = 8;
+  optional string finished_at = 9;
+}
+
+message SyncJobDetail {
+  SyncJobListItem job = 1;
+  repeated SyncAttempt attempts = 2;
+}
+
+message GetHealthRequest {}
+
+message GetHealthResponse {
+  string status = 1;
+}
+
+message GetBootstrapStatusRequest {}
+
+message GetBootstrapStatusResponse {
+  BootstrapStatus data = 1;
+}
+
+message BootstrapRequest {
+  optional string setup_token = 1;
+  optional string x_setup_token = 2;
+  string username = 3;
+  string password = 4;
+  string confirm_password = 5;
+}
+
+message BootstrapResponse {
+  BootstrapResult data = 1;
+}
+
+message LoginRequest {
+  string username = 1;
+  string password = 2;
+}
+
+message LoginResponseEnvelope {
+  LoginResult data = 1;
+}
+
+message GetAdminProfileRequest {}
+
+message GetAdminProfileResponse {
+  AdminProfile data = 1;
+}
+
+message UpdateAdminProfileRequest {
+  string old_password = 1;
+  optional string new_username = 2;
+  optional string new_password = 3;
+  optional string confirm_password = 4;
+}
+
+message UpdateAdminProfileResponse {
+  AdminProfile data = 1;
+}
+
+message GetSystemInfoRequest {}
+
+message GetSystemInfoResponse {
+  SystemInfo data = 1;
+}
+
+message GetSystemSettingsRequest {}
+
+message GetSystemSettingsResponse {
+  SystemSettings data = 1;
+}
+
+message UpdateSystemSettingsRequest {
+  optional string subscription_base_url = 1;
+  optional string timezone = 2;
+}
+
+message UpdateSystemSettingsResponse {
+  SystemSettings data = 1;
+}
+
+message ListUsersRequest {
+  optional int32 limit = 1;
+  optional int32 offset = 2;
+  optional string status = 3;
+}
+
+message ListUsersResponse {
+  repeated User data = 1;
+}
+
+message CreateUserRequest {
+  string username = 1;
+}
+
+message CreateUserResponse {
+  User data = 1;
+}
+
+message GetUserRequest {
+  int64 id = 1;
+}
+
+message GetUserResponse {
+  User data = 1;
+}
+
+message UpdateUserRequest {
+  int64 id = 1;
+  optional string username = 2;
+  optional string status = 3;
+  optional string expire_at = 4;
+  optional int64 traffic_limit = 5;
+  optional int32 traffic_reset_day = 6;
+}
+
+message UpdateUserResponse {
+  User data = 1;
+}
+
+message DisableUserRequest {
+  int64 id = 1;
+}
+
+message DisableUserResponse {
+  User data = 1;
+}
+
+message DeleteUserRequest {
+  int64 id = 1;
+}
+
+message DeleteUserResponse {
+  optional string message = 1;
+  optional User data = 2;
+}
+
+message GetUserGroupsRequest {
+  int64 id = 1;
+}
+
+message GetUserGroupsResponse {
+  repeated int64 group_ids = 1;
+}
+
+message ReplaceUserGroupsRequest {
+  int64 id = 1;
+  repeated int64 group_ids = 2;
+}
+
+message ReplaceUserGroupsResponse {
+  repeated int64 group_ids = 1;
+}
+
+message ListGroupsRequest {
+  optional int32 limit = 1;
+  optional int32 offset = 2;
+}
+
+message ListGroupsResponse {
+  repeated Group data = 1;
+}
+
+message CreateGroupRequest {
+  string name = 1;
+  optional string description = 2;
+}
+
+message CreateGroupResponse {
+  Group data = 1;
+}
+
+message GetGroupRequest {
+  int64 id = 1;
+}
+
+message GetGroupResponse {
+  Group data = 1;
+}
+
+message UpdateGroupRequest {
+  int64 id = 1;
+  optional string name = 2;
+  optional string description = 3;
+}
+
+message UpdateGroupResponse {
+  Group data = 1;
+}
+
+message DeleteGroupRequest {
+  int64 id = 1;
+}
+
+message DeleteGroupResponse {
+  string status = 1;
+}
+
+message ListGroupUsersRequest {
+  int64 id = 1;
+}
+
+message ListGroupUsersResponse {
+  repeated GroupUsersListItem data = 1;
+}
+
+message ReplaceGroupUsersRequest {
+  int64 id = 1;
+  repeated int64 user_ids = 2;
+}
+
+message ReplaceGroupUsersResponse {
+  repeated int64 user_ids = 1;
+}
+
+message ListNodesRequest {
+  optional int32 limit = 1;
+  optional int32 offset = 2;
+}
+
+message ListNodesResponse {
+  repeated Node data = 1;
+}
+
+message CreateNodeRequest {
+  string name = 1;
+  string api_address = 2;
+  int32 api_port = 3;
+  string secret_key = 4;
+  string public_address = 5;
+  optional int64 group_id = 6;
+}
+
+message CreateNodeResponse {
+  Node data = 1;
+}
+
+message GetNodeRequest {
+  int64 id = 1;
+}
+
+message GetNodeResponse {
+  Node data = 1;
+}
+
+message UpdateNodeRequest {
+  int64 id = 1;
+  optional string name = 2;
+  optional string api_address = 3;
+  optional int32 api_port = 4;
+  optional string secret_key = 5;
+  optional string public_address = 6;
+  optional int64 group_id = 7;
+  bool clear_group_id = 8;
+}
+
+message UpdateNodeResponse {
+  Node data = 1;
+}
+
+message DeleteNodeRequest {
+  int64 id = 1;
+  bool force = 2;
+}
+
+message DeleteNodeResponse {
+  string status = 1;
+  optional bool force = 2;
+  optional int32 deleted_inbounds = 3;
+}
+
+message GetNodeHealthRequest {
+  int64 id = 1;
+}
+
+message GetNodeHealthResponse {
+  string status = 1;
+}
+
+message SyncNodeRequest {
+  int64 id = 1;
+}
+
+message SyncNodeResponse {
+  string status = 1;
+}
+
+message ListNodeTrafficRequest {
+  int64 id = 1;
+  optional int32 limit = 2;
+  optional int32 offset = 3;
+}
+
+message ListNodeTrafficResponse {
+  repeated NodeTrafficSample data = 1;
+}
+
+message GetTrafficNodesSummaryRequest {
+  optional string window = 1;
+}
+
+message GetTrafficNodesSummaryResponse {
+  repeated TrafficNodeSummary data = 1;
+}
+
+message GetTrafficTotalSummaryRequest {
+  optional string window = 1;
+}
+
+message GetTrafficTotalSummaryResponse {
+  TrafficTotalSummary data = 1;
+}
+
+message GetTrafficTimeseriesRequest {
+  optional string window = 1;
+  optional string bucket = 2;
+  optional int64 node_id = 3;
+}
+
+message GetTrafficTimeseriesResponse {
+  repeated TrafficTimeseriesPoint data = 1;
+}
+
+message ListInboundsRequest {
+  optional int32 limit = 1;
+  optional int32 offset = 2;
+  optional int64 node_id = 3;
+}
+
+message ListInboundsResponse {
+  repeated Inbound data = 1;
+}
+
+message CreateInboundRequest {
+  int64 node_id = 1;
+  string tag = 2;
+  string protocol = 3;
+  int32 listen_port = 4;
+  optional int32 public_port = 5;
+  string settings_json = 6;
+  optional string tls_settings_json = 7;
+  optional string transport_settings_json = 8;
+}
+
+message CreateInboundResponse {
+  Inbound data = 1;
+  SyncResult sync = 2;
+}
+
+message GetInboundRequest {
+  int64 id = 1;
+}
+
+message GetInboundResponse {
+  Inbound data = 1;
+}
+
+message UpdateInboundRequest {
+  int64 id = 1;
+  optional string tag = 2;
+  optional string protocol = 3;
+  optional int32 listen_port = 4;
+  optional int32 public_port = 5;
+  optional string settings_json = 6;
+  optional string tls_settings_json = 7;
+  optional string transport_settings_json = 8;
+}
+
+message UpdateInboundResponse {
+  Inbound data = 1;
+  SyncResult sync = 2;
+}
+
+message DeleteInboundRequest {
+  int64 id = 1;
+}
+
+message DeleteInboundResponse {
+  string status = 1;
+  SyncResult sync = 2;
+}
+
+message ListSyncJobsRequest {
+  optional int32 limit = 1;
+  optional int32 offset = 2;
+  optional int64 node_id = 3;
+  optional string status = 4;
+  optional string trigger_source = 5;
+  optional string from = 6;
+  optional string to = 7;
+}
+
+message ListSyncJobsResponse {
+  repeated SyncJobListItem data = 1;
+}
+
+message GetSyncJobRequest {
+  int64 id = 1;
+}
+
+message GetSyncJobResponse {
+  SyncJobDetail data = 1;
+}
+
+message RetrySyncJobRequest {
+  int64 id = 1;
+}
+
+message RetrySyncJobResponse {
+  optional string status = 1;
+  optional SyncJobListItem data = 2;
+}
+
+message SingBoxConfigRequest {
+  string config = 1;
+  optional string mode = 2;
+}
+
+message FormatSingBoxRequest {
+  SingBoxConfigRequest data = 1;
+}
+
+message FormatSingBoxResult {
+  string formatted = 1;
+}
+
+message FormatSingBoxResponse {
+  FormatSingBoxResult data = 1;
+}
+
+message CheckSingBoxRequest {
+  SingBoxConfigRequest data = 1;
+}
+
+message CheckSingBoxResult {
+  bool ok = 1;
+  string output = 2;
+}
+
+message CheckSingBoxResponse {
+  CheckSingBoxResult data = 1;
+}
+
+message GenerateSingBoxRequest {
+  string command = 1;
+}
+
+message GenerateSingBoxResult {
+  string output = 1;
+}
+
+message GenerateSingBoxResponse {
+  GenerateSingBoxResult data = 1;
+}

@@ -28,7 +28,7 @@
 查看 Panel 前端的分组管理页面：
 - 分组列表/管理页面结构
 - 创建分组的交互方式和表单字段
-- 查阅 `panel/openapi.yaml` 中 Groups 相关的 API
+- 查阅 `panel/proto/sboard/panel/v1/panel.proto` 中 Groups 相关 RPC
 - 用户编辑时如何选择分组（下拉选择框？）
 
 ### Step 2: 实现分组管理测试
@@ -46,8 +46,8 @@
 ## Verification Commands
 
 ```bash
-cd e2e && docker compose -f docker-compose.e2e.yml up --build --abort-on-container-exit --exit-code-from playwright \
-  -- bunx playwright test --project=e2e tests/e2e/groups.spec.ts
+cd e2e && docker compose -f docker-compose.e2e.yml up --build -d panel node && \
+  docker compose -f docker-compose.e2e.yml run --rm playwright bunx playwright test --project=e2e tests/e2e/groups.spec.ts
 ```
 
 ## Success Criteria

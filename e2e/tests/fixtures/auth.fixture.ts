@@ -6,39 +6,67 @@ const SETUP_TOKEN = process.env.SETUP_TOKEN || "e2e-test-setup-token";
 const ADMIN_USERNAME = "admin";
 const ADMIN_PASSWORD = "admin12345678";
 
+type RpcEnvelope<T> = {
+  data?: T;
+  error?: string;
+};
+
+async function rpcPost<T>(
+  request: APIRequestContext,
+  path: string,
+  payload: unknown,
+  headers?: Record<string, string>,
+): Promise<RpcEnvelope<T>> {
+  const resp = await request.post(`${BASE_URL}${path}`, {
+    headers: {
+      "Content-Type": "application/json",
+      ...(headers ?? {}),
+    },
+    data: payload,
+  });
+
+  if (!resp.ok()) {
+    throw new Error(`RPC ${path} failed: ${resp.status()} ${await resp.text()}`);
+  }
+
+  return (await resp.json()) as RpcEnvelope<T>;
+}
+
 type AuthFixtures = {
   authenticatedPage: Page;
   adminToken: string;
 };
 
 async function ensureBootstrapAndLogin(request: APIRequestContext): Promise<string> {
-  // Check bootstrap status
-  const statusResp = await request.get(`${BASE_URL}/api/admin/bootstrap`);
-  const statusData = await statusResp.json();
+  const statusData = await rpcPost<{ needsSetup: boolean }>(
+    request,
+    "/rpc/sboard.panel.v1.AuthService/GetBootstrapStatus",
+    {},
+  );
 
-  if (statusData.data?.needs_setup) {
-    // Perform bootstrap
-    const bootstrapResp = await request.post(`${BASE_URL}/api/admin/bootstrap`, {
-      headers: { "X-Setup-Token": SETUP_TOKEN },
-      data: {
+  if (statusData.data?.needsSetup) {
+    await rpcPost<{ ok: boolean }>(
+      request,
+      "/rpc/sboard.panel.v1.AuthService/Bootstrap",
+      {
+        setupToken: SETUP_TOKEN,
+        xSetupToken: SETUP_TOKEN,
         username: ADMIN_USERNAME,
         password: ADMIN_PASSWORD,
-        confirm_password: ADMIN_PASSWORD,
+        confirmPassword: ADMIN_PASSWORD,
       },
-    });
-    if (!bootstrapResp.ok()) {
-      throw new Error(`Bootstrap failed: ${bootstrapResp.status()} ${await bootstrapResp.text()}`);
-    }
+    );
   }
 
-  // Login
-  const loginResp = await request.post(`${BASE_URL}/api/admin/login`, {
-    data: { username: ADMIN_USERNAME, password: ADMIN_PASSWORD },
-  });
-  if (!loginResp.ok()) {
-    throw new Error(`Login failed: ${loginResp.status()} ${await loginResp.text()}`);
+  const loginData = await rpcPost<{ token: string; expiresAt: string }>(
+    request,
+    "/rpc/sboard.panel.v1.AuthService/Login",
+    { username: ADMIN_USERNAME, password: ADMIN_PASSWORD },
+  );
+
+  if (!loginData.data?.token) {
+    throw new Error("RPC login returned empty token");
   }
-  const loginData = await loginResp.json();
   return loginData.data.token;
 }
 

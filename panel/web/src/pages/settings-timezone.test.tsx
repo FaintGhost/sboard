@@ -7,6 +7,11 @@ import { resetAuthStore, useAuthStore } from "@/store/auth";
 
 import { SettingsPage } from "./settings-page";
 
+function asRequest(input: RequestInfo | URL, init?: RequestInit): Request {
+  if (input instanceof Request) return input;
+  return new Request(input, init);
+}
+
 describe("SettingsPage timezone", () => {
   beforeEach(() => {
     localStorage.clear();
@@ -15,30 +20,36 @@ describe("SettingsPage timezone", () => {
   });
 
   it("saves global timezone with system settings", async () => {
-    let savedPayload: { subscription_base_url: string; timezone: string } | null = null;
+    let savedPayload: { subscriptionBaseUrl: string; timezone: string } | null = null;
 
-    vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
-      const req = input as Request;
-      const url = new URL(req.url);
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+      const req = asRequest(input, init);
+      const url = new URL(req.url, "http://localhost");
 
-      if (req.method === "GET" && url.pathname === "/api/system/info") {
+      if (
+        req.method === "POST" &&
+        url.pathname === "/rpc/sboard.panel.v1.SystemService/GetSystemInfo"
+      ) {
         return new Response(
           JSON.stringify({
             data: {
-              panel_version: "v0.2.0",
-              panel_commit_id: "abc1234",
-              sing_box_version: "1.12.19",
+              panelVersion: "v0.2.0",
+              panelCommitId: "abc1234",
+              singBoxVersion: "1.12.19",
             },
           }),
           { status: 200, headers: { "Content-Type": "application/json" } },
         );
       }
 
-      if (req.method === "GET" && url.pathname === "/api/system/settings") {
+      if (
+        req.method === "POST" &&
+        url.pathname === "/rpc/sboard.panel.v1.SystemService/GetSystemSettings"
+      ) {
         return new Response(
           JSON.stringify({
             data: {
-              subscription_base_url: "https://203.0.113.10:8443",
+              subscriptionBaseUrl: "https://203.0.113.10:8443",
               timezone: "UTC",
             },
           }),
@@ -46,15 +57,21 @@ describe("SettingsPage timezone", () => {
         );
       }
 
-      if (req.method === "GET" && url.pathname === "/api/admin/profile") {
+      if (
+        req.method === "POST" &&
+        url.pathname === "/rpc/sboard.panel.v1.AuthService/GetAdminProfile"
+      ) {
         return new Response(JSON.stringify({ data: { username: "admin" } }), {
           status: 200,
           headers: { "Content-Type": "application/json" },
         });
       }
 
-      if (req.method === "PUT" && url.pathname === "/api/system/settings") {
-        const body = (await req.json()) as { subscription_base_url: string; timezone: string };
+      if (
+        req.method === "POST" &&
+        url.pathname === "/rpc/sboard.panel.v1.SystemService/UpdateSystemSettings"
+      ) {
+        const body = (await req.json()) as { subscriptionBaseUrl: string; timezone: string };
         savedPayload = body;
         return new Response(JSON.stringify({ data: body }), {
           status: 200,
@@ -62,9 +79,12 @@ describe("SettingsPage timezone", () => {
         });
       }
 
-      if (req.method === "PUT" && url.pathname === "/api/admin/profile") {
-        const body = await req.json();
-        return new Response(JSON.stringify({ data: { username: body.new_username ?? "admin" } }), {
+      if (
+        req.method === "POST" &&
+        url.pathname === "/rpc/sboard.panel.v1.AuthService/UpdateAdminProfile"
+      ) {
+        const body = (await req.json()) as { newUsername?: string };
+        return new Response(JSON.stringify({ data: { username: body.newUsername ?? "admin" } }), {
           status: 200,
           headers: { "Content-Type": "application/json" },
         });
@@ -91,7 +111,7 @@ describe("SettingsPage timezone", () => {
 
     await waitFor(() => {
       expect(savedPayload).toEqual({
-        subscription_base_url: "https://203.0.113.10:8443",
+        subscriptionBaseUrl: "https://203.0.113.10:8443",
         timezone: "Asia/Shanghai",
       });
     });

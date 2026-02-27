@@ -4,6 +4,11 @@ import { resetAuthStore } from "@/store/auth";
 
 import { listAllNodes } from "./nodes";
 
+function asRequest(input: RequestInfo | URL, init?: RequestInit): Request {
+  if (input instanceof Request) return input;
+  return new Request(input, init);
+}
+
 function buildNode(id: number) {
   return {
     id,
@@ -30,26 +35,30 @@ describe("nodes api pagination", () => {
   });
 
   it("listAllNodes paginates with backend max limit", async () => {
-    const calls: Array<{ limit: string | null; offset: string | null }> = [];
+    const calls: Array<{ limit: number | undefined; offset: number | undefined }> = [];
 
-    vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
-      const req = input as Request;
-      const url = new URL(req.url);
-      if (req.method !== "GET" || url.pathname !== "/api/nodes") {
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+      const req = asRequest(input, init);
+      const url = new URL(req.url, "http://localhost");
+      if (
+        req.method !== "POST" ||
+        !url.pathname.endsWith("/sboard.panel.v1.NodeService/ListNodes")
+      ) {
         return new Response(JSON.stringify({ error: "not found" }), {
           status: 404,
           headers: { "Content-Type": "application/json" },
         });
       }
 
-      const limit = url.searchParams.get("limit");
-      const offset = url.searchParams.get("offset");
+      const body = (await req.json()) as { limit?: number; offset?: number };
+      const limit = body.limit;
+      const offset = body.offset;
       calls.push({ limit, offset });
 
       let data = [] as ReturnType<typeof buildNode>[];
-      if (offset === "0") {
+      if (offset === 0) {
         data = Array.from({ length: 500 }, (_, i) => buildNode(i + 1));
-      } else if (offset === "500") {
+      } else if (offset === 500) {
         data = [buildNode(501)];
       }
 
@@ -62,8 +71,8 @@ describe("nodes api pagination", () => {
     const nodes = await listAllNodes();
     expect(nodes).toHaveLength(501);
     expect(calls).toEqual([
-      { limit: "500", offset: "0" },
-      { limit: "500", offset: "500" },
+      { limit: 500, offset: 0 },
+      { limit: 500, offset: 500 },
     ]);
   });
 });

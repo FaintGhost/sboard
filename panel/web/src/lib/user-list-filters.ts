@@ -1,4 +1,4 @@
-import type { UserStatus } from "@/lib/api/types";
+import type { UserStatus } from "@/lib/rpc/types";
 
 export type UserListStatusFilter = UserStatus | "all";
 

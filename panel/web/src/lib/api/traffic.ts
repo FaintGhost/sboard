@@ -1,23 +1,37 @@
-import "./client";
+import { toApiError } from "@/lib/api/client";
+import { i64, rpcCall } from "@/lib/rpc/client";
 import {
-  getTrafficNodesSummary as _getTrafficNodesSummary,
-  getTrafficTotalSummary as _getTrafficTotalSummary,
-  getTrafficTimeseries as _getTrafficTimeseries,
-} from "./gen";
-import type { TrafficNodeSummary, TrafficTotalSummary, TrafficTimeseriesPoint } from "./gen";
+  getTrafficNodesSummary as getTrafficNodesSummaryRPC,
+  getTrafficTotalSummary as getTrafficTotalSummaryRPC,
+  getTrafficTimeseries as getTrafficTimeseriesRPC,
+} from "@/lib/rpc/gen/sboard/panel/v1/panel-TrafficService_connectquery";
+import {
+  toTrafficNodeSummary,
+  toTrafficTimeseriesPoint,
+  toTrafficTotalSummary,
+} from "@/lib/rpc/mappers";
+import type { TrafficNodeSummary, TrafficTotalSummary, TrafficTimeseriesPoint } from "./types";
 
 export type { TrafficNodeSummary, TrafficTotalSummary, TrafficTimeseriesPoint };
 
 export function listTrafficNodesSummary(
   params: { window?: string } = {},
 ): Promise<TrafficNodeSummary[]> {
-  return _getTrafficNodesSummary({ query: params }).then((r) => r.data!.data);
+  return rpcCall(getTrafficNodesSummaryRPC, { window: params.window })
+    .then((r) => (r.data ?? []).map(toTrafficNodeSummary))
+    .catch((e) => {
+      throw toApiError(e);
+    });
 }
 
 export function getTrafficTotalSummary(
   params: { window?: string } = {},
 ): Promise<TrafficTotalSummary> {
-  return _getTrafficTotalSummary({ query: params }).then((r) => r.data!.data);
+  return rpcCall(getTrafficTotalSummaryRPC, { window: params.window })
+    .then((r) => toTrafficTotalSummary(r.data!))
+    .catch((e) => {
+      throw toApiError(e);
+    });
 }
 
 export function listTrafficTimeseries(
@@ -27,5 +41,13 @@ export function listTrafficTimeseries(
     node_id?: number;
   } = {},
 ): Promise<TrafficTimeseriesPoint[]> {
-  return _getTrafficTimeseries({ query: params }).then((r) => r.data!.data);
+  return rpcCall(getTrafficTimeseriesRPC, {
+    window: params.window,
+    bucket: params.bucket,
+    nodeId: i64(params.node_id),
+  })
+    .then((r) => (r.data ?? []).map(toTrafficTimeseriesPoint))
+    .catch((e) => {
+      throw toApiError(e);
+    });
 }

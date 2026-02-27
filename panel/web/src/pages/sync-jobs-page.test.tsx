@@ -8,6 +8,11 @@ import { resetAuthStore, useAuthStore } from "@/store/auth";
 
 import { SyncJobsPage } from "./sync-jobs-page";
 
+function asRequest(input: RequestInfo | URL, init?: RequestInit): Request {
+  if (input instanceof Request) return input;
+  return new Request(input, init);
+}
+
 function job(id: number, status: string, source: string) {
   return {
     id,
@@ -48,23 +53,23 @@ describe("SyncJobsPage", () => {
     let failedCount = 0;
     let resolveSecondFailed = () => {};
 
-    vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
-      const req = input as Request;
-      const url = new URL(req.url);
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+      const req = asRequest(input, init);
+      const url = new URL(req.url, "http://localhost");
 
-      if (req.method === "GET" && url.pathname === "/api/nodes") {
+      if (req.method === "POST" && url.pathname === "/rpc/sboard.panel.v1.NodeService/ListNodes") {
         return new Response(
           JSON.stringify({
             data: [
               {
-                id: 1,
+                id: "1",
                 uuid: "n-1",
                 name: "node-1",
-                api_address: "127.0.0.1",
-                api_port: 8080,
-                secret_key: "sec",
-                public_address: "1.1.1.1",
-                group_id: 1,
+                apiAddress: "127.0.0.1",
+                apiPort: 8080,
+                secretKey: "sec",
+                publicAddress: "1.1.1.1",
+                groupId: "1",
                 status: "online",
               },
             ],
@@ -73,8 +78,12 @@ describe("SyncJobsPage", () => {
         );
       }
 
-      if (req.method === "GET" && url.pathname === "/api/sync-jobs") {
-        const status = url.searchParams.get("status");
+      if (
+        req.method === "POST" &&
+        url.pathname === "/rpc/sboard.panel.v1.SyncJobService/ListSyncJobs"
+      ) {
+        const body = (await req.json()) as { status?: string };
+        const status = body.status;
         if (status === "failed") {
           failedCount += 1;
           if (failedCount === 1) {
@@ -133,23 +142,23 @@ describe("SyncJobsPage", () => {
   it("does not flash all-source rows when switching between empty source filters", async () => {
     let resolveRetrySource = () => {};
 
-    vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
-      const req = input as Request;
-      const url = new URL(req.url);
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+      const req = asRequest(input, init);
+      const url = new URL(req.url, "http://localhost");
 
-      if (req.method === "GET" && url.pathname === "/api/nodes") {
+      if (req.method === "POST" && url.pathname === "/rpc/sboard.panel.v1.NodeService/ListNodes") {
         return new Response(
           JSON.stringify({
             data: [
               {
-                id: 1,
+                id: "1",
                 uuid: "n-1",
                 name: "node-1",
-                api_address: "127.0.0.1",
-                api_port: 8080,
-                secret_key: "sec",
-                public_address: "1.1.1.1",
-                group_id: 1,
+                apiAddress: "127.0.0.1",
+                apiPort: 8080,
+                secretKey: "sec",
+                publicAddress: "1.1.1.1",
+                groupId: "1",
                 status: "online",
               },
             ],
@@ -158,8 +167,12 @@ describe("SyncJobsPage", () => {
         );
       }
 
-      if (req.method === "GET" && url.pathname === "/api/sync-jobs") {
-        const source = url.searchParams.get("trigger_source");
+      if (
+        req.method === "POST" &&
+        url.pathname === "/rpc/sboard.panel.v1.SyncJobService/ListSyncJobs"
+      ) {
+        const body = (await req.json()) as { triggerSource?: string };
+        const source = body.triggerSource;
 
         if (source === "manual_node_sync") {
           return new Response(JSON.stringify({ data: [] }), {

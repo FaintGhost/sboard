@@ -48,8 +48,8 @@
 ## Verification Commands
 
 ```bash
-cd e2e && docker compose -f docker-compose.e2e.yml up --build --abort-on-container-exit --exit-code-from playwright \
-  -- bunx playwright test --project=smoke tests/smoke/navigation.smoke.spec.ts
+cd e2e && docker compose -f docker-compose.e2e.yml up --build -d panel node && \
+  docker compose -f docker-compose.e2e.yml run --rm playwright bunx playwright test --project=smoke tests/smoke/navigation.smoke.spec.ts
 ```
 
 ## Success Criteria

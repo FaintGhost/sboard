@@ -1,37 +1,62 @@
-import "./client";
+import { toApiError } from "@/lib/api/client";
+import { rpcCall } from "@/lib/rpc/client";
 import {
-  getSystemInfo as _getSystemInfo,
-  getSystemSettings as _getSystemSettings,
-  updateSystemSettings as _updateSystemSettings,
-  getAdminProfile as _getAdminProfile,
-  updateAdminProfile as _updateAdminProfile,
-} from "./gen";
-import type { SystemInfo, SystemSettings, AdminProfile } from "./gen";
+  getAdminProfile as getAdminProfileRPC,
+  updateAdminProfile as updateAdminProfileRPC,
+} from "@/lib/rpc/gen/sboard/panel/v1/panel-AuthService_connectquery";
+import {
+  getSystemInfo as getSystemInfoSystemRPC,
+  getSystemSettings as getSystemSettingsSystemRPC,
+  updateSystemSettings as updateSystemSettingsSystemRPC,
+} from "@/lib/rpc/gen/sboard/panel/v1/panel-SystemService_connectquery";
+import { toAdminProfile, toSystemInfo, toSystemSettings } from "@/lib/rpc/mappers";
+import type { AdminProfile, SystemInfo, SystemSettings } from "./types";
 import type { UpdateAdminProfilePayload } from "./types";
 
 export function getSystemInfo(): Promise<SystemInfo> {
-  return _getSystemInfo().then((r) => r.data!.data);
+  return rpcCall(getSystemInfoSystemRPC, {})
+    .then((r) => toSystemInfo(r.data!))
+    .catch((e) => {
+      throw toApiError(e);
+    });
 }
 
 export function getSystemSettings(): Promise<SystemSettings> {
-  return _getSystemSettings().then((r) => r.data!.data);
+  return rpcCall(getSystemSettingsSystemRPC, {})
+    .then((r) => toSystemSettings(r.data!))
+    .catch((e) => {
+      throw toApiError(e);
+    });
 }
 
 export function updateSystemSettings(payload: SystemSettings): Promise<SystemSettings> {
-  return _updateSystemSettings({ body: payload }).then((r) => r.data!.data);
+  return rpcCall(updateSystemSettingsSystemRPC, {
+    subscriptionBaseUrl: payload.subscription_base_url,
+    timezone: payload.timezone,
+  })
+    .then((r) => toSystemSettings(r.data!))
+    .catch((e) => {
+      throw toApiError(e);
+    });
 }
 
 export function getAdminProfile(): Promise<AdminProfile> {
-  return _getAdminProfile().then((r) => r.data!.data);
+  return rpcCall(getAdminProfileRPC, {})
+    .then((r) => toAdminProfile(r.data!))
+    .catch((e) => {
+      throw toApiError(e);
+    });
 }
 
 export function updateAdminProfile(payload: UpdateAdminProfilePayload): Promise<AdminProfile> {
-  return _updateAdminProfile({
-    body: {
-      old_password: payload.old_password,
-      new_username: payload.new_username,
-      new_password: payload.new_password,
-      confirm_password: payload.confirm_password,
-    },
-  }).then((r) => r.data!.data);
+  return rpcCall(updateAdminProfileRPC, {
+    oldPassword: payload.old_password,
+    newUsername: payload.new_username,
+    newPassword: payload.new_password,
+    confirmPassword: payload.confirm_password,
+  })
+    .then((r) => toAdminProfile(r.data!))
+    .catch((e) => {
+      throw toApiError(e);
+    });
 }

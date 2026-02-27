@@ -29,7 +29,7 @@ import {
 import { ApiError } from "@/lib/api/client";
 import { listGroups } from "@/lib/api/groups";
 import { getUserGroups } from "@/lib/api/user-groups";
-import type { UserStatus } from "@/lib/api/types";
+import type { UserStatus } from "@/lib/rpc/types";
 import { gbStringToBytes, rfc3339FromDateOnlyUTC } from "@/lib/units";
 import type { EditState } from "./types";
 

@@ -1,0 +1,23 @@
+version: v2
+plugins:
+  - local: [go, tool, protoc-gen-go]
+    out: internal/rpc/gen
+    opt:
+      - paths=source_relative
+  - local: [go, tool, protoc-gen-connect-go]
+    out: internal/rpc/gen
+    opt:
+      - paths=source_relative
+      - simple
+  - local: [bun, x, "@bufbuild/protoc-gen-es"]
+    out: web/src/lib/rpc/gen
+    include_imports: true
+    opt:
+      - target=ts
+      - import_extension=none
+  - local: [bun, x, "@connectrpc/protoc-gen-connect-query"]
+    out: web/src/lib/rpc/gen
+    include_imports: true
+    opt:
+      - target=ts
+      - import_extension=none

@@ -26,7 +26,7 @@
 ### Step 1: 研究订阅功能
 
 查看 Panel 的订阅相关实现：
-- 查阅 `panel/openapi.yaml` 中 Subscriptions 相关 API
+- 查阅 `panel/proto/sboard/panel/v1/panel.proto` 与 `panel/internal/api/subscription.go` 中订阅相关 RPC/REST 边界
 - 前端订阅页面的 UI 结构（订阅列表、用户关联、链接展示方式）
 - 订阅链接的格式和生成方式
 - 订阅内容格式：sing-box JSON 和 v2ray base64
@@ -58,8 +58,8 @@
 ## Verification Commands
 
 ```bash
-cd e2e && docker compose -f docker-compose.e2e.yml up --build --abort-on-container-exit --exit-code-from playwright \
-  -- bunx playwright test --project=e2e tests/e2e/subscriptions.spec.ts
+cd e2e && docker compose -f docker-compose.e2e.yml up --build -d panel node && \
+  docker compose -f docker-compose.e2e.yml run --rm playwright bunx playwright test --project=e2e tests/e2e/subscriptions.spec.ts
 ```
 
 ## Success Criteria

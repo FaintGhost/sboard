@@ -27,7 +27,7 @@
 
 创建 `health.smoke.spec.ts`，包含两个测试：
 
-1. **Panel 健康检查**：发送 GET 到 `${BASE_URL}/api/health`，验证返回 200 且响应体包含 `status: "ok"`
+1. **Panel 健康检查**：发送 POST 到 `${BASE_URL}/rpc/sboard.panel.v1.HealthService/GetHealth`，验证返回 200 且响应体包含 `status: "ok"`
 2. **Node 健康检查**：发送 GET 到 `${NODE_API_URL}/api/health`，验证返回 200 且响应体包含 `status: "ok"`
 
 这两个测试使用 Playwright 的 `request` API 直接发送 HTTP 请求（不需要浏览器）。
@@ -39,8 +39,8 @@
 ## Verification Commands
 
 ```bash
-cd e2e && docker compose -f docker-compose.e2e.yml up --build --abort-on-container-exit --exit-code-from playwright \
-  -- bunx playwright test --project=smoke tests/smoke/health.smoke.spec.ts
+cd e2e && docker compose -f docker-compose.e2e.yml up --build -d panel node && \
+  docker compose -f docker-compose.e2e.yml run --rm playwright bunx playwright test --project=smoke tests/smoke/health.smoke.spec.ts
 ```
 
 ## Success Criteria

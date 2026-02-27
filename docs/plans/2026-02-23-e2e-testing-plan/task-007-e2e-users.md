@@ -31,7 +31,7 @@
 - 用户创建表单的字段（用户名、密码、流量限制、过期时间、分组等）
 - 编辑用户的交互方式（点击编辑按钮 → 弹窗/抽屉/跳转）
 - 删除确认的交互方式（确认对话框）
-- 查阅 `panel/openapi.yaml` 中 Users 相关的 API 了解字段定义
+- 查阅 `panel/proto/sboard/panel/v1/panel.proto` 中 Users 相关 RPC 了解字段定义
 
 ### Step 2: 实现用户管理测试
 
@@ -50,8 +50,8 @@
 ## Verification Commands
 
 ```bash
-cd e2e && docker compose -f docker-compose.e2e.yml up --build --abort-on-container-exit --exit-code-from playwright \
-  -- bunx playwright test --project=e2e tests/e2e/users.spec.ts
+cd e2e && docker compose -f docker-compose.e2e.yml up --build -d panel node && \
+  docker compose -f docker-compose.e2e.yml run --rm playwright bunx playwright test --project=e2e tests/e2e/users.spec.ts
 ```
 
 ## Success Criteria

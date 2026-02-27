@@ -51,7 +51,7 @@ import {
   formatSingBoxConfig,
   generateSingBoxValue,
 } from "@/lib/api/singbox-tools";
-import type { Inbound, Node, SingBoxGenerateCommand } from "@/lib/api/types";
+import type { Inbound, Node, SingBoxGenerateCommand } from "@/lib/rpc/types";
 import {
   buildInboundTemplateText,
   buildPresetInboundTemplateText,

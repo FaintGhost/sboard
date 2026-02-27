@@ -25,8 +25,8 @@
 │  React Frontend  │  Gin Backend  │  SQLite  │  Sub Generator │
 └────────┬────────────────┬────────────────────────────────────┘
          │                │
-         │     REST API   │
-         │   (Bearer JWT) │
+         │   RPC API      │
+         │ (Connect + JWT)│
          ▼                ▼
 ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐
 │   SBoard Node   │  │   SBoard Node   │  │   SBoard Node   │
@@ -48,8 +48,13 @@
 ```
 panel/
 ├── cmd/panel/main.go           # 入口
+├── proto/sboard/panel/v1/      # Panel 管理面 RPC 契约（protobuf）
 ├── internal/
-│   ├── api/                    # Gin HTTP handlers
+│   ├── rpc/                    # Connect RPC handlers
+│   │   ├── server.go           # RPC 服务注册与鉴权拦截
+│   │   ├── services_impl.go    # RPC 方法实现
+│   │   └── gen/                # buf 生成代码（go + connect-go）
+│   ├── api/                    # HTTP 兼容层（订阅入口、Web 托管）
 │   │   ├── auth.go             # JWT 认证
 │   │   ├── users.go            # 用户 CRUD
 │   │   ├── nodes.go            # 节点管理
@@ -203,6 +208,12 @@ CREATE TABLE traffic_stats (
 ---
 
 ## Panel-Node 通信协议
+
+### 管理面与节点面的协议边界
+
+- Panel 管理面：RPC（Connect），统一入口 `/rpc/sboard.panel.v1.<Service>/<Method>`
+- Panel 订阅兼容：REST `GET /api/sub/:user_uuid`
+- Node 对外接口：REST（健康检查、配置同步、统计）
 
 ### Node API 端点
 

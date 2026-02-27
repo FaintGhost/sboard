@@ -42,7 +42,7 @@ import { listGroupUsers, replaceGroupUsers } from "@/lib/api/group-users";
 import { createGroup, deleteGroup, listGroups, updateGroup } from "@/lib/api/groups";
 import { tableColumnLayout, tableColumnSpacing } from "@/lib/table-spacing";
 import { listAllUsers } from "@/lib/api/users";
-import type { Group } from "@/lib/api/types";
+import type { Group } from "@/lib/rpc/types";
 import { tableToolbarClass } from "@/lib/table-toolbar";
 
 type EditState = {

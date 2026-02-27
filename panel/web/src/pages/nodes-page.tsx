@@ -50,7 +50,7 @@ import { FlashValue } from "@/components/flash-value";
 import { ApiError } from "@/lib/api/client";
 import { listGroups } from "@/lib/api/groups";
 import { createNode, deleteNode, listNodeTraffic, listNodes, updateNode } from "@/lib/api/nodes";
-import type { Group, Node, NodeTrafficSample } from "@/lib/api/types";
+import type { Group, Node, NodeTrafficSample } from "@/lib/rpc/types";
 import { listTrafficNodesSummary, type TrafficNodeSummary } from "@/lib/api/traffic";
 import { buildNodeDockerCompose, generateNodeSecretKey } from "@/lib/node-compose";
 import { tableColumnLayout, tableColumnSpacing } from "@/lib/table-spacing";

@@ -13,6 +13,7 @@ import (
 	"sboard/panel/internal/config"
 	"sboard/panel/internal/db"
 	"sboard/panel/internal/monitor"
+	"sboard/panel/internal/rpc"
 )
 
 func ensureSetupTokenIfNeeded(cfg *config.Config, store *db.Store) (string, error) {
@@ -85,7 +86,8 @@ func main() {
 	go tm.Run(monitorCtx, cfg.TrafficMonitorInterval)
 	log.Printf("[monitor] traffic enabled interval=%s", cfg.TrafficMonitorInterval)
 
-	r := api.NewRouter(cfg, store)
+	rpcHandler := rpc.NewHandler(cfg, store)
+	r := api.NewRouterWithRPC(cfg, store, rpcHandler)
 	srv := &http.Server{
 		Addr:    cfg.HTTPAddr,
 		Handler: r,

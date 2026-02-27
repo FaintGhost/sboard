@@ -1,4 +1,4 @@
-import type { SyncJobStatus } from "@/lib/api/types";
+import type { SyncJobStatus } from "@/lib/rpc/types";
 
 export const syncJobStatusValues: SyncJobStatus[] = ["queued", "running", "success", "failed"];
 

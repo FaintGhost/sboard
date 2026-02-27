@@ -30,7 +30,7 @@
 - 创建节点的表单字段（名称、API 地址、API 端口、密钥、公网地址等）
 - 节点健康状态的显示方式（在线/离线标识）
 - 删除节点的交互方式
-- 查阅 `panel/openapi.yaml` 中 Nodes 相关的 API 了解字段定义
+- 查阅 `panel/proto/sboard/panel/v1/panel.proto` 中 Nodes 相关 RPC 了解字段定义
 
 ### Step 2: 实现节点管理测试
 
@@ -56,8 +56,8 @@
 ## Verification Commands
 
 ```bash
-cd e2e && docker compose -f docker-compose.e2e.yml up --build --abort-on-container-exit --exit-code-from playwright \
-  -- bunx playwright test --project=e2e tests/e2e/nodes.spec.ts
+cd e2e && docker compose -f docker-compose.e2e.yml up --build -d panel node && \
+  docker compose -f docker-compose.e2e.yml run --rm playwright bunx playwright test --project=e2e tests/e2e/nodes.spec.ts
 ```
 
 ## Success Criteria

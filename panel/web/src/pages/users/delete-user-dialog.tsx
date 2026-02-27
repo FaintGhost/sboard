@@ -11,7 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ApiError } from "@/lib/api/client";
-import type { User } from "@/lib/api/types";
+import type { User } from "@/lib/rpc/types";
 
 type DeleteUserDialogProps = {
   user: User | null;

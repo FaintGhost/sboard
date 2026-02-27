@@ -1,12 +1,18 @@
-import { test, expect, PanelAPI, NodeAPI, uniqueNodeName } from "../fixtures";
+import { test, expect, PanelAPI, NodeAPI, uniqueGroupName, uniqueNodeName } from "../fixtures";
 
 test.describe.serial("配置同步与验证", () => {
   let nodeId: number;
+  let groupId: number;
   const nodeName = uniqueNodeName();
 
   test("创建节点和入站配置", async ({ authenticatedPage, adminToken, request }) => {
     const page = authenticatedPage;
     const api = new PanelAPI(request, adminToken);
+
+    const groupResp = await api.createGroup(uniqueGroupName(), "e2e node-sync group");
+    expect(groupResp.ok()).toBeTruthy();
+    const groupData = await groupResp.json();
+    groupId = Number(groupData.data.id);
 
     // Create node via API for speed
     const nodeResp = await api.createNode({
@@ -15,10 +21,11 @@ test.describe.serial("配置同步与验证", () => {
       api_port: 3000,
       secret_key: "e2e-test-node-secret",
       public_address: "node",
+      group_id: groupId,
     });
     expect(nodeResp.ok()).toBeTruthy();
     const nodeData = await nodeResp.json();
-    nodeId = nodeData.data.id;
+    nodeId = Number(nodeData.data.id);
 
     // Wait for node to be detected as online
     await page.waitForTimeout(6_000);
@@ -35,9 +42,9 @@ test.describe.serial("配置同步与验证", () => {
     await page.getByRole("combobox", { name: "Select Node" }).click();
     await page.getByRole("option", { name: new RegExp(nodeName) }).click();
 
-    // Select VLESS preset
+    // Select VMESS preset to avoid Reality key requirements in VLESS preset
     await page.getByRole("combobox", { name: "Preset" }).click();
-    await page.getByRole("option", { name: "VLESS" }).click();
+    await page.getByRole("option", { name: "VMESS" }).click();
 
     // Save the inbound
     await page.getByRole("dialog", { name: "Create Inbound" }).getByRole("button", { name: "Save" }).click();
@@ -67,7 +74,7 @@ test.describe.serial("配置同步与验证", () => {
     const syncResp = await api.syncNode(nodeId);
     expect(syncResp.ok()).toBeTruthy();
     const syncData = await syncResp.json();
-    expect(syncData.data?.status).toBe("success");
+    expect(syncData.status).toBe("ok");
 
     // Verify node is still healthy after re-sync
     const nodeApi = new NodeAPI(request);

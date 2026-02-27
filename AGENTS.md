@@ -29,7 +29,8 @@
 - `panel/`
   - Go 后端：`panel/cmd/panel`，路由与业务：`panel/internal/*`
   - Web 前端：`panel/web/`（React + Vite + TailwindCSS v4 + shadcn/ui）
-  - API spec：`panel/openapi.yaml`（OpenAPI 3.0.3）
+  - RPC 契约：`panel/proto/sboard/panel/v1/panel.proto`（Protobuf）
+  - RPC 生成配置：`panel/buf.yaml`、`panel/buf.gen.yaml`
 - `node/`
   - Go 节点：`node/cmd/node`
   - 对外 HTTP API：`node/internal/api`
@@ -45,33 +46,27 @@
 - `node`：节点（实际承载入站的 VPS 节点；`node` 只属于 1 个 `group`）
 - `inbound`：入站（属于某个 `node`；`panel` 下发给 `node` 时会把分组用户注入到每个入站的 `users` 字段）
 
-## OpenAPI 驱动的 API 开发工作流
-- **Spec 文件**：`panel/openapi.yaml`（OpenAPI 3.0.3，作为前后端 API 的 Single Source of Truth）
-- **Go 代码生成**：`oapi-codegen`，配置在 `panel/internal/api/generate.go`
-  - 生成文件：`oapi_types.gen.go`（类型）、`oapi_server.gen.go`（Gin server interface）
-- **TS 代码生成**：`@hey-api/openapi-ts`，配置在 `panel/web/openapi-ts.config.ts`
-  - 生成目录：`panel/web/src/lib/api/gen/`（types、SDK、client、zod schemas）
-- **再生成命令**：`make generate`（同时生成 Go + TS）
-- **新鲜度检查**：`make check-generate`（生成后检查 git diff，有差异则报错）
-- **API 变更工作流**：修改 `panel/openapi.yaml` → `make generate` → 更新 handler/页面 → 测试
+## RPC（Proto）驱动的 API 开发工作流
+- **Spec 文件**：`panel/proto/sboard/panel/v1/panel.proto`（作为 Panel 管理面 API 的 Single Source of Truth）
+- **Go 代码生成**：`buf generate` + `protoc-gen-go` + `protoc-gen-connect-go`
+  - 生成目录：`panel/internal/rpc/gen/`（protobuf types + connect handlers）
+- **TS 代码生成**：`buf generate` + `@bufbuild/protoc-gen-es` + `@connectrpc/protoc-gen-connect-query`
+  - 生成目录：`panel/web/src/lib/rpc/gen/`
+- **再生成命令**：`make generate`
+- **新鲜度检查**：`make check-generate`（检查 `panel/internal/rpc/gen/**` 与 `panel/web/src/lib/rpc/gen/**`）
+- **API 变更工作流**：修改 `panel/proto/sboard/panel/v1/panel.proto` → `make generate` → 更新服务实现/页面映射 → 测试
+
+## REST 兼容边界
+- Panel 管理面默认走 RPC：`/rpc/sboard.panel.v1.<Service>/<Method>`
+- 仅保留订阅 REST 兼容入口：`GET /api/sub/:user_uuid`
+- Node 对外接口仍为 REST：`node/internal/api/router.go`
 
 ## 关键 API（后端）
-- 所有 API 端点定义在 `panel/openapi.yaml`，后端 handler 实现 `oapi-codegen` 生成的 `StrictServerInterface`
+- Panel 管理面 API 由 `panel/proto/sboard/panel/v1/panel.proto` 定义，后端由 `panel/internal/rpc/*` 提供实现
 - Panel（`panel/internal/api/`）
-  - 健康检查：`GET /api/health`
-  - 管理员登录：`POST /api/admin/login`
-  - 订阅：`GET /api/sub/:user_uuid`（`format=singbox|v2ray`，也会按 `User-Agent` 选择默认输出）
-  - Users：`GET/POST /api/users`，`GET/PUT/DELETE /api/users/:id`
-  - User Groups：`GET/PUT /api/users/:id/groups`
-  - Groups：`GET/POST /api/groups`，`GET/PUT/DELETE /api/groups/:id`
-  - Nodes：`GET/POST /api/nodes`，`GET/PUT/DELETE /api/nodes/:id`
-  - Node 运维：`GET /api/nodes/:id/health`，`POST /api/nodes/:id/sync`
-  - Inbounds：`GET/POST /api/inbounds`，`GET/PUT/DELETE /api/inbounds/:id`
-  - System：`GET/PUT /api/system/settings`，`GET /api/system/info`
-  - Admin Profile：`GET/PUT /api/admin/profile`
-  - Traffic：`GET /api/traffic/nodes/summary`，`GET /api/traffic/total/summary`，`GET /api/traffic/timeseries`
-  - SingBox Tools：`POST /api/singbox/{format,check,generate}`
-  - Sync Jobs：`GET /api/sync-jobs`，`GET /api/sync-jobs/:id`，`POST /api/sync-jobs/:id/retry`
+  - RPC 统一入口：`POST /rpc/sboard.panel.v1.<Service>/<Method>`
+  - 服务集合：Health/Auth/System/User/Group/Node/Traffic/Inbound/SyncJob/SingBoxTool
+  - 订阅兼容入口：`GET /api/sub/:user_uuid`（`format=singbox|v2ray`，也会按 `User-Agent` 选择默认输出）
 - Node（`node/internal/api/router.go`）
   - 健康检查：`GET /api/health`
   - 配置同步：`POST /api/config/sync`（`Authorization: Bearer <NODE_SECRET_KEY>`）

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { TrafficTimeseriesPoint } from "@/lib/api/traffic";
+import type { TrafficTimeseriesPoint } from "@/lib/rpc/types";
 import { resolveTrafficChartRows } from "@/lib/traffic-chart-data";
 
 function point(at: string, upload: number, download: number): TrafficTimeseriesPoint {

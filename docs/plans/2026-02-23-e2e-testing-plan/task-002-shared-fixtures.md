@@ -28,11 +28,11 @@
 
 ### Step 1: 研究 Panel API 接口
 
-查阅 `panel/openapi.yaml` 了解以下 API 的请求/响应格式：
-- `GET /api/admin/bootstrap` — 检查是否需要初始化
-- `POST /api/admin/bootstrap` — 执行初始化（需要 X-Setup-Token header）
-- `POST /api/admin/login` — 登录获取 JWT token
-- `GET /api/health` — 健康检查
+查阅 `panel/proto/sboard/panel/v1/panel.proto` 与 `panel/web/src/lib/rpc/gen/**` 了解以下 RPC 的请求/响应格式：
+- `POST /rpc/sboard.panel.v1.AuthService/GetBootstrapStatus` — 检查是否需要初始化
+- `POST /rpc/sboard.panel.v1.AuthService/Bootstrap` — 执行初始化（`setupToken` / `xSetupToken`）
+- `POST /rpc/sboard.panel.v1.AuthService/Login` — 登录获取 JWT token
+- `POST /rpc/sboard.panel.v1.HealthService/GetHealth` — Panel 健康检查
 
 查阅 Panel 前端代码了解 token 存储方式：
 - 检查 `panel/web/src/store/auth.ts` 或相关文件，确认 token 存储在 localStorage 的哪个 key 下
@@ -54,7 +54,7 @@
 ### Step 3: 创建 api.fixture.ts
 
 封装常用 API 操作，提供：
-- `panelAPI` — 带认证的 Panel API 请求封装（创建用户、创建节点、创建入站等）
+- `panelAPI` — 带认证的 Panel RPC 请求封装（创建用户、创建节点、创建入站等）
 - `nodeAPI` — Node API 请求封装（查询健康状态、查询配置等，使用 Bearer Token 鉴权）
 - 环境变量：`BASE_URL`（Panel）、`NODE_API_URL`（Node）、`SETUP_TOKEN`
 

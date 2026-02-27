@@ -8,6 +8,11 @@ import { MemoryRouter } from "react-router-dom";
 
 import { SubscriptionsPage } from "./subscriptions-page";
 
+function asRequest(input: RequestInfo | URL, init?: RequestInit): Request {
+  if (input instanceof Request) return input;
+  return new Request(input, init);
+}
+
 describe("SubscriptionsPage", () => {
   beforeEach(() => {
     localStorage.clear();
@@ -16,23 +21,23 @@ describe("SubscriptionsPage", () => {
   });
 
   it("uses configured subscription base URL", async () => {
-    vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
-      const req = input as Request;
-      const url = new URL(req.url);
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+      const req = asRequest(input, init);
+      const url = new URL(req.url, "http://localhost");
 
-      if (req.method === "GET" && url.pathname === "/api/users") {
+      if (req.method === "POST" && url.pathname === "/rpc/sboard.panel.v1.UserService/ListUsers") {
         return new Response(
           JSON.stringify({
             data: [
               {
-                id: 1,
+                id: "1",
                 uuid: "67e59f3f-412e-4f46-92cd-495aed76ee35",
                 username: "alice",
-                group_ids: [],
-                traffic_limit: 0,
-                traffic_used: 0,
-                traffic_reset_day: 0,
-                expire_at: null,
+                groupIds: [],
+                trafficLimit: "0",
+                trafficUsed: "0",
+                trafficResetDay: 0,
+                expireAt: null,
                 status: "active",
               },
             ],
@@ -41,11 +46,15 @@ describe("SubscriptionsPage", () => {
         );
       }
 
-      if (req.method === "GET" && url.pathname === "/api/system/settings") {
+      if (
+        req.method === "POST" &&
+        url.pathname === "/rpc/sboard.panel.v1.SystemService/GetSystemSettings"
+      ) {
         return new Response(
           JSON.stringify({
             data: {
-              subscription_base_url: "https://sub.example.com",
+              subscriptionBaseUrl: "https://sub.example.com",
+              timezone: "UTC",
             },
           }),
           { status: 200, headers: { "Content-Type": "application/json" } },

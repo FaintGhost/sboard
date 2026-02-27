@@ -35,7 +35,7 @@ import {
 } from "@/components/ui/table";
 import { listUsers } from "@/lib/api/users";
 import { listGroups } from "@/lib/api/groups";
-import type { User, UserStatus } from "@/lib/api/types";
+import type { User, UserStatus } from "@/lib/rpc/types";
 import { tableColumnLayout, tableColumnSpacing } from "@/lib/table-spacing";
 import { tableTransitionClass } from "@/lib/table-motion";
 import { useTableQueryTransition } from "@/lib/table-query-transition";

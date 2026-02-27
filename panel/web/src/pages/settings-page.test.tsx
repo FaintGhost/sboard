@@ -7,6 +7,11 @@ import { resetAuthStore, useAuthStore } from "@/store/auth";
 
 import { SettingsPage } from "./settings-page";
 
+function asRequest(input: RequestInfo | URL, init?: RequestInit): Request {
+  if (input instanceof Request) return input;
+  return new Request(input, init);
+}
+
 type AdminProfilePayload = {
   new_username: string;
   old_password: string;
@@ -17,7 +22,7 @@ type AdminProfilePayload = {
 type SetupMockOptions = {
   initialSubscriptionBaseURL?: string;
   initialTimezone?: string;
-  onPutSystemSettings?: (payload: { subscription_base_url: string; timezone: string }) => void;
+  onPutSystemSettings?: (payload: { subscriptionBaseUrl: string; timezone: string }) => void;
   onPutAdminProfile?: (payload: AdminProfilePayload) => { username: string };
 };
 
@@ -29,17 +34,20 @@ function setupSettingsFetchMock(options: SetupMockOptions = {}) {
     onPutAdminProfile,
   } = options;
 
-  vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
-    const req = input as Request;
-    const url = new URL(req.url);
+  vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+    const req = asRequest(input, init);
+    const url = new URL(req.url, "http://localhost");
 
-    if (req.method === "GET" && url.pathname === "/api/system/info") {
+    if (
+      req.method === "POST" &&
+      url.pathname === "/rpc/sboard.panel.v1.SystemService/GetSystemInfo"
+    ) {
       return new Response(
         JSON.stringify({
           data: {
-            panel_version: "v0.2.0",
-            panel_commit_id: "abc1234",
-            sing_box_version: "1.12.19",
+            panelVersion: "v0.2.0",
+            panelCommitId: "abc1234",
+            singBoxVersion: "1.12.19",
           },
         }),
         {
@@ -49,11 +57,14 @@ function setupSettingsFetchMock(options: SetupMockOptions = {}) {
       );
     }
 
-    if (req.method === "GET" && url.pathname === "/api/system/settings") {
+    if (
+      req.method === "POST" &&
+      url.pathname === "/rpc/sboard.panel.v1.SystemService/GetSystemSettings"
+    ) {
       return new Response(
         JSON.stringify({
           data: {
-            subscription_base_url: initialSubscriptionBaseURL,
+            subscriptionBaseUrl: initialSubscriptionBaseURL,
             timezone: initialTimezone,
           },
         }),
@@ -64,7 +75,10 @@ function setupSettingsFetchMock(options: SetupMockOptions = {}) {
       );
     }
 
-    if (req.method === "GET" && url.pathname === "/api/admin/profile") {
+    if (
+      req.method === "POST" &&
+      url.pathname === "/rpc/sboard.panel.v1.AuthService/GetAdminProfile"
+    ) {
       return new Response(
         JSON.stringify({
           data: {
@@ -78,13 +92,16 @@ function setupSettingsFetchMock(options: SetupMockOptions = {}) {
       );
     }
 
-    if (req.method === "PUT" && url.pathname === "/api/system/settings") {
-      const body = (await req.json()) as { subscription_base_url: string; timezone: string };
+    if (
+      req.method === "POST" &&
+      url.pathname === "/rpc/sboard.panel.v1.SystemService/UpdateSystemSettings"
+    ) {
+      const body = (await req.json()) as { subscriptionBaseUrl: string; timezone: string };
       onPutSystemSettings?.(body);
       return new Response(
         JSON.stringify({
           data: {
-            subscription_base_url: body.subscription_base_url,
+            subscriptionBaseUrl: body.subscriptionBaseUrl,
             timezone: body.timezone,
           },
         }),
@@ -95,9 +112,22 @@ function setupSettingsFetchMock(options: SetupMockOptions = {}) {
       );
     }
 
-    if (req.method === "PUT" && url.pathname === "/api/admin/profile") {
-      const body = (await req.json()) as AdminProfilePayload;
-      const updated = onPutAdminProfile?.(body) ?? { username: body.new_username };
+    if (
+      req.method === "POST" &&
+      url.pathname === "/rpc/sboard.panel.v1.AuthService/UpdateAdminProfile"
+    ) {
+      const body = (await req.json()) as {
+        oldPassword: string;
+        newUsername?: string;
+        newPassword?: string;
+        confirmPassword?: string;
+      };
+      const updated = onPutAdminProfile?.({
+        old_password: body.oldPassword,
+        new_username: body.newUsername || "",
+        new_password: body.newPassword || "",
+        confirm_password: body.confirmPassword || "",
+      }) ?? { username: body.newUsername ?? "admin" };
       return new Response(
         JSON.stringify({
           data: {
@@ -147,7 +177,7 @@ describe("SettingsPage", () => {
     let savedTimezone = "";
     setupSettingsFetchMock({
       onPutSystemSettings: (payload) => {
-        savedValue = payload.subscription_base_url;
+        savedValue = payload.subscriptionBaseUrl;
         savedTimezone = payload.timezone;
       },
     });

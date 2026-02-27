@@ -17,7 +17,7 @@ test.describe.serial("订阅管理", () => {
     const userResp = await api.createUser(testUsername);
     expect(userResp.ok()).toBeTruthy();
     const userData = await userResp.json();
-    userId = userData.data.id;
+    userId = Number(userData.data.id);
     userUuid = userData.data.uuid;
 
     // Create node
@@ -31,13 +31,13 @@ test.describe.serial("订阅管理", () => {
     });
     expect(nodeResp.ok()).toBeTruthy();
     const nodeData = await nodeResp.json();
-    nodeId = nodeData.data.id;
+    nodeId = Number(nodeData.data.id);
 
     // Wait for node to be online
     await page.waitForTimeout(6_000);
 
     // Navigate to subscriptions page
-    await page.getByRole("link", { name: "Subscriptions" }).click();
+    await page.getByRole("link", { name: "Subscriptions", exact: true }).click();
     await expect(page).toHaveURL(/\/subscriptions/);
 
     // Search for the test user

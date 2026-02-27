@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { Inbound } from "@/lib/api/types";
+import type { Inbound } from "@/lib/rpc/types";
 
 import {
   buildInboundTemplateText,

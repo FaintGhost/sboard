@@ -30,7 +30,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Badge } from "@/components/ui/badge";
 import { listUsers } from "@/lib/api/users";
 import { getSystemSettings } from "@/lib/api/system";
-import type { User, UserStatus } from "@/lib/api/types";
+import type { User, UserStatus } from "@/lib/rpc/types";
 import { tableColumnLayout, tableColumnSpacing } from "@/lib/table-spacing";
 import { tableTransitionClass } from "@/lib/table-motion";
 import { useTableQueryTransition } from "@/lib/table-query-transition";

@@ -13,7 +13,7 @@ SBoard 是一个基于 sing-box 的订阅管理面板与节点管理系统。
 - 订阅格式：sing-box JSON、v2ray（Base64 分享链接），按 User-Agent 自动选择
 - 入站配置通过 sing-box 模板编辑，支持 TLS/Reality/Transport
 - 入站新增/更新/删除后自动触发节点同步
-- OpenAPI 3.0 驱动的前后端 API 对接，代码生成保证类型一致性
+- RPC（Connect + Protobuf）驱动的前后端 API 对接，代码生成保证类型一致性
 
 ## 前置条件
 
@@ -47,9 +47,13 @@ go run ./cmd/node
 3. 启动前端（开发模式）
 ```bash
 cd panel/web
-bun run dev
+VITE_API_BASE_URL=http://127.0.0.1:8080 bun run dev
 ```
-Vite 会把 `/api/*` 代理到 Panel（默认 `http://127.0.0.1:8080`）。自定义目标：
+说明：
+- 前端管理面接口默认走 `/rpc/*`，建议通过 `VITE_API_BASE_URL` 直连 Panel。
+- `/api/*` 仅用于订阅兼容入口（`/api/sub/:user_uuid`）和 Node 侧 REST，不再作为 Panel 管理面主链路。
+
+如果你仍希望通过 Vite 代理到 Panel，可继续自定义目标：
 ```bash
 VITE_PROXY_TARGET=http://127.0.0.1:8080 bun run dev
 ```
@@ -119,16 +123,16 @@ SBOARD_PANEL_IMAGE="faintghost/sboard-panel:latest" \
 
 ## API
 
-所有 API 端点定义在 `panel/openapi.yaml`（OpenAPI 3.0.3 spec）。
+Panel 管理面 API 已迁移到 RPC（Connect 协议，HTTP 路径为 `/rpc/*`）。
 
-**主要端点**
-- 健康检查：`GET /api/health`
-- 管理员登录：`POST /api/admin/login`
+**Panel 管理面（RPC）**
+- 统一入口：`POST /rpc/sboard.panel.v1.<Service>/<Method>`
+- 公共服务：`HealthService`、`AuthService`、`SystemService`
+- 业务服务：`UserService`、`GroupService`、`NodeService`、`InboundService`
+- 运维服务：`TrafficService`、`SyncJobService`、`SingBoxToolService`
+
+**兼容保留（REST）**
 - 订阅：`GET /api/sub/:user_uuid`
-- Users：`GET/POST /api/users`，`GET/PUT/DELETE /api/users/:id`
-- Groups：`GET/POST /api/groups`，`GET/PUT/DELETE /api/groups/:id`
-- Nodes：`GET/POST /api/nodes`，`GET/PUT/DELETE /api/nodes/:id`
-- Inbounds：`GET/POST /api/inbounds`，`GET/PUT/DELETE /api/inbounds/:id`
 
 **订阅行为**
 - `?format=singbox`：返回 sing-box JSON
@@ -141,9 +145,10 @@ SBOARD_PANEL_IMAGE="faintghost/sboard-panel:latest" \
 ```
 panel/               # Panel 后端（Gin + SQLite）+ 前端
   cmd/panel/         # 入口
-  internal/api/      # HTTP handlers（oapi-codegen 生成的接口）
+  internal/rpc/      # Panel RPC 服务实现与生成代码（connect-go）
+  proto/             # Protobuf 契约（Panel 管理面 API）
+  internal/api/      # HTTP 兼容层（订阅入口、Web 托管、兼容测试路由）
   web/               # React 前端（Vite + TailwindCSS v4 + shadcn/ui）
-  openapi.yaml       # OpenAPI 3.0.3 spec（API 的 Single Source of Truth）
 node/                # Node 服务（嵌入 sing-box）
   cmd/node/          # 入口
   internal/api/      # Node HTTP API
@@ -153,9 +158,9 @@ docs/                # 设计与规划文档
 Makefile             # 代码生成与检查
 ```
 
-**OpenAPI 工作流**
+**RPC Proto 工作流**
 
-API 变更流程：修改 `panel/openapi.yaml` → `make generate` → 更新 handler/页面 → 测试
+API 变更流程：修改 `panel/proto/sboard/panel/v1/panel.proto` → `make generate` → 更新服务实现/页面映射 → 测试
 
 ```bash
 # 生成 Go + TS 代码
@@ -166,8 +171,9 @@ make check-generate
 ```
 
 工具链：
-- Go 后端：[oapi-codegen](https://github.com/oapi-codegen/oapi-codegen)（生成 Gin server interface + 类型）
-- TS 前端：[@hey-api/openapi-ts](https://heyapi.dev/)（生成 SDK + 类型 + Zod schemas）
+- 契约与生成：[buf](https://buf.build/)
+- Go 后端：[connect-go](https://connectrpc.com/)
+- TS 前端：[connect-es/connect-query](https://connectrpc.com/)
 
 **代码质量**
 

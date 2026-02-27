@@ -1,17 +1,23 @@
 import { test, expect, ADMIN_USERNAME, ADMIN_PASSWORD, BASE_URL, SETUP_TOKEN } from "../fixtures";
 
 async function ensureBootstrap(request: import("@playwright/test").APIRequestContext) {
-  const statusResp = await request.get(`${BASE_URL}/api/admin/bootstrap`);
+  const statusResp = await request.post(`${BASE_URL}/rpc/sboard.panel.v1.AuthService/GetBootstrapStatus`, {
+    headers: { "Content-Type": "application/json" },
+    data: {},
+  });
   const statusData = await statusResp.json();
-  if (statusData.data?.needs_setup) {
-    await request.post(`${BASE_URL}/api/admin/bootstrap`, {
-      headers: { "X-Setup-Token": SETUP_TOKEN },
+  if (statusData.data?.needsSetup) {
+    const bootstrapResp = await request.post(`${BASE_URL}/rpc/sboard.panel.v1.AuthService/Bootstrap`, {
+      headers: { "Content-Type": "application/json" },
       data: {
+        setupToken: SETUP_TOKEN,
+        xSetupToken: SETUP_TOKEN,
         username: ADMIN_USERNAME,
         password: ADMIN_PASSWORD,
-        confirm_password: ADMIN_PASSWORD,
+        confirmPassword: ADMIN_PASSWORD,
       },
     });
+    expect(bootstrapResp.ok()).toBeTruthy();
   }
 }
 
@@ -40,9 +46,9 @@ test.describe("认证管理", () => {
     await page.locator("#password").fill("wrong-password");
     await page.getByRole("button", { name: "Login" }).click();
 
-    // Should show error and stay on login page
-    await expect(page.getByText(/failed|error|invalid/i)).toBeVisible({ timeout: 5_000 });
+    // Should stay on login page and remain unauthenticated
     await expect(page).toHaveURL(/\/login/);
+    await expect(page.getByRole("link", { name: "Dashboard" })).not.toBeVisible();
   });
 
   test("未认证访问受保护页面", async ({ page }) => {

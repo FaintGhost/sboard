@@ -26,7 +26,7 @@
 ### Step 1: 研究配置同步流程
 
 深入了解 Panel↔Node 的配置同步机制：
-- 查看 `panel/openapi.yaml` 中 Inbounds、SyncJobs 相关 API
+- 查看 `panel/proto/sboard/panel/v1/panel.proto` 中 InboundService、SyncJobService、NodeService 相关 RPC
 - 了解入站配置的创建流程和字段（协议类型、端口、关联节点等）
 - 了解同步触发方式（手动触发 API 或 UI 操作）
 - 查看 Node API：`POST /api/config/sync`（接收配置）、可能的配置查询端点
@@ -58,8 +58,8 @@
 ## Verification Commands
 
 ```bash
-cd e2e && docker compose -f docker-compose.e2e.yml up --build --abort-on-container-exit --exit-code-from playwright \
-  -- bunx playwright test --project=e2e tests/e2e/node-sync.spec.ts
+cd e2e && docker compose -f docker-compose.e2e.yml up --build -d panel node && \
+  docker compose -f docker-compose.e2e.yml run --rm playwright bunx playwright test --project=e2e tests/e2e/node-sync.spec.ts
 ```
 
 ## Success Criteria
