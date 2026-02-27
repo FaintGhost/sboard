@@ -2,56 +2,12 @@ package api
 
 import (
 	"context"
-	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
 	"sboard/panel/internal/config"
 	"sboard/panel/internal/db"
 )
-
-// publicOperations lists operations that do NOT require authentication.
-var publicOperations = map[string]bool{
-	"GetHealth":          true,
-	"GetBootstrapStatus": true,
-	"Bootstrap":          true,
-	"Login":              true,
-	"GetSubscription":    true,
-}
-
-// authStrictMiddleware returns a StrictMiddlewareFunc that enforces JWT
-// authentication for all operations except those in publicOperations.
-func authStrictMiddleware(secret string) StrictMiddlewareFunc {
-	return func(f StrictHandlerFunc, operationID string) StrictHandlerFunc {
-		if publicOperations[operationID] {
-			return f
-		}
-		return func(ctx *gin.Context, request any) (any, error) {
-			auth := ctx.GetHeader("Authorization")
-			if !strings.HasPrefix(auth, "Bearer ") {
-				ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-				ctx.Abort()
-				return nil, nil
-			}
-			tokenStr := strings.TrimPrefix(auth, "Bearer ")
-			claims := &jwt.RegisteredClaims{}
-			token, err := jwt.ParseWithClaims(tokenStr, claims, func(t *jwt.Token) (any, error) {
-				if t.Method != jwt.SigningMethodHS256 {
-					return nil, fmt.Errorf("unexpected signing method")
-				}
-				return []byte(secret), nil
-			})
-			if err != nil || !token.Valid || claims.Subject != "admin" {
-				ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-				ctx.Abort()
-				return nil, nil
-			}
-			return f(ctx, request)
-		}
-	}
-}
 
 func NewRouter(cfg config.Config, store *db.Store) *gin.Engine {
 	return NewRouterWithRPC(cfg, store, nil)
@@ -68,27 +24,69 @@ func NewRouterWithRPC(cfg config.Config, store *db.Store, rpcHandler http.Handle
 	r.Use(CORSMiddleware(cfg.CORSAllowOrigins))
 
 	if rpcHandler == nil {
-		singBoxTools := singBoxToolsFactory()
-		server := NewServer(store, cfg, singBoxTools)
-		strictHandler := NewStrictHandler(server, []StrictMiddlewareFunc{
-			authStrictMiddleware(cfg.JWTSecret),
-		})
+		r.GET("/api/health", Health)
+		r.GET("/api/admin/bootstrap", AdminBootstrapGet(store))
+		r.POST("/api/admin/bootstrap", AdminBootstrapPost(cfg, store))
+		r.POST("/api/admin/login", AdminLogin(cfg, store))
+		r.GET("/api/sub/:user_uuid", SubscriptionGet(store))
 
-		RegisterHandlersWithOptions(r, strictHandler, GinServerOptions{
-			BaseURL: "/api",
-			ErrorHandler: func(c *gin.Context, err error, statusCode int) {
-				msg := err.Error()
-				// Normalize generated parameter validation errors.
-				if statusCode == http.StatusBadRequest && strings.Contains(msg, "Invalid format for parameter") {
-					if strings.Contains(msg, "limit") || strings.Contains(msg, "offset") {
-						msg = "invalid pagination"
-					} else {
-						msg = "invalid parameter"
-					}
-				}
-				c.JSON(statusCode, gin.H{"error": msg})
-			},
-		})
+		authed := r.Group("/api")
+		authed.Use(AuthMiddleware(cfg.JWTSecret))
+		{
+			authed.GET("/admin/profile", AdminProfileGet(store))
+			authed.PUT("/admin/profile", AdminProfilePut(store))
+
+			authed.GET("/users", UsersList(store))
+			authed.POST("/users", UsersCreate(store))
+			authed.GET("/users/:id", UsersGet(store))
+			authed.PUT("/users/:id", UsersUpdate(store))
+			authed.DELETE("/users/:id", UsersDelete(store))
+			authed.GET("/users/:id/groups", UserGroupsGet(store))
+			authed.PUT("/users/:id/groups", UserGroupsPut(store))
+
+			authed.GET("/groups", GroupsList(store))
+			authed.POST("/groups", GroupsCreate(store))
+			authed.GET("/groups/:id", GroupsGet(store))
+			authed.PUT("/groups/:id", GroupsUpdate(store))
+			authed.DELETE("/groups/:id", GroupsDelete(store))
+			authed.GET("/groups/:id/users", GroupUsersList(store))
+			authed.PUT("/groups/:id/users", GroupUsersReplace(store))
+
+			authed.GET("/nodes", NodesList(store))
+			authed.POST("/nodes", NodesCreate(store))
+			authed.GET("/nodes/:id", NodesGet(store))
+			authed.PUT("/nodes/:id", NodesUpdate(store))
+			authed.DELETE("/nodes/:id", NodesDelete(store))
+			authed.GET("/nodes/:id/health", NodeHealth(store))
+			authed.POST("/nodes/:id/sync", NodeSync(store))
+			authed.GET("/nodes/:id/traffic", NodeTrafficList(store))
+
+			authed.GET("/traffic/nodes/summary", TrafficNodesSummary(store))
+			authed.GET("/traffic/total/summary", LegacyTrafficTotalSummary(store))
+			authed.GET("/traffic/timeseries", TrafficTimeseries(store))
+
+			authed.GET("/inbounds", InboundsList(store))
+			authed.POST("/inbounds", InboundsCreate(store))
+			authed.GET("/inbounds/:id", InboundsGet(store))
+			authed.PUT("/inbounds/:id", InboundsUpdate(store))
+			authed.DELETE("/inbounds/:id", InboundsDelete(store))
+
+			authed.GET("/sync-jobs", SyncJobsList(store))
+			authed.GET("/sync-jobs/:id", SyncJobsGet(store))
+			authed.POST("/sync-jobs/:id/retry", SyncJobsRetry(store))
+
+			singBoxTools := singBoxToolsFactory()
+			authed.POST("/singbox/format", SingBoxFormat(singBoxTools))
+			authed.POST("/sing-box/format", SingBoxFormat(singBoxTools))
+			authed.POST("/singbox/check", SingBoxCheck(singBoxTools))
+			authed.POST("/sing-box/check", SingBoxCheck(singBoxTools))
+			authed.POST("/singbox/generate", SingBoxGenerate(singBoxTools))
+			authed.POST("/sing-box/generate", SingBoxGenerate(singBoxTools))
+
+			authed.GET("/system/info", SystemInfoGet())
+			authed.GET("/system/settings", SystemSettingsGet(store))
+			authed.PUT("/system/settings", SystemSettingsPut(store))
+		}
 	} else if store != nil {
 		// Keep legacy subscription endpoint for client compatibility.
 		r.GET("/api/sub/:user_uuid", SubscriptionGet(store))

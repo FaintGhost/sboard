@@ -8,10 +8,8 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/golang-jwt/jwt/v5"
-	"sboard/panel/internal/api"
 	"sboard/panel/internal/config"
 	"sboard/panel/internal/db"
-	panelv1 "sboard/panel/internal/rpc/gen/sboard/panel/v1"
 	panelv1connect "sboard/panel/internal/rpc/gen/sboard/panel/v1/panelv1connect"
 )
 
@@ -27,14 +25,13 @@ var _ panelv1connect.SyncJobServiceHandler = (*Server)(nil)
 var _ panelv1connect.SingBoxToolServiceHandler = (*Server)(nil)
 
 type Server struct {
-	cfg    config.Config
-	store  *db.Store
-	legacy *api.Server
+	cfg   config.Config
+	store *db.Store
 }
 
 func NewHandler(cfg config.Config, store *db.Store) http.Handler {
 	mux := http.NewServeMux()
-	s := &Server{cfg: cfg, store: store, legacy: api.NewServer(store, cfg, nil)}
+	s := &Server{cfg: cfg, store: store}
 	opts := []connect.HandlerOption{
 		connect.WithInterceptors(authInterceptor(cfg.JWTSecret)),
 	}
@@ -122,63 +119,4 @@ func connectErrorFromHTTP(status int, msg string) error {
 		code = connect.CodeInternal
 	}
 	return connect.NewError(code, errors.New(m))
-}
-
-func limitParam(v int32) *api.LimitParam {
-	if v <= 0 {
-		return nil
-	}
-	n := api.LimitParam(v)
-	return &n
-}
-
-func offsetParam(v int32) *api.OffsetParam {
-	n := api.OffsetParam(v)
-	return &n
-}
-
-func mapUser(u api.User) *panelv1.User {
-	out := &panelv1.User{
-		Id:              u.Id,
-		Uuid:            u.Uuid,
-		Username:        u.Username,
-		GroupIds:        append([]int64{}, u.GroupIds...),
-		TrafficLimit:    u.TrafficLimit,
-		TrafficUsed:     u.TrafficUsed,
-		TrafficResetDay: int32(u.TrafficResetDay),
-		Status:          u.Status,
-	}
-	if u.ExpireAt != nil {
-		v := u.ExpireAt.Format("2006-01-02T15:04:05Z07:00")
-		out.ExpireAt = &v
-	}
-	return out
-}
-
-func mapGroup(g api.Group) *panelv1.Group {
-	return &panelv1.Group{
-		Id:          g.Id,
-		Name:        g.Name,
-		Description: g.Description,
-		MemberCount: g.MemberCount,
-	}
-}
-
-func mapNode(n api.Node) *panelv1.Node {
-	out := &panelv1.Node{
-		Id:            n.Id,
-		Uuid:          n.Uuid,
-		Name:          n.Name,
-		ApiAddress:    n.ApiAddress,
-		ApiPort:       int32(n.ApiPort),
-		SecretKey:     n.SecretKey,
-		PublicAddress: n.PublicAddress,
-		Status:        n.Status,
-		GroupId:       n.GroupId,
-	}
-	if n.LastSeenAt != nil {
-		v := n.LastSeenAt.Format("2006-01-02T15:04:05Z07:00")
-		out.LastSeenAt = &v
-	}
-	return out
 }

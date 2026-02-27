@@ -13,7 +13,6 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/golang-jwt/jwt/v5"
-	"sboard/panel/internal/api"
 	"sboard/panel/internal/buildinfo"
 	"sboard/panel/internal/db"
 	inbval "sboard/panel/internal/inbounds"
@@ -25,28 +24,12 @@ import (
 	"sboard/panel/internal/userstate"
 )
 
-func unexpectedResponseError() error {
-	return connect.NewError(connect.CodeInternal, errors.New("unexpected response"))
-}
-
 func encodeJSON(v any) string {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return "{}"
 	}
 	return string(b)
-}
-
-func decodeJSONMap(s string) map[string]any {
-	m := map[string]any{}
-	trim := s
-	if trim == "" {
-		return m
-	}
-	if err := json.Unmarshal([]byte(trim), &m); err != nil {
-		return map[string]any{}
-	}
-	return m
 }
 
 func formatTime(t time.Time) string {
@@ -64,11 +47,10 @@ func formatTimePtr(t *time.Time) *string {
 	return &v
 }
 
-type syncResult = api.SyncResult
-
-type inboundDTO = api.Inbound
-type syncJobListItemDTO = api.SyncJobListItem
-type syncAttemptDTO = api.SyncAttempt
+type syncResult struct {
+	Status string
+	Error  *string
+}
 
 func mapSyncResult(r syncResult) *panelv1.SyncResult {
 	out := &panelv1.SyncResult{Status: r.Status}
@@ -85,22 +67,7 @@ func rawJSONToString(raw json.RawMessage) string {
 	return string(raw)
 }
 
-func mapInbound(inb inboundDTO) *panelv1.Inbound {
-	return &panelv1.Inbound{
-		Id:                    inb.Id,
-		Uuid:                  inb.Uuid,
-		NodeId:                inb.NodeId,
-		Tag:                   inb.Tag,
-		Protocol:              inb.Protocol,
-		ListenPort:            int32(inb.ListenPort),
-		PublicPort:            int32(inb.PublicPort),
-		SettingsJson:          encodeJSON(inb.Settings),
-		TlsSettingsJson:       encodeJSON(inb.TlsSettings),
-		TransportSettingsJson: encodeJSON(inb.TransportSettings),
-	}
-}
-
-func mapDBInbound(inb db.Inbound) *panelv1.Inbound {
+func mapInbound(inb db.Inbound) *panelv1.Inbound {
 	return &panelv1.Inbound{
 		Id:                    inb.ID,
 		Uuid:                  inb.UUID,
@@ -115,26 +82,7 @@ func mapDBInbound(inb db.Inbound) *panelv1.Inbound {
 	}
 }
 
-func mapSyncJob(item syncJobListItemDTO) *panelv1.SyncJobListItem {
-	return &panelv1.SyncJobListItem{
-		Id:              item.Id,
-		NodeId:          item.NodeId,
-		ParentJobId:     item.ParentJobId,
-		TriggerSource:   item.TriggerSource,
-		Status:          item.Status,
-		InboundCount:    int32(item.InboundCount),
-		ActiveUserCount: int32(item.ActiveUserCount),
-		PayloadHash:     item.PayloadHash,
-		AttemptCount:    int32(item.AttemptCount),
-		DurationMs:      item.DurationMs,
-		ErrorSummary:    item.ErrorSummary,
-		CreatedAt:       formatTime(item.CreatedAt),
-		StartedAt:       formatTimePtr(item.StartedAt),
-		FinishedAt:      formatTimePtr(item.FinishedAt),
-	}
-}
-
-func mapDBSyncJob(item db.SyncJob) *panelv1.SyncJobListItem {
+func mapSyncJob(item db.SyncJob) *panelv1.SyncJobListItem {
 	return &panelv1.SyncJobListItem{
 		Id:              item.ID,
 		NodeId:          item.NodeID,
@@ -153,21 +101,7 @@ func mapDBSyncJob(item db.SyncJob) *panelv1.SyncJobListItem {
 	}
 }
 
-func mapSyncAttempt(item syncAttemptDTO) *panelv1.SyncAttempt {
-	return &panelv1.SyncAttempt{
-		Id:           item.Id,
-		AttemptNo:    int32(item.AttemptNo),
-		Status:       item.Status,
-		HttpStatus:   int32(item.HttpStatus),
-		DurationMs:   item.DurationMs,
-		ErrorSummary: item.ErrorSummary,
-		BackoffMs:    item.BackoffMs,
-		StartedAt:    formatTime(item.StartedAt),
-		FinishedAt:   formatTimePtr(item.FinishedAt),
-	}
-}
-
-func mapDBSyncAttempt(item db.SyncAttempt) *panelv1.SyncAttempt {
+func mapSyncAttempt(item db.SyncAttempt) *panelv1.SyncAttempt {
 	return &panelv1.SyncAttempt{
 		Id:           item.ID,
 		AttemptNo:    int32(item.AttemptNo),
@@ -1495,7 +1429,7 @@ func (s *Server) ListInbounds(ctx context.Context, req *panelv1.ListInboundsRequ
 	}
 	out := make([]*panelv1.Inbound, 0, len(inbounds))
 	for _, inb := range inbounds {
-		out = append(out, mapDBInbound(inb))
+		out = append(out, mapInbound(inb))
 	}
 	return &panelv1.ListInboundsResponse{Data: out}, nil
 }
@@ -1558,10 +1492,10 @@ func (s *Server) CreateInbound(ctx context.Context, req *panelv1.CreateInboundRe
 	nodeItem, err := s.store.GetNodeByID(ctx, inb.NodeID)
 	if err != nil {
 		msg := "get node failed"
-		return &panelv1.CreateInboundResponse{Data: mapDBInbound(inb), Sync: mapSyncResult(syncResult{Status: "error", Error: &msg})}, nil
+		return &panelv1.CreateInboundResponse{Data: mapInbound(inb), Sync: mapSyncResult(syncResult{Status: "error", Error: &msg})}, nil
 	}
 	res := s.runNodeSync(ctx, nodeItem, rpcTriggerInbound, nil)
-	return &panelv1.CreateInboundResponse{Data: mapDBInbound(inb), Sync: mapSyncResult(res)}, nil
+	return &panelv1.CreateInboundResponse{Data: mapInbound(inb), Sync: mapSyncResult(res)}, nil
 }
 
 func (s *Server) GetInbound(ctx context.Context, req *panelv1.GetInboundRequest) (*panelv1.GetInboundResponse, error) {
@@ -1572,7 +1506,7 @@ func (s *Server) GetInbound(ctx context.Context, req *panelv1.GetInboundRequest)
 		}
 		return nil, connectErrorFromHTTP(500, "get inbound failed")
 	}
-	return &panelv1.GetInboundResponse{Data: mapDBInbound(inb)}, nil
+	return &panelv1.GetInboundResponse{Data: mapInbound(inb)}, nil
 }
 
 func (s *Server) UpdateInbound(ctx context.Context, req *panelv1.UpdateInboundRequest) (*panelv1.UpdateInboundResponse, error) {
@@ -1670,10 +1604,10 @@ func (s *Server) UpdateInbound(ctx context.Context, req *panelv1.UpdateInboundRe
 	nodeItem, err := s.store.GetNodeByID(ctx, inb.NodeID)
 	if err != nil {
 		msg := "get node failed"
-		return &panelv1.UpdateInboundResponse{Data: mapDBInbound(inb), Sync: mapSyncResult(syncResult{Status: "error", Error: &msg})}, nil
+		return &panelv1.UpdateInboundResponse{Data: mapInbound(inb), Sync: mapSyncResult(syncResult{Status: "error", Error: &msg})}, nil
 	}
 	res := s.runNodeSync(ctx, nodeItem, rpcTriggerInbound, nil)
-	return &panelv1.UpdateInboundResponse{Data: mapDBInbound(inb), Sync: mapSyncResult(res)}, nil
+	return &panelv1.UpdateInboundResponse{Data: mapInbound(inb), Sync: mapSyncResult(res)}, nil
 }
 
 func (s *Server) DeleteInbound(ctx context.Context, req *panelv1.DeleteInboundRequest) (*panelv1.DeleteInboundResponse, error) {
@@ -1729,7 +1663,7 @@ func (s *Server) ListSyncJobs(ctx context.Context, req *panelv1.ListSyncJobsRequ
 	}
 	out := make([]*panelv1.SyncJobListItem, 0, len(items))
 	for _, item := range items {
-		out = append(out, mapDBSyncJob(item))
+		out = append(out, mapSyncJob(item))
 	}
 	return &panelv1.ListSyncJobsResponse{Data: out}, nil
 }
@@ -1748,9 +1682,9 @@ func (s *Server) GetSyncJob(ctx context.Context, req *panelv1.GetSyncJobRequest)
 	}
 	attempts := make([]*panelv1.SyncAttempt, 0, len(attemptsRaw))
 	for _, item := range attemptsRaw {
-		attempts = append(attempts, mapDBSyncAttempt(item))
+		attempts = append(attempts, mapSyncAttempt(item))
 	}
-	return &panelv1.GetSyncJobResponse{Data: &panelv1.SyncJobDetail{Job: mapDBSyncJob(job), Attempts: attempts}}, nil
+	return &panelv1.GetSyncJobResponse{Data: &panelv1.SyncJobDetail{Job: mapSyncJob(job), Attempts: attempts}}, nil
 }
 
 func (s *Server) RetrySyncJob(ctx context.Context, req *panelv1.RetrySyncJobRequest) (*panelv1.RetrySyncJobResponse, error) {
@@ -1784,7 +1718,7 @@ func (s *Server) RetrySyncJob(ctx context.Context, req *panelv1.RetrySyncJobRequ
 		status := "ok"
 		return &panelv1.RetrySyncJobResponse{Status: &status}, nil
 	}
-	return &panelv1.RetrySyncJobResponse{Data: mapDBSyncJob(jobs[0])}, nil
+	return &panelv1.RetrySyncJobResponse{Data: mapSyncJob(jobs[0])}, nil
 }
 
 func (s *Server) FormatSingBox(ctx context.Context, req *panelv1.FormatSingBoxRequest) (*panelv1.FormatSingBoxResponse, error) {
