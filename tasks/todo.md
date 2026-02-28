@@ -26,3 +26,47 @@
   - `NewRouter`（无 rpcHandler）继续保留完整 `/api/*` 手写路由，用于现有后端单测与兼容场景；`rpcHandler != nil` 时仅暴露 `/rpc/*` 与 `/api/sub/:user_uuid`。
 - 本轮验证：`go test ./panel/internal/api ./panel/internal/rpc`、`go test ./panel/...` 均通过。
 - 当前主要剩余：前端门禁与 e2e 门禁的完整回归（`bun run lint/format/test`、`bunx tsc -b`、`make check-generate`、`e2e --project=e2e`）。
+
+---
+
+## 2026-02-28 Panel-Node RPC 继续迁移（Brainstorming）
+
+### 目标
+- 评估并设计 Panel 与 Node 间从 REST 到 RPC 的迁移方案。
+- 在不破坏现有线上行为的前提下，明确迁移阶段、兼容策略与验收标准。
+
+### 任务
+- [x] 完成发现阶段：梳理当前 Panel-Node 调用链、认证与错误语义
+- [x] 完成方案阶段：给出可选迁移路径并确定推荐方案
+- [x] 完成设计阶段：产出设计文档（`_index.md`、`architecture.md`、`bdd-specs.md`、`best-practices.md`）
+- [x] 完成提交阶段：仅提交本轮设计文档目录
+- [ ] 完成移交流程：提示使用 `writing-plans` 进入实现计划拆解
+
+### Review
+- 方案选择：已与用户确认采用“Panel↔Node 直切 RPC（不双栈）”，并保留订阅 REST（`GET /api/sub/:user_uuid`）。
+- 设计产物：已新增 `docs/plans/2026-02-28-panel-node-rpc-cutover-design/`，包含 `_index.md`、`architecture.md`、`bdd-specs.md`、`best-practices.md`。
+- 设计要点：
+  - Node 控制面引入 `NodeControlService`（Health/SyncConfig/GetTraffic/GetInboundTraffic）。
+  - Panel 侧保持现有业务调用面，替换 `internal/node/client` 传输层为 RPC。
+  - 错误处理从 HTTP 文本解析升级为 Connect code 映射。
+  - 发布采用同窗口成对发布与成对回滚策略。
+
+---
+
+## 2026-02-28 Panel↔Node REST 直切 RPC 架构研究
+
+### 目标
+- 基于当前代码事实梳理 Panel↔Node 调用链与边界。
+- 给出可落地的 REST→RPC 直切目标态与最小侵入迁移步骤（不保留双栈）。
+- 识别迁移风险并给出缓解策略。
+
+### 任务
+- [x] 盘点 Panel 启动装配、RPC 管理面入口与 Node 调用落点
+- [x] 盘点 Node API 路由、鉴权、配置解析与状态采集路径
+- [x] 抽取 REST→RPC 直切的最小改造面与依赖关系
+- [x] 输出迁移风险与缓解清单
+
+### Review
+- 现状确认：Panel 管理面已为 RPC（`/rpc/*`），但 Panel→Node 仍由 `panel/internal/node/client.go` 走 HTTP REST（`/api/health`、`/api/config/sync`、`/api/stats/*`）。
+- 影响范围确认：NodeSync（手动/自动）、节点健康探测、流量采集三条链路均依赖上述 REST 客户端。
+- 迁移切口确认：优先保留 `panel/internal/node` 客户端接口语义，替换其传输层为 Connect RPC；Node 侧新增 RPC Server 复用现有 `sync.ParseAndValidateConfig` 与 `core.ApplyConfig`。
