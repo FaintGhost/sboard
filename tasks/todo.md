@@ -83,8 +83,8 @@
 - [x] 校验设计目录完整性（`_index.md` + `bdd-specs.md`）
 - [x] 读取并映射全部 BDD 场景到任务清单
 - [x] 生成 `docs/plans/2026-02-28-panel-node-rpc-cutover-plan/` 与任务文件
-- [ ] 提交计划目录（docs commit）
-- [ ] 进入执行阶段移交（`executing-plans`）
+- [x] 提交计划目录（docs commit）
+- [x] 进入执行阶段移交（`executing-plans`）
 
 ### Review
 - 已完成 14 个任务文件（7 组 Red/Green）与 `_index.md`，每个任务都内嵌完整 Gherkin 场景与验证命令。
