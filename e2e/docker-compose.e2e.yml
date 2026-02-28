@@ -29,6 +29,21 @@ services:
     networks:
       - e2e-net
 
+  probe:
+    image: hashicorp/http-echo:1.0.0
+    command: ["-text=ok", "-listen=:8080"]
+    networks:
+      - e2e-net
+
+  sb-client:
+    image: gzxhwq/sing-box:1.12.19
+    restart: always
+    command: ["run", "-D", "/etc/sing-box", "-C", "/etc/sing-box"]
+    volumes:
+      - sb-shared:/etc/sing-box
+    networks:
+      - e2e-net
+
   playwright:
     build:
       context: .
@@ -37,13 +52,20 @@ services:
       CI: "true"
       BASE_URL: "http://panel:8080"
       NODE_API_URL: "http://node:3000"
+      NODE_SECRET_KEY: "e2e-test-node-secret"
       SETUP_TOKEN: "e2e-test-setup-token"
+      PROBE_URL: "http://probe:8080"
+      SB_CLIENT_SOCKS5: "sb-client:10801"
+      SB_CLIENT_CONFIG_DIR: "/shared"
     volumes:
       - ./playwright-report:/app/playwright-report
       - ./test-results:/app/test-results
+      - sb-shared:/shared
     depends_on:
       - panel
       - node
+      - probe
+      - sb-client
     ipc: host
     networks:
       - e2e-net
@@ -51,6 +73,7 @@ services:
 volumes:
   panel-data:
   node-data:
+  sb-shared:
 
 networks:
   e2e-net:

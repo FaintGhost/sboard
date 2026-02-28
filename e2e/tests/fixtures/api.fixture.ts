@@ -2,7 +2,7 @@ import type { APIRequestContext } from "@playwright/test";
 
 const BASE_URL = process.env.BASE_URL || "http://localhost:8080";
 const NODE_API_URL = process.env.NODE_API_URL || "http://node:3000";
-const NODE_SECRET_KEY = "e2e-test-node-secret";
+const NODE_SECRET_KEY = process.env.NODE_SECRET_KEY || "e2e-test-node-secret";
 
 function i64(v: number): string {
   return String(Math.trunc(v));
@@ -100,6 +100,16 @@ export class PanelAPI {
     return this.request.post(`${BASE_URL}/rpc/sboard.panel.v1.GroupService/ListGroups`, {
       headers: this.rpcHeaders,
       data: {},
+    });
+  }
+
+  async replaceGroupUsers(groupId: number, userIds: number[]) {
+    return this.request.post(`${BASE_URL}/rpc/sboard.panel.v1.GroupService/ReplaceGroupUsers`, {
+      headers: this.rpcHeaders,
+      data: {
+        id: i64(groupId),
+        userIds: userIds.map((id) => i64(id)),
+      },
     });
   }
 
@@ -264,8 +274,18 @@ export class NodeAPI {
     });
   }
 
-  async getInbounds() {
-    return this.request.get(`${NODE_API_URL}/api/stats/inbounds`, {
+  async getInbounds(options?: { reset?: boolean }) {
+    const params = new URLSearchParams();
+    if (options?.reset) {
+      params.set("reset", "true");
+    }
+
+    const query = params.toString();
+    const url = query
+      ? `${NODE_API_URL}/api/stats/inbounds?${query}`
+      : `${NODE_API_URL}/api/stats/inbounds`;
+
+    return this.request.get(url, {
       headers: this.headers,
     });
   }

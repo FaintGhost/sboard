@@ -20,3 +20,7 @@ export function uniqueNodeName(): string {
 export function uniqueInboundTag(): string {
   return `${uniquePrefix()}-inbound`;
 }
+
+export function uniqueClientTag(): string {
+  return `${uniquePrefix()}-client`;
+}

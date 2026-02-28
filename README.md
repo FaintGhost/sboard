@@ -100,6 +100,29 @@ SBOARD_PANEL_IMAGE="faintghost/sboard-panel:latest" \
   docker compose -f docker-compose.yml -f docker-compose.build.yml build
 ```
 
+## GitHub Actions 自动发布镜像
+
+仓库内置工作流：`.github/workflows/docker-publish.yml`
+
+- 触发条件：
+  - `push` 到 `main`/`master`
+  - `push tag`（`v*`）
+  - 手动触发（`workflow_dispatch`）
+- 发布目标：
+  - Docker Hub：`docker.io/<DOCKERHUB_USERNAME>/sboard-node`、`docker.io/<DOCKERHUB_USERNAME>/sboard-panel`
+  - GHCR：`ghcr.io/<repo_owner>/sboard-node`、`ghcr.io/<repo_owner>/sboard-panel`
+- 默认标签策略：`branch`、`tag`、`sha`、`latest`（仅默认分支）
+
+需要在 GitHub 仓库 Secrets 中配置：
+
+- `DOCKERHUB_USERNAME`
+- `DOCKERHUB_TOKEN`（建议使用 Docker Hub Access Token）
+
+说明：
+
+- GHCR 使用 `GITHUB_TOKEN` 自动登录，无需额外密钥。
+- workflow 使用 `docker/build-push-action` 直接构建并推送，与本地 `scripts/docker-build-push.sh` 的目标一致。
+
 ## 配置说明
 
 **Panel**
