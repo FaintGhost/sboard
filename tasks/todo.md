@@ -70,3 +70,22 @@
 - 现状确认：Panel 管理面已为 RPC（`/rpc/*`），但 Panel→Node 仍由 `panel/internal/node/client.go` 走 HTTP REST（`/api/health`、`/api/config/sync`、`/api/stats/*`）。
 - 影响范围确认：NodeSync（手动/自动）、节点健康探测、流量采集三条链路均依赖上述 REST 客户端。
 - 迁移切口确认：优先保留 `panel/internal/node` 客户端接口语义，替换其传输层为 Connect RPC；Node 侧新增 RPC Server 复用现有 `sync.ParseAndValidateConfig` 与 `core.ApplyConfig`。
+
+---
+
+## 2026-02-28 Panel-Node RPC 实施计划拆解（Writing-Plans）
+
+### 目标
+- 基于 `2026-02-28-panel-node-rpc-cutover-design` 产出可执行实施计划。
+- 按 BDD 场景拆分 Red/Green 成对任务，明确依赖、文件边界与验证命令。
+
+### 任务
+- [x] 校验设计目录完整性（`_index.md` + `bdd-specs.md`）
+- [x] 读取并映射全部 BDD 场景到任务清单
+- [x] 生成 `docs/plans/2026-02-28-panel-node-rpc-cutover-plan/` 与任务文件
+- [ ] 提交计划目录（docs commit）
+- [ ] 进入执行阶段移交（`executing-plans`）
+
+### Review
+- 已完成 14 个任务文件（7 组 Red/Green）与 `_index.md`，每个任务都内嵌完整 Gherkin 场景与验证命令。
+- 任务依赖仅保留技术前置关系（契约先行、实现依赖对应 Red 任务、全链路 e2e 依赖核心实现完成）。
