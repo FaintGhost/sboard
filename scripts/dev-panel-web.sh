@@ -28,7 +28,7 @@ fi
 cleanup() {
   local code=$?
   echo
-  echo "[dev] 正在停止本地 panel/web..."
+  echo "[dev] 正在停止本地 panel + web..."
 
   if [[ -n "${PANEL_PID:-}" ]] && kill -0 "${PANEL_PID}" >/dev/null 2>&1; then
     kill "${PANEL_PID}" >/dev/null 2>&1 || true

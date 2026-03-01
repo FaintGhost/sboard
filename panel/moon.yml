@@ -12,7 +12,7 @@ tasks:
       - panel:generate
     command: bash
     args:
-      - check-generate.sh
+      - panel/check-generate.sh
     options:
       cache: false
       runFromWorkspaceRoot: true
