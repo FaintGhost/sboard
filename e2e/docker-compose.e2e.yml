@@ -36,9 +36,9 @@ services:
       - e2e-net
 
   sb-client:
-    image: gzxhwq/sing-box:1.12.19
-    restart: always
-    command: ["run", "-D", "/etc/sing-box", "-C", "/etc/sing-box"]
+    build:
+      context: .
+      dockerfile: sb-client.Dockerfile
     volumes:
       - sb-shared:/etc/sing-box
     networks:

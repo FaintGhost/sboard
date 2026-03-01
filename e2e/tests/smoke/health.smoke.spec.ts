@@ -14,7 +14,9 @@ test.describe("系统健康检查", () => {
   });
 
   test("Node 健康检查", async ({ request }) => {
-    const resp = await request.get(`${NODE_API_URL}/api/health`);
+    const resp = await request.post(`${NODE_API_URL}/rpc/sboard.node.v1.NodeControlService/Health`, {
+      data: {},
+    });
     expect(resp.status()).toBe(200);
     const body = await resp.json();
     expect(body.status).toBe("ok");

@@ -17,9 +17,9 @@ until curl -sf -X POST "$PANEL_URL/rpc/sboard.panel.v1.HealthService/GetHealth" 
 done
 echo "Panel is healthy (${elapsed}s)"
 
-echo "Waiting for Node at $NODE_URL/api/health ..."
+echo "Waiting for Node at $NODE_URL/rpc/sboard.node.v1.NodeControlService/Health ..."
 elapsed=0
-until curl -sf "$NODE_URL/api/health" > /dev/null 2>&1; do
+until curl -sf -X POST "$NODE_URL/rpc/sboard.node.v1.NodeControlService/Health" -H "Content-Type: application/json" -d '{}' > /dev/null 2>&1; do
   if [ "$elapsed" -ge "$MAX_WAIT" ]; then
     echo "ERROR: Node did not become healthy within ${MAX_WAIT}s"
     exit 1

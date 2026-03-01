@@ -73,6 +73,76 @@
 
 ---
 
+## 2026-03-01 Panel-Node RPC Cutover 执行进展（Executing-Plans）
+
+### 目标
+- 按 `docs/plans/2026-02-28-panel-node-rpc-cutover-plan/` 持续落地 Task001+，并验证“直切 RPC + 订阅 REST 保留”的边界。
+
+### 任务
+- [x] 修复 `panel/internal/node/client_test.go` 中断状态并恢复 `panel/internal/node` 定向测试
+- [x] 完成 Task001/Task002 核心测试链路
+  - [x] 新增 `panel/internal/rpc/node_sync_error_mapping_test.go`
+  - [x] 新增 `node/internal/rpc/auth_interceptor_test.go`
+  - [x] 新增 `TestNodeControlInvalidArgument`
+  - [x] 将 Node 鉴权拦截器拆分为 `node/internal/rpc/auth_interceptor.go`
+  - [x] 在 Panel Node 客户端引入 `SyncError` 类型化错误，减少对字符串解析的依赖
+  - [x] 在 `runNodeSync` 中落地 `Retryable` 错误标记与离线判定分流
+- [x] 推进 Task005 边界收口（阶段一）
+  - [x] `node/internal/api/NewRouterWithRPC` 在 RPC 模式下不再暴露旧 `/api/*` 控制面
+  - [x] 新增 `node/internal/api/rest_boundary_test.go` 覆盖旧 REST 不可用
+  - [x] e2e Node 健康检查与 Node fixture 调用切到 `/rpc/sboard.node.v1.NodeControlService/*`
+- [x] 推进 Task003 监控遥测迁移（测试与回归）
+  - [x] 新增 `panel/internal/node/client_telemetry_test.go`（`TestRPCClientTelemetry`）
+  - [x] 新增 `panel/internal/monitor/node_rpc_monitor_test.go`（`TestNodeRPCTelemetryMonitor`）
+  - [x] 新增 `node/internal/rpc/telemetry_test.go`（`TestNodeControlTelemetry`）
+- [x] 推进 Task004 并发串行保护（测试与实现）
+  - [x] 新增 `panel/internal/rpc/node_sync_concurrency_test.go`（`TestNodeSyncRPCSerializesPerNode`）
+  - [x] 新增 `panel/internal/node/client_telemetry_test.go`（`TestRPCClientConcurrentSyncOrdering`）
+  - [x] `panel/internal/node/client.go` 增加按节点地址维度的 `SyncConfig` 串行锁
+- [x] 推进 Task006 SS2022 兼容验证（测试）
+  - [x] 新增 `panel/internal/node/ss2022_rpc_compat_test.go`（`TestSS2022RPCSyncPayloadCompatibility`）
+  - [x] 新增 `panel/internal/api/subscription_ss2022_rpc_compat_test.go`（`TestSubscriptionSS2022RPCCompatibility`）
+- [x] 推进 Task007 e2e 直切场景（测试文件）
+  - [x] 新增 `e2e/tests/e2e/node-rpc-cutover.spec.ts`
+  - [x] `cd e2e && bunx playwright test --list` 可识别该新增用例
+- [x] 修复 `make e2e-smoke` 对 playwright 旧镜像缓存导致的旧健康探针问题
+  - [x] `Makefile` 的 `e2e-smoke` 先 `docker compose build playwright`
+  - [x] `make e2e-smoke` 已通过（13 passed）
+- [ ] 继续执行 Task007 全门禁回归（全量 e2e + 前端门禁）
+
+### Review
+- 本轮定向回归通过：
+  - `cd panel && go test ./internal/node -count=1`
+  - `cd panel && go test ./internal/rpc -run 'TestNodeSyncRPC(Success|ErrorMapping)' -count=1`
+  - `cd panel && go test ./internal/node ./internal/rpc -count=1`
+  - `cd node && go test ./internal/rpc -run 'TestNodeControl(Auth|InvalidArgument|SyncConfigSuccess)' -count=1`
+  - `cd node && go test ./internal/api -run TestLegacyNodeRESTEndpointsUnavailable -count=1`
+  - `cd node && go test ./internal/api ./internal/rpc -count=1`
+- 本轮全量 Go 回归通过：
+  - `cd panel && go test ./... -count=1`
+  - `cd node && go test ./... -count=1`
+- 本轮新增定向测试通过：
+  - `cd panel && go test ./internal/monitor -run TestNodeRPCTelemetryMonitor -count=1`
+  - `cd panel && go test ./internal/node -run 'TestRPCClientTelemetry|TestRPCClientConcurrentSyncOrdering|TestSS2022RPCSyncPayloadCompatibility' -count=1`
+  - `cd panel && go test ./internal/rpc -run TestNodeSyncRPCSerializesPerNode -count=1`
+  - `cd panel && go test ./internal/api -run TestSubscriptionSS2022RPCCompatibility -count=1`
+  - `cd node && go test ./internal/rpc -run TestNodeControlTelemetry -count=1`
+- 本轮 e2e smoke 回归通过：
+  - `make e2e-smoke`
+- 本轮前端门禁通过：
+  - `cd panel/web && bun run lint`
+  - `cd panel/web && bun run format`
+  - `cd panel/web && bunx tsc -b`
+  - `cd panel/web && bun run test`
+- 本轮全量 e2e 回归通过：
+  - `make e2e`（`31 passed`）
+- 额外说明：
+  - 已按“直切 RPC”要求删除 `panel/internal/node/client.go` 中的 legacy REST fallback，Panel->Node 控制面仅走 Connect RPC；订阅 REST 未触碰。
+  - 为避免 `make e2e` 被 `sb-client` 在配置文件尚未写入时提前退出中断，新增了 `e2e/sb-client.Dockerfile` 与 `e2e/sb-client-entrypoint.go`，在检测到 `/etc/sing-box/config.json` 非空后再启动 sing-box。
+  - `make check-generate` 仍失败，但当前失败点仍是生成产物 diff：`panel/web/src/lib/rpc/gen/sboard/panel/v1/panel_pb.ts` 的 tracked 内容与本地生成器输出风格不一致（例如 `/*@__PURE__*/` 位置变化），需要单独统一生成器/产物基线。
+
+---
+
 ## 2026-02-28 Panel-Node RPC 实施计划拆解（Writing-Plans）
 
 ### 目标

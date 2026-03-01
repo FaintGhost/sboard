@@ -264,29 +264,59 @@ export class NodeAPI {
     return { Authorization: `Bearer ${NODE_SECRET_KEY}` };
   }
 
+  get rpcHeaders() {
+    return {
+      "Content-Type": "application/json",
+      ...this.headers,
+    };
+  }
+
   async health() {
-    return this.request.get(`${NODE_API_URL}/api/health`);
+    return this.request.post(`${NODE_API_URL}/rpc/sboard.node.v1.NodeControlService/Health`, {
+      headers: { "Content-Type": "application/json" },
+      data: {},
+    });
   }
 
   async getTraffic() {
-    return this.request.get(`${NODE_API_URL}/api/stats/traffic`, {
-      headers: this.headers,
+    return this.request.post(`${NODE_API_URL}/rpc/sboard.node.v1.NodeControlService/GetTraffic`, {
+      headers: this.rpcHeaders,
+      data: {},
     });
   }
 
   async getInbounds(options?: { reset?: boolean }) {
-    const params = new URLSearchParams();
-    if (options?.reset) {
-      params.set("reset", "true");
-    }
+    return this.request.post(
+      `${NODE_API_URL}/rpc/sboard.node.v1.NodeControlService/GetInboundTraffic`,
+      {
+        headers: this.rpcHeaders,
+        data: { reset: !!options?.reset },
+      },
+    );
+  }
 
-    const query = params.toString();
-    const url = query
-      ? `${NODE_API_URL}/api/stats/inbounds?${query}`
-      : `${NODE_API_URL}/api/stats/inbounds`;
+  async expectLegacyRESTUnavailable() {
+    const [health, traffic, inbounds, sync] = await Promise.all([
+      this.request.get(`${NODE_API_URL}/api/health`),
+      this.request.get(`${NODE_API_URL}/api/stats/traffic`, { headers: this.headers }),
+      this.request.get(`${NODE_API_URL}/api/stats/inbounds`, { headers: this.headers }),
+      this.request.post(`${NODE_API_URL}/api/config/sync`, {
+        headers: { ...this.rpcHeaders },
+        data: { inbounds: [] },
+      }),
+    ]);
+    return {
+      healthStatus: health.status(),
+      trafficStatus: traffic.status(),
+      inboundsStatus: inbounds.status(),
+      syncStatus: sync.status(),
+    };
+  }
 
-    return this.request.get(url, {
-      headers: this.headers,
+  async syncConfig(payload: Record<string, unknown>) {
+    return this.request.post(`${NODE_API_URL}/rpc/sboard.node.v1.NodeControlService/SyncConfig`, {
+      headers: this.rpcHeaders,
+      data: { payloadJson: Buffer.from(JSON.stringify(payload), "utf8").toString("base64") },
     });
   }
 }
