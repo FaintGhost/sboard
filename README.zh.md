@@ -1,4 +1,6 @@
-# SBoard（中文）
+# SBoard
+
+[English](./README.md)
 
 SBoard 是一个基于 sing-box 的订阅管理面板与节点管理系统。
 
