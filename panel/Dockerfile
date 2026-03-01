@@ -10,7 +10,7 @@ COPY web ./
 RUN --mount=type=cache,target=/root/.bun/install/cache \
   bun run build
 
-FROM golang:1.25 AS builder
+FROM golang:1.26 AS builder
 
 ARG PANEL_VERSION=unknown
 ARG PANEL_COMMIT_ID=unknown
@@ -18,7 +18,7 @@ ARG SING_BOX_VERSION=unknown
 ARG GO_BUILD_TAGS=with_utls
 
 WORKDIR /src
-COPY go.mod ./
+COPY panel/go.mod ./
 
 # Panel uses github.com/mattn/go-sqlite3 which requires CGO.
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -32,7 +32,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Some environments also set GOFLAGS=-mod=readonly; use -mod=mod explicitly.
 RUN --mount=type=cache,target=/go/pkg/mod \
   go mod download
-COPY . .
+COPY panel/ .
 
 # `go mod tidy` does not accept `-mod=...`. Also avoid inheriting GOFLAGS=-mod=readonly.
 RUN --mount=type=cache,target=/go/pkg/mod \

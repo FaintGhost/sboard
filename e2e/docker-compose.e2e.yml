@@ -1,8 +1,8 @@
 services:
   panel:
     build:
-      context: ../panel
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: panel/Dockerfile
     environment:
       PANEL_JWT_SECRET: "e2e-test-jwt-secret-key-32chars!!"
       PANEL_SETUP_TOKEN: "e2e-test-setup-token"
