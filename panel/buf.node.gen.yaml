@@ -1,0 +1,22 @@
+version: v2
+plugins:
+  - local: [go, tool, protoc-gen-go]
+    out: internal/rpc/gen
+    opt:
+      - paths=source_relative
+  - local: [go, tool, protoc-gen-connect-go]
+    out: internal/rpc/gen
+    opt:
+      - paths=source_relative
+      - simple
+  - local: [go, tool, protoc-gen-go]
+    out: ../node/internal/rpc/gen
+    opt:
+      - paths=source_relative
+      - Msboard/node/v1/node.proto=sboard/node/internal/rpc/gen/sboard/node/v1
+  - local: [go, tool, protoc-gen-connect-go]
+    out: ../node/internal/rpc/gen
+    opt:
+      - paths=source_relative
+      - simple
+      - Msboard/node/v1/node.proto=sboard/node/internal/rpc/gen/sboard/node/v1

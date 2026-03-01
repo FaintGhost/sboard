@@ -1,0 +1,61 @@
+syntax = "proto3";
+
+package sboard.node.v1;
+
+option go_package = "sboard/panel/internal/rpc/gen/sboard/node/v1;nodev1";
+
+service NodeControlService {
+  rpc Health(HealthRequest) returns (HealthResponse);
+  rpc SyncConfig(SyncConfigRequest) returns (SyncConfigResponse);
+  rpc GetTraffic(GetTrafficRequest) returns (GetTrafficResponse);
+  rpc GetInboundTraffic(GetInboundTrafficRequest) returns (GetInboundTrafficResponse);
+}
+
+message HealthRequest {}
+
+message HealthResponse {
+  string status = 1;
+}
+
+message SyncConfigRequest {
+  bytes payload_json = 1;
+}
+
+message SyncConfigResponse {
+  string status = 1;
+}
+
+message GetTrafficRequest {
+  string interface = 1;
+}
+
+message GetTrafficResponse {
+  string interface = 1;
+  uint64 rx_bytes = 2;
+  uint64 tx_bytes = 3;
+  string at = 4;
+}
+
+message GetInboundTrafficRequest {
+  bool reset = 1;
+}
+
+message InboundTraffic {
+  string tag = 1;
+  string user = 2;
+  int64 uplink = 3;
+  int64 downlink = 4;
+  string at = 5;
+}
+
+message InboundTrafficMeta {
+  int32 tracked_tags = 1;
+  int64 tcp_conns = 2;
+  int64 udp_conns = 3;
+}
+
+message GetInboundTrafficResponse {
+  repeated InboundTraffic data = 1;
+  bool reset = 2;
+  InboundTrafficMeta meta = 3;
+}
