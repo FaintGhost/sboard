@@ -51,7 +51,7 @@ go run ./cmd/node
 3) 启动前端（开发模式）
 
 ```bash
-cd panel/web
+cd web
 VITE_API_BASE_URL=http://127.0.0.1:8080 bun run dev
 ```
 
@@ -205,12 +205,12 @@ Panel 管理面 API 已迁移到 RPC（Connect，路径 `/rpc/*`）。
 目录结构：
 
 ```text
-panel/               # Panel 后端 + 前端
+panel/               # Panel 后端
   cmd/panel/         # 入口
   internal/rpc/      # RPC 服务实现与生成代码
   proto/             # Protobuf 契约
   internal/api/      # HTTP 兼容层（含订阅入口）
-  web/               # React 前端
+web/                 # React 前端（独立 moon 项目）
 node/                # Node 服务
   cmd/node/          # 入口
   internal/api/      # Node HTTP API
@@ -225,16 +225,16 @@ RPC Proto 工作流：
 
 ```bash
 # 生成 Go + TS 代码
-moon run automation:generate
+moon run panel:generate
 
 # 检查生成代码是否与 spec 同步
-moon run automation:check-generate
+moon run panel:check-generate
 ```
 
 前端质量工具（Oxc）：
 
 ```bash
-cd panel/web
+cd web
 bun run lint
 bun run format
 bunx tsc -b
@@ -247,4 +247,4 @@ bun run test
 - `bun run format`
 - `bunx tsc -b`
 - `bun run test`
-- `moon run automation:check-generate`
+- `moon run panel:check-generate`

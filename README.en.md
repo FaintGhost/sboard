@@ -51,7 +51,7 @@ go run ./cmd/node
 3) Start frontend (dev)
 
 ```bash
-cd panel/web
+cd web
 VITE_API_BASE_URL=http://127.0.0.1:8080 bun run dev
 ```
 
@@ -205,12 +205,12 @@ Subscription behavior:
 Project structure:
 
 ```text
-panel/               # Panel backend + frontend
+panel/               # Panel backend
   cmd/panel/         # entrypoint
   internal/rpc/      # RPC implementation and generated code
   proto/             # Protobuf contracts
   internal/api/      # HTTP compatibility layer (includes subscription endpoint)
-  web/               # React frontend
+web/                 # React frontend (independent moon project)
 node/                # Node service
   cmd/node/          # entrypoint
   internal/api/      # Node HTTP API
@@ -225,16 +225,16 @@ RPC proto workflow:
 
 ```bash
 # Generate Go + TS code
-moon run automation:generate
+moon run panel:generate
 
 # Ensure generated code is in sync with spec
-moon run automation:check-generate
+moon run panel:check-generate
 ```
 
 Frontend quality tools (Oxc):
 
 ```bash
-cd panel/web
+cd web
 bun run lint
 bun run format
 bunx tsc -b
@@ -247,4 +247,4 @@ Delivery gates:
 - `bun run format`
 - `bunx tsc -b`
 - `bun run test`
-- `moon run automation:check-generate`
+- `moon run panel:check-generate`

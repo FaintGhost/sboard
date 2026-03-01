@@ -5,7 +5,7 @@
 - 代码/文档里的列表缩进使用 2 个空格
 
 ## 前端代码质量工具（Oxc）
-- `panel/web` 使用 Oxc（`oxlint` + `oxfmt`），不使用 ESLint。
+- `web` 使用 Oxc（`oxlint` + `oxfmt`），不使用 ESLint。
 - 优先使用 `bun` 执行前端质量命令（也兼容 `npm run`）：
   - `bun run lint` / `bun run lint:fix`
   - `bun run format` / `bun run format:check`
@@ -13,10 +13,10 @@
 
 ## 前端交付门禁
 - 前端开发相关改动在交付前必须通过以下检查：
-  - `moon run panel:web-lint`（等价于 `cd panel/web && bun run lint`）
-  - `moon run panel:web-typecheck`（等价于 `cd panel/web && bunx tsc -b`）
-  - `moon run panel:web-test`（等价于 `cd panel/web && bun run test`）
-  - `moon run automation:check-generate`（确保生成代码与 spec 同步）
+  - `moon run web:lint`（等价于 `cd web && bun run lint`）
+  - `moon run web:typecheck`（等价于 `cd web && bunx tsc -b`）
+  - `moon run web:test`（等价于 `cd web && bun run test`）
+  - `moon run panel:check-generate`（确保生成代码与 spec 同步）
 - 任一检查未通过时，不应标记为完成交付。
 
 ## GitHub 操作
@@ -27,9 +27,9 @@
 ## 项目结构
 - `panel/`
   - Go 后端：`panel/cmd/panel`，路由与业务：`panel/internal/*`
-  - Web 前端：`panel/web/`（React + Vite + TailwindCSS v4 + shadcn/ui）
   - RPC 契约：`panel/proto/sboard/panel/v1/panel.proto`（Protobuf）
   - RPC 生成配置：`panel/buf.yaml`、`panel/buf.gen.yaml`
+- `web/`：Web 前端（React + Vite + TailwindCSS v4 + shadcn/ui）
 - `node/`
   - Go 节点：`node/cmd/node`
   - 对外 HTTP API：`node/internal/api`
@@ -51,10 +51,10 @@
 - **Go 代码生成**：`buf generate` + `protoc-gen-go` + `protoc-gen-connect-go`
   - 生成目录：`panel/internal/rpc/gen/`（protobuf types + connect handlers）
 - **TS 代码生成**：`buf generate` + `@bufbuild/protoc-gen-es` + `@connectrpc/protoc-gen-connect-query`
-  - 生成目录：`panel/web/src/lib/rpc/gen/`
-- **再生成命令**：`moon run automation:generate`
-- **新鲜度检查**：`moon run automation:check-generate`（检查 `panel/internal/rpc/gen/**` 与 `panel/web/src/lib/rpc/gen/**`）
-- **API 变更工作流**：修改 `panel/proto/sboard/panel/v1/panel.proto` → `moon run automation:generate` → 更新服务实现/页面映射 → 测试
+  - 生成目录：`web/src/lib/rpc/gen/`
+- **再生成命令**：`moon run panel:generate`
+- **新鲜度检查**：`moon run panel:check-generate`（检查 `panel/internal/rpc/gen/**` 与 `web/src/lib/rpc/gen/**`）
+- **API 变更工作流**：修改 `panel/proto/sboard/panel/v1/panel.proto` → `moon run panel:generate` → 更新服务实现/页面映射 → 测试
 
 ## REST 兼容边界
 - Panel 管理面默认走 RPC：`/rpc/sboard.panel.v1.<Service>/<Method>`
