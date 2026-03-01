@@ -2,7 +2,9 @@ package api_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -13,10 +15,12 @@ import (
 	"testing"
 	"time"
 
+	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
 	"sboard/panel/internal/api"
 	"sboard/panel/internal/config"
 	"sboard/panel/internal/node"
+	nodev1 "sboard/panel/internal/rpc/gen/sboard/node/v1"
 )
 
 type fakeDoer struct {
@@ -24,43 +28,32 @@ type fakeDoer struct {
 }
 
 func (d *fakeDoer) Do(req *http.Request) (*http.Response, error) {
-	if req.URL.Path == "/api/health" && req.Method == http.MethodGet {
-		return &http.Response{
-			StatusCode: http.StatusOK,
-			Header:     http.Header{"Content-Type": []string{"application/json"}},
-			Body:       io.NopCloser(strings.NewReader(`{"status":"ok"}`)),
-		}, nil
-	}
+	return serveNodeRPCRequest(req, nodeRPCServiceStub{
+		syncConfigFunc: func(_ context.Context, reqBody *nodev1.SyncConfigRequest) (*nodev1.SyncConfigResponse, error) {
+			if req.Header.Get("Authorization") != "Bearer secret" {
+				return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("unauthorized"))
+			}
 
-	if req.URL.Path != "/api/config/sync" || req.Method != http.MethodPost {
-		return &http.Response{StatusCode: http.StatusNotFound, Body: io.NopCloser(strings.NewReader("not found"))}, nil
-	}
-	if req.Header.Get("Authorization") != "Bearer secret" {
-		return &http.Response{StatusCode: http.StatusUnauthorized, Body: io.NopCloser(strings.NewReader("unauthorized"))}, nil
-	}
-	b, _ := io.ReadAll(req.Body)
-	var body struct {
-		Inbounds []map[string]any `json:"inbounds"`
-	}
-	if err := json.Unmarshal(b, &body); err != nil {
-		return &http.Response{StatusCode: http.StatusBadRequest, Body: io.NopCloser(strings.NewReader("bad json"))}, nil
-	}
-	if len(body.Inbounds) != 1 {
-		return &http.Response{StatusCode: http.StatusBadRequest, Body: io.NopCloser(strings.NewReader("bad inbounds"))}, nil
-	}
-	inb := body.Inbounds[0]
-	if inb["type"] != "vless" || inb["tag"] != "vless-in" {
-		return &http.Response{StatusCode: http.StatusBadRequest, Body: io.NopCloser(strings.NewReader("bad inbound"))}, nil
-	}
-	if _, ok := inb["users"]; !ok {
-		return &http.Response{StatusCode: http.StatusBadRequest, Body: io.NopCloser(strings.NewReader("missing users"))}, nil
-	}
-	atomic.AddInt32(&d.got, 1)
-	return &http.Response{
-		StatusCode: http.StatusOK,
-		Header:     http.Header{"Content-Type": []string{"application/json"}},
-		Body:       io.NopCloser(strings.NewReader(`{"status":"ok"}`)),
-	}, nil
+			var body struct {
+				Inbounds []map[string]any `json:"inbounds"`
+			}
+			if err := json.Unmarshal(reqBody.PayloadJson, &body); err != nil {
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("bad json"))
+			}
+			if len(body.Inbounds) != 1 {
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("bad inbounds"))
+			}
+			inb := body.Inbounds[0]
+			if inb["type"] != "vless" || inb["tag"] != "vless-in" {
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("bad inbound"))
+			}
+			if _, ok := inb["users"]; !ok {
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("missing users"))
+			}
+			atomic.AddInt32(&d.got, 1)
+			return &nodev1.SyncConfigResponse{Status: "ok"}, nil
+		},
+	}, nil)
 }
 
 type flakySyncDoer struct {
@@ -69,28 +62,16 @@ type flakySyncDoer struct {
 }
 
 func (d *flakySyncDoer) Do(req *http.Request) (*http.Response, error) {
-	if req.URL.Path == "/api/health" && req.Method == http.MethodGet {
-		return &http.Response{
-			StatusCode: http.StatusOK,
-			Header:     http.Header{"Content-Type": []string{"application/json"}},
-			Body:       io.NopCloser(strings.NewReader(`{"status":"ok"}`)),
-		}, nil
-	}
-
-	if req.URL.Path != "/api/config/sync" || req.Method != http.MethodPost {
-		return &http.Response{StatusCode: http.StatusNotFound, Body: io.NopCloser(strings.NewReader("not found"))}, nil
-	}
-
-	atomic.AddInt32(&d.got, 1)
-	if atomic.LoadInt32(&d.failLeft) > 0 {
-		atomic.AddInt32(&d.failLeft, -1)
-		return nil, io.ErrUnexpectedEOF
-	}
-	return &http.Response{
-		StatusCode: http.StatusOK,
-		Header:     http.Header{"Content-Type": []string{"application/json"}},
-		Body:       io.NopCloser(strings.NewReader(`{"status":"ok"}`)),
-	}, nil
+	return serveNodeRPCRequest(req, nodeRPCServiceStub{
+		syncConfigFunc: func(context.Context, *nodev1.SyncConfigRequest) (*nodev1.SyncConfigResponse, error) {
+			atomic.AddInt32(&d.got, 1)
+			if atomic.LoadInt32(&d.failLeft) > 0 {
+				atomic.AddInt32(&d.failLeft, -1)
+				return nil, io.ErrUnexpectedEOF
+			}
+			return &nodev1.SyncConfigResponse{Status: "ok"}, nil
+		},
+	}, nil)
 }
 
 type blockingSyncDoer struct {
@@ -108,37 +89,25 @@ func newBlockingSyncDoer(delay time.Duration) *blockingSyncDoer {
 }
 
 func (d *blockingSyncDoer) Do(req *http.Request) (*http.Response, error) {
-	if req.URL.Path == "/api/health" && req.Method == http.MethodGet {
-		return &http.Response{
-			StatusCode: http.StatusOK,
-			Header:     http.Header{"Content-Type": []string{"application/json"}},
-			Body:       io.NopCloser(strings.NewReader(`{"status":"ok"}`)),
-		}, nil
-	}
+	return serveNodeRPCRequest(req, nodeRPCServiceStub{
+		syncConfigFunc: func(context.Context, *nodev1.SyncConfigRequest) (*nodev1.SyncConfigResponse, error) {
+			d.mu.Lock()
+			d.totalRequests++
+			d.inFlight++
+			if d.inFlight > d.maxInFlight {
+				d.maxInFlight = d.inFlight
+			}
+			d.mu.Unlock()
 
-	if req.URL.Path != "/api/config/sync" || req.Method != http.MethodPost {
-		return &http.Response{StatusCode: http.StatusNotFound, Body: io.NopCloser(strings.NewReader("not found"))}, nil
-	}
+			time.Sleep(d.delay)
 
-	d.mu.Lock()
-	d.totalRequests++
-	d.inFlight++
-	if d.inFlight > d.maxInFlight {
-		d.maxInFlight = d.inFlight
-	}
-	d.mu.Unlock()
+			d.mu.Lock()
+			d.inFlight--
+			d.mu.Unlock()
 
-	time.Sleep(d.delay)
-
-	d.mu.Lock()
-	d.inFlight--
-	d.mu.Unlock()
-
-	return &http.Response{
-		StatusCode: http.StatusOK,
-		Header:     http.Header{"Content-Type": []string{"application/json"}},
-		Body:       io.NopCloser(strings.NewReader(`{"status":"ok"}`)),
-	}, nil
+			return &nodev1.SyncConfigResponse{Status: "ok"}, nil
+		},
+	}, nil)
 }
 
 func (d *blockingSyncDoer) maxConcurrent() int {

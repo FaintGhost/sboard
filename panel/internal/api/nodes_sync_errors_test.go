@@ -1,18 +1,21 @@
 package api_test
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
+	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
 	"sboard/panel/internal/api"
 	"sboard/panel/internal/config"
 	"sboard/panel/internal/node"
+	nodev1 "sboard/panel/internal/rpc/gen/sboard/node/v1"
 )
 
 func TestNodeSync_InvalidIDNotFoundAndMissingGroup(t *testing.T) {
@@ -53,13 +56,11 @@ func TestNodeSync_InvalidIDNotFoundAndMissingGroup(t *testing.T) {
 func TestNodeSync_UpstreamFailureReturnsBadGateway(t *testing.T) {
 	restore := api.SetNodeClientFactoryForTest(func() *node.Client {
 		return node.NewClient(&fakeDoerFunc{do: func(req *http.Request) (*http.Response, error) {
-			if req.URL.Path == "/api/config/sync" && req.Method == http.MethodPost {
-				return &http.Response{StatusCode: http.StatusInternalServerError, Body: io.NopCloser(strings.NewReader("boom"))}, nil
-			}
-			if req.URL.Path == "/api/health" && req.Method == http.MethodGet {
-				return &http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(strings.NewReader(`{"status":"ok"}`))}, nil
-			}
-			return &http.Response{StatusCode: http.StatusNotFound, Body: io.NopCloser(strings.NewReader("not found"))}, nil
+			return serveNodeRPCRequest(req, nodeRPCServiceStub{
+				syncConfigFunc: func(context.Context, *nodev1.SyncConfigRequest) (*nodev1.SyncConfigResponse, error) {
+					return nil, connect.NewError(connect.CodeUnavailable, errors.New("boom"))
+				},
+			}, nil)
 		}})
 	})
 	t.Cleanup(restore)

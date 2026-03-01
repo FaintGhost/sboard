@@ -3,7 +3,6 @@ package api_test
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -109,13 +108,7 @@ func TestUserGroups_GetPutErrorPaths(t *testing.T) {
 func TestSyncJobs_ListGetRetryErrorPathsAndFilters(t *testing.T) {
 	restore := api.SetNodeClientFactoryForTest(func() *node.Client {
 		return node.NewClient(&fakeDoerFunc{do: func(req *http.Request) (*http.Response, error) {
-			if req.URL.Path == "/api/config/sync" && req.Method == http.MethodPost {
-				return &http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(strings.NewReader(`{"status":"ok"}`))}, nil
-			}
-			if req.URL.Path == "/api/health" && req.Method == http.MethodGet {
-				return &http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(strings.NewReader(`{"status":"ok"}`))}, nil
-			}
-			return &http.Response{StatusCode: http.StatusNotFound, Body: io.NopCloser(strings.NewReader("not found"))}, nil
+			return serveNodeRPCRequest(req, nodeRPCServiceStub{}, nil)
 		}})
 	})
 	t.Cleanup(restore)

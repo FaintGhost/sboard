@@ -1,6 +1,7 @@
 package api_test
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -13,6 +14,7 @@ import (
 	"sboard/panel/internal/api"
 	"sboard/panel/internal/config"
 	"sboard/panel/internal/node"
+	nodev1 "sboard/panel/internal/rpc/gen/sboard/node/v1"
 )
 
 func TestNodeHealth_StatusTransitions(t *testing.T) {
@@ -20,14 +22,7 @@ func TestNodeHealth_StatusTransitions(t *testing.T) {
 	store := setupStore(t)
 
 	doer := &fakeDoerFunc{do: func(req *http.Request) (*http.Response, error) {
-		if req.URL.Path == "/api/health" && req.Method == http.MethodGet {
-			return &http.Response{
-				StatusCode: http.StatusOK,
-				Header:     http.Header{"Content-Type": []string{"application/json"}},
-				Body:       io.NopCloser(strings.NewReader(`{"status":"ok"}`)),
-			}, nil
-		}
-		return &http.Response{StatusCode: http.StatusNotFound, Body: io.NopCloser(strings.NewReader("not found"))}, nil
+		return serveNodeRPCRequest(req, nodeRPCServiceStub{}, nil)
 	}}
 	restore := api.SetNodeClientFactoryForTest(func() *node.Client {
 		return node.NewClient(doer)
@@ -50,10 +45,11 @@ func TestNodeHealth_StatusTransitions(t *testing.T) {
 	require.NotNil(t, got.LastSeenAt)
 
 	doer.do = func(req *http.Request) (*http.Response, error) {
-		if req.URL.Path == "/api/health" && req.Method == http.MethodGet {
-			return nil, io.ErrUnexpectedEOF
-		}
-		return &http.Response{StatusCode: http.StatusNotFound, Body: io.NopCloser(strings.NewReader("not found"))}, nil
+		return serveNodeRPCRequest(req, nodeRPCServiceStub{
+			healthFunc: func(context.Context, *nodev1.HealthRequest) (*nodev1.HealthResponse, error) {
+				return nil, io.ErrUnexpectedEOF
+			},
+		}, nil)
 	}
 
 	w = httptest.NewRecorder()
@@ -92,21 +88,7 @@ func TestInboundsGet_BasicAndErrors(t *testing.T) {
 
 	restore := api.SetNodeClientFactoryForTest(func() *node.Client {
 		return node.NewClient(&fakeDoerFunc{do: func(req *http.Request) (*http.Response, error) {
-			if req.URL.Path == "/api/config/sync" && req.Method == http.MethodPost {
-				return &http.Response{
-					StatusCode: http.StatusOK,
-					Header:     http.Header{"Content-Type": []string{"application/json"}},
-					Body:       io.NopCloser(strings.NewReader(`{"status":"ok"}`)),
-				}, nil
-			}
-			if req.URL.Path == "/api/health" && req.Method == http.MethodGet {
-				return &http.Response{
-					StatusCode: http.StatusOK,
-					Header:     http.Header{"Content-Type": []string{"application/json"}},
-					Body:       io.NopCloser(strings.NewReader(`{"status":"ok"}`)),
-				}, nil
-			}
-			return &http.Response{StatusCode: http.StatusNotFound, Body: io.NopCloser(strings.NewReader("not found"))}, nil
+			return serveNodeRPCRequest(req, nodeRPCServiceStub{}, nil)
 		}})
 	})
 	t.Cleanup(restore)

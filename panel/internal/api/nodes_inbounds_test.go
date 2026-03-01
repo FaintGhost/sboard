@@ -1,18 +1,21 @@
 package api_test
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
+	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
 	"sboard/panel/internal/api"
 	"sboard/panel/internal/config"
 	"sboard/panel/internal/node"
+	nodev1 "sboard/panel/internal/rpc/gen/sboard/node/v1"
 )
 
 type nodeDTO struct {
@@ -116,27 +119,23 @@ func TestNodesAndInboundsAPI_Basic(t *testing.T) {
 type forceDeleteDoer struct{}
 
 func (d *forceDeleteDoer) Do(req *http.Request) (*http.Response, error) {
-	if req.URL.Path != "/api/config/sync" || req.Method != http.MethodPost {
-		return &http.Response{StatusCode: http.StatusNotFound, Body: io.NopCloser(strings.NewReader("not found"))}, nil
-	}
-	if req.Header.Get("Authorization") != "Bearer secret" {
-		return &http.Response{StatusCode: http.StatusUnauthorized, Body: io.NopCloser(strings.NewReader("unauthorized"))}, nil
-	}
-	b, _ := io.ReadAll(req.Body)
-	var body struct {
-		Inbounds []map[string]any `json:"inbounds"`
-	}
-	if err := json.Unmarshal(b, &body); err != nil {
-		return &http.Response{StatusCode: http.StatusBadRequest, Body: io.NopCloser(strings.NewReader("bad json"))}, nil
-	}
-	if len(body.Inbounds) != 0 {
-		return &http.Response{StatusCode: http.StatusBadRequest, Body: io.NopCloser(strings.NewReader("expected empty inbounds"))}, nil
-	}
-	return &http.Response{
-		StatusCode: http.StatusOK,
-		Header:     http.Header{"Content-Type": []string{"application/json"}},
-		Body:       io.NopCloser(strings.NewReader(`{"status":"ok"}`)),
-	}, nil
+	return serveNodeRPCRequest(req, nodeRPCServiceStub{
+		syncConfigFunc: func(_ context.Context, reqBody *nodev1.SyncConfigRequest) (*nodev1.SyncConfigResponse, error) {
+			if req.Header.Get("Authorization") != "Bearer secret" {
+				return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("unauthorized"))
+			}
+			var body struct {
+				Inbounds []map[string]any `json:"inbounds"`
+			}
+			if err := json.Unmarshal(reqBody.GetPayloadJson(), &body); err != nil {
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("bad json"))
+			}
+			if len(body.Inbounds) != 0 {
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("expected empty inbounds"))
+			}
+			return &nodev1.SyncConfigResponse{Status: "ok"}, nil
+		},
+	}, nil)
 }
 
 func TestNodesDelete_ForceDrainsNodeAndDeletesInbounds(t *testing.T) {

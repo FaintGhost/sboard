@@ -2,9 +2,9 @@ package api_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
@@ -20,6 +20,7 @@ import (
 	"sboard/panel/internal/config"
 	"sboard/panel/internal/db"
 	"sboard/panel/internal/node"
+	nodev1 "sboard/panel/internal/rpc/gen/sboard/node/v1"
 )
 
 type usersAPIFakeDoer struct {
@@ -27,23 +28,12 @@ type usersAPIFakeDoer struct {
 }
 
 func (d *usersAPIFakeDoer) Do(req *http.Request) (*http.Response, error) {
-	if req.URL.Path == "/api/health" && req.Method == http.MethodGet {
-		return &http.Response{
-			StatusCode: http.StatusOK,
-			Header:     http.Header{"Content-Type": []string{"application/json"}},
-			Body:       io.NopCloser(strings.NewReader(`{"status":"ok"}`)),
-		}, nil
-	}
-
-	if req.URL.Path != "/api/config/sync" || req.Method != http.MethodPost {
-		return &http.Response{StatusCode: http.StatusNotFound, Body: io.NopCloser(strings.NewReader("not found"))}, nil
-	}
-	atomic.AddInt32(&d.got, 1)
-	return &http.Response{
-		StatusCode: http.StatusOK,
-		Header:     http.Header{"Content-Type": []string{"application/json"}},
-		Body:       io.NopCloser(strings.NewReader(`{"status":"ok"}`)),
-	}, nil
+	return serveNodeRPCRequest(req, nodeRPCServiceStub{
+		syncConfigFunc: func(context.Context, *nodev1.SyncConfigRequest) (*nodev1.SyncConfigResponse, error) {
+			atomic.AddInt32(&d.got, 1)
+			return &nodev1.SyncConfigResponse{Status: "ok"}, nil
+		},
+	}, nil)
 }
 
 type userDTO struct {

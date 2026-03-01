@@ -2,6 +2,7 @@ package api_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -15,6 +16,7 @@ import (
 	"sboard/panel/internal/api"
 	"sboard/panel/internal/config"
 	"sboard/panel/internal/node"
+	nodev1 "sboard/panel/internal/rpc/gen/sboard/node/v1"
 )
 
 type syncJobsFlakyDoer struct {
@@ -23,26 +25,16 @@ type syncJobsFlakyDoer struct {
 }
 
 func (d *syncJobsFlakyDoer) Do(req *http.Request) (*http.Response, error) {
-	if req.URL.Path == "/api/health" && req.Method == http.MethodGet {
-		return &http.Response{
-			StatusCode: http.StatusOK,
-			Header:     http.Header{"Content-Type": []string{"application/json"}},
-			Body:       io.NopCloser(strings.NewReader(`{"status":"ok"}`)),
-		}, nil
-	}
-	if req.URL.Path != "/api/config/sync" || req.Method != http.MethodPost {
-		return &http.Response{StatusCode: http.StatusNotFound, Body: io.NopCloser(strings.NewReader("not found"))}, nil
-	}
-	atomic.AddInt32(&d.got, 1)
-	if atomic.LoadInt32(&d.failLeft) > 0 {
-		atomic.AddInt32(&d.failLeft, -1)
-		return nil, io.ErrUnexpectedEOF
-	}
-	return &http.Response{
-		StatusCode: http.StatusOK,
-		Header:     http.Header{"Content-Type": []string{"application/json"}},
-		Body:       io.NopCloser(strings.NewReader(`{"status":"ok"}`)),
-	}, nil
+	return serveNodeRPCRequest(req, nodeRPCServiceStub{
+		syncConfigFunc: func(context.Context, *nodev1.SyncConfigRequest) (*nodev1.SyncConfigResponse, error) {
+			atomic.AddInt32(&d.got, 1)
+			if atomic.LoadInt32(&d.failLeft) > 0 {
+				atomic.AddInt32(&d.failLeft, -1)
+				return nil, io.ErrUnexpectedEOF
+			}
+			return &nodev1.SyncConfigResponse{Status: "ok"}, nil
+		},
+	}, nil)
 }
 
 func TestSyncJobsAPI_ListGetRetry(t *testing.T) {

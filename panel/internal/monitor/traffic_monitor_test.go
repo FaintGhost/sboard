@@ -2,34 +2,26 @@ package monitor
 
 import (
 	"context"
-	"io"
 	"net/http"
-	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
 	"sboard/panel/internal/db"
 	"sboard/panel/internal/node"
+	nodev1 "sboard/panel/internal/rpc/gen/sboard/node/v1"
 )
 
 type trafficMonitorFakeDoer struct {
-	body string
+	resp *nodev1.GetInboundTrafficResponse
 }
 
 func (d *trafficMonitorFakeDoer) Do(req *http.Request) (*http.Response, error) {
-	if req.URL.Path != "/api/stats/inbounds" {
-		return &http.Response{
-			StatusCode: http.StatusNotFound,
-			Body:       io.NopCloser(strings.NewReader("not found")),
-			Header:     http.Header{"Content-Type": []string{"application/json"}},
-		}, nil
-	}
-	return &http.Response{
-		StatusCode: http.StatusOK,
-		Body:       io.NopCloser(strings.NewReader(d.body)),
-		Header:     http.Header{"Content-Type": []string{"application/json"}},
-	}, nil
+	return serveNodeRPCRequest(req, nodeRPCServiceStub{
+		inboundTrafficFunc: func(context.Context, *nodev1.GetInboundTrafficRequest) (*nodev1.GetInboundTrafficResponse, error) {
+			return d.resp, nil
+		},
+	})
 }
 
 func TestTrafficMonitor_SampleOnce_AccumulatesUserTrafficUsed(t *testing.T) {
@@ -67,7 +59,14 @@ func TestTrafficMonitor_SampleOnce_AccumulatesUserTrafficUsed(t *testing.T) {
 	require.NoError(t, store.ReplaceUserGroups(ctx, bob.ID, []int64{g.ID}))
 
 	now := time.Date(2026, 2, 8, 4, 0, 0, 0, time.UTC).Format(time.RFC3339)
-	doer := &trafficMonitorFakeDoer{body: `{"data":[{"tag":"ss-in","user":"alice","uplink":900,"downlink":300,"at":"` + now + `"},{"tag":"ss-in","user":"bob","uplink":120,"downlink":80,"at":"` + now + `"}],"reset":true,"meta":{"tracked_tags":1,"tcp_conns":1,"udp_conns":0}}`}
+	doer := &trafficMonitorFakeDoer{resp: &nodev1.GetInboundTrafficResponse{
+		Data: []*nodev1.InboundTraffic{
+			{Tag: "ss-in", User: "alice", Uplink: 900, Downlink: 300, At: now},
+			{Tag: "ss-in", User: "bob", Uplink: 120, Downlink: 80, At: now},
+		},
+		Reset_: true,
+		Meta:   &nodev1.InboundTrafficMeta{TrackedTags: 1, TcpConns: 1, UdpConns: 0},
+	}}
 	m := NewTrafficMonitor(store, node.NewClient(doer))
 
 	require.NoError(t, m.SampleOnce(ctx))
