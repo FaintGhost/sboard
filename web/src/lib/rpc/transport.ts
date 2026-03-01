@@ -1,3 +1,4 @@
+import { Code, ConnectError } from "@connectrpc/connect";
 import { createConnectTransport } from "@connectrpc/connect-web";
 import type { Interceptor } from "@connectrpc/connect";
 
@@ -13,7 +14,7 @@ const runtimeOrigin =
     : "http://localhost";
 const base = envBase ? envBase.replace(/\/+$/, "") : runtimeOrigin.replace(/\/+$/, "");
 
-const authInterceptor: Interceptor = (next) => async (req) => {
+export const authInterceptor: Interceptor = (next) => async (req) => {
   const token = useAuthStore.getState().token;
   if (token) {
     req.header.set("Authorization", `Bearer ${token}`);
@@ -21,11 +22,7 @@ const authInterceptor: Interceptor = (next) => async (req) => {
   try {
     return await next(req);
   } catch (err) {
-    const code =
-      typeof err === "object" && err && "code" in err
-        ? String((err as { code: unknown }).code)
-        : "";
-    if (code === "unauthenticated") {
+    if (err instanceof ConnectError && err.code === Code.Unauthenticated) {
       useAuthStore.getState().clearToken();
     }
     throw err;

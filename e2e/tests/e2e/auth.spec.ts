@@ -62,4 +62,28 @@ test.describe("认证管理", () => {
     // Should redirect to login
     await expect(page).toHaveURL(/\/login/, { timeout: 5_000 });
   });
+
+  test("失效 token 触发自动登出并跳转 login", async ({ page, request }) => {
+    await ensureBootstrap(request);
+
+    // Navigate to login page first to set localStorage on the correct origin
+    await page.goto(`${BASE_URL}/login`);
+
+    // Inject a fake/expired token into localStorage
+    await page.evaluate(() => {
+      localStorage.setItem("sboard_token", "invalid-expired-token");
+    });
+
+    // Navigate to a protected route — the page will attempt RPC calls
+    // which return Unauthenticated (401), triggering the transport
+    // interceptor to clear the token, then RequireAuth redirects to /login
+    await page.goto(`${BASE_URL}/`);
+
+    // Wait for the redirect to /login after the 401 response clears the token
+    await expect(page).toHaveURL(/\/login/, { timeout: 15_000 });
+
+    // Verify the invalid token has been removed from localStorage
+    const token = await page.evaluate(() => localStorage.getItem("sboard_token"));
+    expect(token).toBeNull();
+  });
 });
