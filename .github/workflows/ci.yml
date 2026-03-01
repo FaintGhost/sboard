@@ -23,6 +23,8 @@ jobs:
         with:
           go-version-file: panel/go.mod
       - uses: bufbuild/buf-setup-action@v1
+      - name: Install web protoc plugins
+        run: cd web && bun install --frozen-lockfile
       - run: moon run panel:check-generate
 
   web:
