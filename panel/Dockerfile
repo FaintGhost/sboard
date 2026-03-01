@@ -10,7 +10,7 @@ COPY web ./
 RUN --mount=type=cache,target=/root/.bun/install/cache \
   bun run build
 
-FROM golang:1.26 AS builder
+FROM golang:1.25 AS builder
 
 ARG PANEL_VERSION=unknown
 ARG PANEL_COMMIT_ID=unknown
@@ -18,7 +18,7 @@ ARG SING_BOX_VERSION=unknown
 ARG GO_BUILD_TAGS=with_utls
 
 WORKDIR /src
-COPY panel/go.mod ./
+COPY panel/go.mod panel/go.sum* ./
 
 # Panel uses github.com/mattn/go-sqlite3 which requires CGO.
 RUN apt-get update && apt-get install -y --no-install-recommends \
