@@ -1,0 +1,27 @@
+tasks:
+  generate:
+    command: go
+    args:
+      - generate
+      - ./internal/rpc/...
+    options:
+      cache: false
+
+  check-generate:
+    deps:
+      - panel:generate
+    command: bash
+    args:
+      - panel/check-generate.sh
+    options:
+      cache: false
+      runFromWorkspaceRoot: true
+
+  test:
+    command: go
+    args:
+      - test
+      - ./...
+      - -count=1
+    options:
+      cache: false

@@ -1,7 +1,7 @@
 services:
   sboard-panel:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: panel/Dockerfile
     # Tag the locally built image, so you can push it to Docker Hub after build.
     image: "${SBOARD_PANEL_IMAGE:-faintghost/sboard-panel:local}"

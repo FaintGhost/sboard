@@ -100,7 +100,7 @@ jobs:
       - name: Build and push panel
         uses: docker/build-push-action@v6
         with:
-          context: ./panel
+          context: .
           file: ./panel/Dockerfile
           push: true
           provenance: false

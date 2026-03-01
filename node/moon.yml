@@ -1,0 +1,9 @@
+tasks:
+  test:
+    command: go
+    args:
+      - test
+      - ./...
+      - -count=1
+    options:
+      cache: false

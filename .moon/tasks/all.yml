@@ -1,0 +1,12 @@
+fileGroups:
+  rpcSpec:
+    - /panel/proto/**/*.proto
+    - /panel/buf*.yaml
+  rpcGenerated:
+    - /panel/internal/rpc/gen/**
+    - /web/src/lib/rpc/gen/**
+    - /node/internal/rpc/gen/**
+  e2eInfra:
+    - /e2e/docker-compose.e2e.yml
+    - /e2e/Dockerfile
+    - /e2e/entrypoint.sh

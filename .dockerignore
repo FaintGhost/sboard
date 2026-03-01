@@ -1,0 +1,41 @@
+# VCS
+.git
+.github
+
+# Moon cache
+.moon/cache/
+
+# Claude / IDE
+.claude/
+.idea/
+.vscode/
+
+# Projects not needed in panel Docker build
+node/
+e2e/
+docs/
+
+# Database files
+**/*.db
+**/*.db-*
+**/*.sqlite
+**/*.sqlite-*
+
+# Data directories
+data/
+
+# Web build artifacts (rebuilt inside Docker)
+web/node_modules/
+web/dist/
+web/.env
+web/.env.*
+
+# Node artifacts
+node_modules/
+dist/
+
+# Misc
+*.md
+LICENSE
+.prototools
+.gitignore

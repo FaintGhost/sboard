@@ -1,0 +1,35 @@
+tasks:
+  run:
+    command: bash
+    args:
+      - run.sh
+    options:
+      cache: false
+
+  smoke:
+    command: bash
+    args:
+      - smoke.sh
+    options:
+      cache: false
+
+  down:
+    command: docker
+    args:
+      - compose
+      - -f
+      - docker-compose.e2e.yml
+      - down
+      - -v
+    options:
+      cache: false
+
+  report:
+    command: bunx
+    args:
+      - playwright
+      - show-report
+      - playwright-report
+    options:
+      cache: false
+      runInCI: false
