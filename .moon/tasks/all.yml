@@ -4,7 +4,7 @@ fileGroups:
     - /panel/buf*.yaml
   rpcGenerated:
     - /panel/internal/rpc/gen/**
-    - /panel/web/src/lib/rpc/gen/**
+    - /web/src/lib/rpc/gen/**
     - /node/internal/rpc/gen/**
   e2eInfra:
     - /e2e/docker-compose.e2e.yml

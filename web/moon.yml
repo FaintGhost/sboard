@@ -1,0 +1,24 @@
+tasks:
+  lint:
+    command: bun
+    args:
+      - run
+      - lint
+
+  format:
+    command: bun
+    args:
+      - run
+      - format
+
+  typecheck:
+    command: bunx
+    args:
+      - tsc
+      - -b
+
+  test:
+    command: bun
+    args:
+      - run
+      - test

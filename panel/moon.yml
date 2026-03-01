@@ -1,5 +1,5 @@
 tasks:
-  generate-rpc:
+  generate:
     command: go
     args:
       - generate
@@ -7,20 +7,21 @@ tasks:
     options:
       cache: false
 
-  web-lint:
+  check-generate:
+    deps:
+      - panel:generate
     command: bash
     args:
-      - -lc
-      - cd web && bun run lint
+      - check-generate.sh
+    options:
+      cache: false
+      runFromWorkspaceRoot: true
 
-  web-typecheck:
-    command: bash
+  test:
+    command: go
     args:
-      - -lc
-      - cd web && bunx tsc -b
-
-  web-test:
-    command: bash
-    args:
-      - -lc
-      - cd web && bun run test
+      - test
+      - ./...
+      - -count=1
+    options:
+      cache: false
