@@ -9,5 +9,4 @@ fileGroups:
   e2eInfra:
     - /e2e/docker-compose.e2e.yml
     - /e2e/Dockerfile
-    - /e2e/sb-client.Dockerfile
     - /e2e/entrypoint.sh
