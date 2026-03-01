@@ -9,3 +9,4 @@
 **/*.sqlite-*
 CLAUDE.md
 .moon/cache/
+node/node
