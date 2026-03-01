@@ -20,8 +20,8 @@ if ! command -v go >/dev/null 2>&1; then
   exit 1
 fi
 
-if ! command -v npm >/dev/null 2>&1; then
-  echo "[错误] 未找到 npm，请先安装 Node.js/npm。" >&2
+if ! command -v bun >/dev/null 2>&1; then
+  echo "[错误] 未找到 bun，请先安装 Bun。" >&2
   exit 1
 fi
 
@@ -60,8 +60,8 @@ PANEL_PID=$!
 echo "[dev] 启动 web dev server: http://${WEB_HOST}:${WEB_PORT}"
 echo "[dev] 前端 API 代理目标: ${VITE_PROXY_TARGET}"
 (
-  cd "${ROOT_DIR}/panel/web"
-  VITE_PROXY_TARGET="${VITE_PROXY_TARGET}" npm run dev -- --host "${WEB_HOST}" --port "${WEB_PORT}"
+  cd "${ROOT_DIR}/web"
+  VITE_PROXY_TARGET="${VITE_PROXY_TARGET}" bun run dev --host "${WEB_HOST}" --port "${WEB_PORT}"
 ) &
 WEB_PID=$!
 

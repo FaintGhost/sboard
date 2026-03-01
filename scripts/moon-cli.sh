@@ -10,6 +10,12 @@ if ! command -v bunx >/dev/null 2>&1; then
   exit 1
 fi
 
+MOON_VERSION="$(grep '^moon = ' .prototools | sed 's/moon = "\(.*\)"/\1/')"
+if [ -z "$MOON_VERSION" ]; then
+  echo "ERROR: cannot determine moon version from .prototools" >&2
+  exit 1
+fi
+
 : "${BUN_TMPDIR:=/tmp/bun-tmp}"
 : "${BUN_INSTALL:=/tmp/bun-install}"
 : "${MOON_HOME:=/tmp/moon-home}"
@@ -24,4 +30,4 @@ exec env \
   MOON_HOME="$MOON_HOME" \
   PROTO_HOME="$PROTO_HOME" \
   XDG_CACHE_HOME="$XDG_CACHE_HOME" \
-  bunx @moonrepo/cli@2.0.0 "$@"
+  bunx "@moonrepo/cli@${MOON_VERSION}" "$@"
