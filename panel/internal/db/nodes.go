@@ -41,6 +41,25 @@ type NodeUpdate struct {
 	GroupIDSet    bool
 }
 
+// PendingNodeParams holds the parameters for creating a pending node
+// via heartbeat registration.
+type PendingNodeParams struct {
+	UUID       string
+	SecretKey  string
+	APIAddress string
+	APIPort    int
+}
+
+// ApproveNodeParams holds the parameters for approving a pending node.
+type ApproveNodeParams struct {
+	Name          string
+	GroupID       *int64
+	PublicAddress string
+}
+
+// ErrNotPending is returned when trying to approve a node that is not in pending status.
+var ErrNotPending = errors.New("node is not pending")
+
 func (s *Store) CreateNode(ctx context.Context, req NodeCreate) (Node, error) {
 	id := uuid.NewString()
 	res, err := s.DB.ExecContext(ctx, `
@@ -80,6 +99,75 @@ func (s *Store) GetNodeByID(ctx context.Context, id int64) (Node, error) {
 		return Node{}, err
 	}
 	return n, nil
+}
+
+func (s *Store) GetNodeByUUID(ctx context.Context, nodeUUID string) (Node, error) {
+	row := s.DB.QueryRowContext(ctx, `
+    SELECT id, uuid, name, COALESCE(api_address, address), COALESCE(api_port, port), secret_key, COALESCE(public_address, ''), group_id, status, last_seen_at
+    FROM nodes WHERE uuid = ?
+  `, nodeUUID)
+	n, err := scanNode(row)
+	if err != nil {
+		return Node{}, err
+	}
+	return n, nil
+}
+
+func (s *Store) CreatePendingNode(ctx context.Context, params PendingNodeParams) (Node, error) {
+	now := s.nowUTC().Format(time.RFC3339)
+	_, err := s.DB.ExecContext(ctx, `
+    INSERT INTO nodes (uuid, name, address, port, secret_key, api_address, api_port, status, last_seen_at)
+    VALUES (?, '', ?, ?, ?, ?, ?, 'pending', ?)
+    ON CONFLICT(uuid) DO UPDATE SET last_seen_at = ?
+  `,
+		params.UUID,
+		params.APIAddress,
+		params.APIPort,
+		params.SecretKey,
+		params.APIAddress,
+		params.APIPort,
+		now,
+		now,
+	)
+	if err != nil {
+		return Node{}, err
+	}
+	return s.GetNodeByUUID(ctx, params.UUID)
+}
+
+func (s *Store) ApproveNode(ctx context.Context, id int64, params ApproveNodeParams) (Node, error) {
+	res, err := s.DB.ExecContext(ctx, `
+    UPDATE nodes SET status = 'offline', name = ?, group_id = ?, public_address = ?
+    WHERE id = ? AND status = 'pending'
+  `,
+		params.Name,
+		nullInt64(params.GroupID),
+		params.PublicAddress,
+		id,
+	)
+	if err != nil {
+		return Node{}, err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return Node{}, err
+	}
+	if n == 0 {
+		return Node{}, ErrNotPending
+	}
+	return s.GetNodeByID(ctx, id)
+}
+
+func (s *Store) UpdateNodeLastSeen(ctx context.Context, nodeUUID string, seenAt time.Time) error {
+	if seenAt.IsZero() {
+		seenAt = s.nowUTC()
+	}
+	_, err := s.DB.ExecContext(ctx,
+		"UPDATE nodes SET last_seen_at = ? WHERE uuid = ?",
+		seenAt.UTC().Format(time.RFC3339),
+		nodeUUID,
+	)
+	return err
 }
 
 func (s *Store) ListNodes(ctx context.Context, limit, offset int) ([]Node, error) {

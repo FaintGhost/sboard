@@ -4,6 +4,8 @@ export type BuildNodeComposeInput = {
   logLevel?: string;
   image?: string;
   containerName?: string;
+  panelUrl?: string;
+  nodeUuid?: string;
 };
 
 export function buildNodeDockerCompose(input: BuildNodeComposeInput): string {
@@ -15,6 +17,19 @@ export function buildNodeDockerCompose(input: BuildNodeComposeInput): string {
   const logLevel = input.logLevel?.trim() || "info";
   const image = input.image?.trim() || "faintghost/sboard-node:latest";
   const containerName = input.containerName?.trim() || "sboard-node";
+  const panelUrl = input.panelUrl?.trim() || "";
+  const nodeUuid = input.nodeUuid?.trim() || "";
+
+  let env = `      NODE_HTTP_ADDR: ":${port}"
+      NODE_SECRET_KEY: "${escapeDoubleQuoted(secretKey)}"
+      NODE_LOG_LEVEL: "${escapeDoubleQuoted(logLevel)}"`;
+
+  if (panelUrl) {
+    env += `\n      PANEL_URL: "${escapeDoubleQuoted(panelUrl)}"`;
+  }
+  if (nodeUuid) {
+    env += `\n      NODE_UUID: "${escapeDoubleQuoted(nodeUuid)}"`;
+  }
 
   return `services:
   ${containerName}:
@@ -25,9 +40,7 @@ export function buildNodeDockerCompose(input: BuildNodeComposeInput): string {
     volumes:
       - ./data:/data
     environment:
-      NODE_HTTP_ADDR: ":${port}"
-      NODE_SECRET_KEY: "${escapeDoubleQuoted(secretKey)}"
-      NODE_LOG_LEVEL: "${escapeDoubleQuoted(logLevel)}"
+${env}
 `;
 }
 

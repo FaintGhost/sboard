@@ -51,6 +51,12 @@ func (m *NodesMonitor) CheckOnce(ctx context.Context) error {
 	}
 
 	for _, n := range nodes {
+		// Pending nodes (registered via heartbeat but not yet approved) lack
+		// full configuration — skip them until an admin approves them.
+		if n.Status == "pending" {
+			continue
+		}
+
 		// Keep a short per-node timeout so one bad node doesn't block the whole pass.
 		nctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 		err := m.client.Health(nctx, n)

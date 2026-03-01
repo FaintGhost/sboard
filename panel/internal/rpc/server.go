@@ -19,6 +19,7 @@ var _ panelv1connect.SystemServiceHandler = (*Server)(nil)
 var _ panelv1connect.UserServiceHandler = (*Server)(nil)
 var _ panelv1connect.GroupServiceHandler = (*Server)(nil)
 var _ panelv1connect.NodeServiceHandler = (*Server)(nil)
+var _ panelv1connect.NodeRegistrationServiceHandler = (*Server)(nil)
 var _ panelv1connect.TrafficServiceHandler = (*Server)(nil)
 var _ panelv1connect.InboundServiceHandler = (*Server)(nil)
 var _ panelv1connect.SyncJobServiceHandler = (*Server)(nil)
@@ -48,6 +49,8 @@ func NewHandler(cfg config.Config, store *db.Store) http.Handler {
 	mux.Handle(path, h)
 	path, h = panelv1connect.NewNodeServiceHandler(s, opts...)
 	mux.Handle(path, h)
+	path, h = panelv1connect.NewNodeRegistrationServiceHandler(s, opts...)
+	mux.Handle(path, h)
 	path, h = panelv1connect.NewTrafficServiceHandler(s, opts...)
 	mux.Handle(path, h)
 	path, h = panelv1connect.NewInboundServiceHandler(s, opts...)
@@ -65,7 +68,8 @@ func authInterceptor(secret string) connect.UnaryInterceptorFunc {
 		panelv1connect.AuthServiceGetBootstrapStatusProcedure: true,
 		panelv1connect.AuthServiceBootstrapProcedure:          true,
 		panelv1connect.AuthServiceLoginProcedure:              true,
-		panelv1connect.HealthServiceGetHealthProcedure:        true,
+		panelv1connect.HealthServiceGetHealthProcedure:             true,
+		panelv1connect.NodeRegistrationServiceHeartbeatProcedure: true,
 	}
 
 	return func(next connect.UnaryFunc) connect.UnaryFunc {

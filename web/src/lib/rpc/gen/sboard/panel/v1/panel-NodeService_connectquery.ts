@@ -43,3 +43,13 @@ export const syncNode = NodeService.method.syncNode;
  * @generated from rpc sboard.panel.v1.NodeService.ListNodeTraffic
  */
 export const listNodeTraffic = NodeService.method.listNodeTraffic;
+
+/**
+ * @generated from rpc sboard.panel.v1.NodeService.ApproveNode
+ */
+export const approveNode = NodeService.method.approveNode;
+
+/**
+ * @generated from rpc sboard.panel.v1.NodeService.RejectNode
+ */
+export const rejectNode = NodeService.method.rejectNode;

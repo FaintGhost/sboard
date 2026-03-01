@@ -33,6 +33,8 @@ const (
 	GroupServiceName = "sboard.panel.v1.GroupService"
 	// NodeServiceName is the fully-qualified name of the NodeService service.
 	NodeServiceName = "sboard.panel.v1.NodeService"
+	// NodeRegistrationServiceName is the fully-qualified name of the NodeRegistrationService service.
+	NodeRegistrationServiceName = "sboard.panel.v1.NodeRegistrationService"
 	// TrafficServiceName is the fully-qualified name of the TrafficService service.
 	TrafficServiceName = "sboard.panel.v1.TrafficService"
 	// InboundServiceName is the fully-qualified name of the InboundService service.
@@ -130,6 +132,13 @@ const (
 	// NodeServiceListNodeTrafficProcedure is the fully-qualified name of the NodeService's
 	// ListNodeTraffic RPC.
 	NodeServiceListNodeTrafficProcedure = "/sboard.panel.v1.NodeService/ListNodeTraffic"
+	// NodeServiceApproveNodeProcedure is the fully-qualified name of the NodeService's ApproveNode RPC.
+	NodeServiceApproveNodeProcedure = "/sboard.panel.v1.NodeService/ApproveNode"
+	// NodeServiceRejectNodeProcedure is the fully-qualified name of the NodeService's RejectNode RPC.
+	NodeServiceRejectNodeProcedure = "/sboard.panel.v1.NodeService/RejectNode"
+	// NodeRegistrationServiceHeartbeatProcedure is the fully-qualified name of the
+	// NodeRegistrationService's Heartbeat RPC.
+	NodeRegistrationServiceHeartbeatProcedure = "/sboard.panel.v1.NodeRegistrationService/Heartbeat"
 	// TrafficServiceGetTrafficNodesSummaryProcedure is the fully-qualified name of the TrafficService's
 	// GetTrafficNodesSummary RPC.
 	TrafficServiceGetTrafficNodesSummaryProcedure = "/sboard.panel.v1.TrafficService/GetTrafficNodesSummary"
@@ -1124,6 +1133,8 @@ type NodeServiceClient interface {
 	GetNodeHealth(context.Context, *v1.GetNodeHealthRequest) (*v1.GetNodeHealthResponse, error)
 	SyncNode(context.Context, *v1.SyncNodeRequest) (*v1.SyncNodeResponse, error)
 	ListNodeTraffic(context.Context, *v1.ListNodeTrafficRequest) (*v1.ListNodeTrafficResponse, error)
+	ApproveNode(context.Context, *v1.ApproveNodeRequest) (*v1.ApproveNodeResponse, error)
+	RejectNode(context.Context, *v1.RejectNodeRequest) (*v1.RejectNodeResponse, error)
 }
 
 // NewNodeServiceClient constructs a client for the sboard.panel.v1.NodeService service. By default,
@@ -1185,6 +1196,18 @@ func NewNodeServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 			connect.WithSchema(nodeServiceMethods.ByName("ListNodeTraffic")),
 			connect.WithClientOptions(opts...),
 		),
+		approveNode: connect.NewClient[v1.ApproveNodeRequest, v1.ApproveNodeResponse](
+			httpClient,
+			baseURL+NodeServiceApproveNodeProcedure,
+			connect.WithSchema(nodeServiceMethods.ByName("ApproveNode")),
+			connect.WithClientOptions(opts...),
+		),
+		rejectNode: connect.NewClient[v1.RejectNodeRequest, v1.RejectNodeResponse](
+			httpClient,
+			baseURL+NodeServiceRejectNodeProcedure,
+			connect.WithSchema(nodeServiceMethods.ByName("RejectNode")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -1198,6 +1221,8 @@ type nodeServiceClient struct {
 	getNodeHealth   *connect.Client[v1.GetNodeHealthRequest, v1.GetNodeHealthResponse]
 	syncNode        *connect.Client[v1.SyncNodeRequest, v1.SyncNodeResponse]
 	listNodeTraffic *connect.Client[v1.ListNodeTrafficRequest, v1.ListNodeTrafficResponse]
+	approveNode     *connect.Client[v1.ApproveNodeRequest, v1.ApproveNodeResponse]
+	rejectNode      *connect.Client[v1.RejectNodeRequest, v1.RejectNodeResponse]
 }
 
 // ListNodes calls sboard.panel.v1.NodeService.ListNodes.
@@ -1272,6 +1297,24 @@ func (c *nodeServiceClient) ListNodeTraffic(ctx context.Context, req *v1.ListNod
 	return nil, err
 }
 
+// ApproveNode calls sboard.panel.v1.NodeService.ApproveNode.
+func (c *nodeServiceClient) ApproveNode(ctx context.Context, req *v1.ApproveNodeRequest) (*v1.ApproveNodeResponse, error) {
+	response, err := c.approveNode.CallUnary(ctx, connect.NewRequest(req))
+	if response != nil {
+		return response.Msg, err
+	}
+	return nil, err
+}
+
+// RejectNode calls sboard.panel.v1.NodeService.RejectNode.
+func (c *nodeServiceClient) RejectNode(ctx context.Context, req *v1.RejectNodeRequest) (*v1.RejectNodeResponse, error) {
+	response, err := c.rejectNode.CallUnary(ctx, connect.NewRequest(req))
+	if response != nil {
+		return response.Msg, err
+	}
+	return nil, err
+}
+
 // NodeServiceHandler is an implementation of the sboard.panel.v1.NodeService service.
 type NodeServiceHandler interface {
 	ListNodes(context.Context, *v1.ListNodesRequest) (*v1.ListNodesResponse, error)
@@ -1282,6 +1325,8 @@ type NodeServiceHandler interface {
 	GetNodeHealth(context.Context, *v1.GetNodeHealthRequest) (*v1.GetNodeHealthResponse, error)
 	SyncNode(context.Context, *v1.SyncNodeRequest) (*v1.SyncNodeResponse, error)
 	ListNodeTraffic(context.Context, *v1.ListNodeTrafficRequest) (*v1.ListNodeTrafficResponse, error)
+	ApproveNode(context.Context, *v1.ApproveNodeRequest) (*v1.ApproveNodeResponse, error)
+	RejectNode(context.Context, *v1.RejectNodeRequest) (*v1.RejectNodeResponse, error)
 }
 
 // NewNodeServiceHandler builds an HTTP handler from the service implementation. It returns the path
@@ -1339,6 +1384,18 @@ func NewNodeServiceHandler(svc NodeServiceHandler, opts ...connect.HandlerOption
 		connect.WithSchema(nodeServiceMethods.ByName("ListNodeTraffic")),
 		connect.WithHandlerOptions(opts...),
 	)
+	nodeServiceApproveNodeHandler := connect.NewUnaryHandlerSimple(
+		NodeServiceApproveNodeProcedure,
+		svc.ApproveNode,
+		connect.WithSchema(nodeServiceMethods.ByName("ApproveNode")),
+		connect.WithHandlerOptions(opts...),
+	)
+	nodeServiceRejectNodeHandler := connect.NewUnaryHandlerSimple(
+		NodeServiceRejectNodeProcedure,
+		svc.RejectNode,
+		connect.WithSchema(nodeServiceMethods.ByName("RejectNode")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/sboard.panel.v1.NodeService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case NodeServiceListNodesProcedure:
@@ -1357,6 +1414,10 @@ func NewNodeServiceHandler(svc NodeServiceHandler, opts ...connect.HandlerOption
 			nodeServiceSyncNodeHandler.ServeHTTP(w, r)
 		case NodeServiceListNodeTrafficProcedure:
 			nodeServiceListNodeTrafficHandler.ServeHTTP(w, r)
+		case NodeServiceApproveNodeProcedure:
+			nodeServiceApproveNodeHandler.ServeHTTP(w, r)
+		case NodeServiceRejectNodeProcedure:
+			nodeServiceRejectNodeHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -1396,6 +1457,90 @@ func (UnimplementedNodeServiceHandler) SyncNode(context.Context, *v1.SyncNodeReq
 
 func (UnimplementedNodeServiceHandler) ListNodeTraffic(context.Context, *v1.ListNodeTrafficRequest) (*v1.ListNodeTrafficResponse, error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("sboard.panel.v1.NodeService.ListNodeTraffic is not implemented"))
+}
+
+func (UnimplementedNodeServiceHandler) ApproveNode(context.Context, *v1.ApproveNodeRequest) (*v1.ApproveNodeResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("sboard.panel.v1.NodeService.ApproveNode is not implemented"))
+}
+
+func (UnimplementedNodeServiceHandler) RejectNode(context.Context, *v1.RejectNodeRequest) (*v1.RejectNodeResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("sboard.panel.v1.NodeService.RejectNode is not implemented"))
+}
+
+// NodeRegistrationServiceClient is a client for the sboard.panel.v1.NodeRegistrationService
+// service.
+type NodeRegistrationServiceClient interface {
+	Heartbeat(context.Context, *v1.NodeHeartbeatRequest) (*v1.NodeHeartbeatResponse, error)
+}
+
+// NewNodeRegistrationServiceClient constructs a client for the
+// sboard.panel.v1.NodeRegistrationService service. By default, it uses the Connect protocol with
+// the binary Protobuf Codec, asks for gzipped responses, and sends uncompressed requests. To use
+// the gRPC or gRPC-Web protocols, supply the connect.WithGRPC() or connect.WithGRPCWeb() options.
+//
+// The URL supplied here should be the base URL for the Connect or gRPC server (for example,
+// http://api.acme.com or https://acme.com/grpc).
+func NewNodeRegistrationServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) NodeRegistrationServiceClient {
+	baseURL = strings.TrimRight(baseURL, "/")
+	nodeRegistrationServiceMethods := v1.File_sboard_panel_v1_panel_proto.Services().ByName("NodeRegistrationService").Methods()
+	return &nodeRegistrationServiceClient{
+		heartbeat: connect.NewClient[v1.NodeHeartbeatRequest, v1.NodeHeartbeatResponse](
+			httpClient,
+			baseURL+NodeRegistrationServiceHeartbeatProcedure,
+			connect.WithSchema(nodeRegistrationServiceMethods.ByName("Heartbeat")),
+			connect.WithClientOptions(opts...),
+		),
+	}
+}
+
+// nodeRegistrationServiceClient implements NodeRegistrationServiceClient.
+type nodeRegistrationServiceClient struct {
+	heartbeat *connect.Client[v1.NodeHeartbeatRequest, v1.NodeHeartbeatResponse]
+}
+
+// Heartbeat calls sboard.panel.v1.NodeRegistrationService.Heartbeat.
+func (c *nodeRegistrationServiceClient) Heartbeat(ctx context.Context, req *v1.NodeHeartbeatRequest) (*v1.NodeHeartbeatResponse, error) {
+	response, err := c.heartbeat.CallUnary(ctx, connect.NewRequest(req))
+	if response != nil {
+		return response.Msg, err
+	}
+	return nil, err
+}
+
+// NodeRegistrationServiceHandler is an implementation of the
+// sboard.panel.v1.NodeRegistrationService service.
+type NodeRegistrationServiceHandler interface {
+	Heartbeat(context.Context, *v1.NodeHeartbeatRequest) (*v1.NodeHeartbeatResponse, error)
+}
+
+// NewNodeRegistrationServiceHandler builds an HTTP handler from the service implementation. It
+// returns the path on which to mount the handler and the handler itself.
+//
+// By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
+// and JSON codecs. They also support gzip compression.
+func NewNodeRegistrationServiceHandler(svc NodeRegistrationServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
+	nodeRegistrationServiceMethods := v1.File_sboard_panel_v1_panel_proto.Services().ByName("NodeRegistrationService").Methods()
+	nodeRegistrationServiceHeartbeatHandler := connect.NewUnaryHandlerSimple(
+		NodeRegistrationServiceHeartbeatProcedure,
+		svc.Heartbeat,
+		connect.WithSchema(nodeRegistrationServiceMethods.ByName("Heartbeat")),
+		connect.WithHandlerOptions(opts...),
+	)
+	return "/sboard.panel.v1.NodeRegistrationService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case NodeRegistrationServiceHeartbeatProcedure:
+			nodeRegistrationServiceHeartbeatHandler.ServeHTTP(w, r)
+		default:
+			http.NotFound(w, r)
+		}
+	})
+}
+
+// UnimplementedNodeRegistrationServiceHandler returns CodeUnimplemented from all methods.
+type UnimplementedNodeRegistrationServiceHandler struct{}
+
+func (UnimplementedNodeRegistrationServiceHandler) Heartbeat(context.Context, *v1.NodeHeartbeatRequest) (*v1.NodeHeartbeatResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("sboard.panel.v1.NodeRegistrationService.Heartbeat is not implemented"))
 }
 
 // TrafficServiceClient is a client for the sboard.panel.v1.TrafficService service.

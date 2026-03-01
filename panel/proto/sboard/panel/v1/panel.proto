@@ -52,6 +52,12 @@ service NodeService {
   rpc GetNodeHealth(GetNodeHealthRequest) returns (GetNodeHealthResponse);
   rpc SyncNode(SyncNodeRequest) returns (SyncNodeResponse);
   rpc ListNodeTraffic(ListNodeTrafficRequest) returns (ListNodeTrafficResponse);
+  rpc ApproveNode(ApproveNodeRequest) returns (ApproveNodeResponse);
+  rpc RejectNode(RejectNodeRequest) returns (RejectNodeResponse);
+}
+
+service NodeRegistrationService {
+  rpc Heartbeat(NodeHeartbeatRequest) returns (NodeHeartbeatResponse);
 }
 
 service TrafficService {
@@ -676,4 +682,42 @@ message GenerateSingBoxResult {
 
 message GenerateSingBoxResponse {
   GenerateSingBoxResult data = 1;
+}
+
+enum NodeHeartbeatStatus {
+  NODE_HEARTBEAT_STATUS_UNSPECIFIED = 0;
+  NODE_HEARTBEAT_STATUS_RECOGNIZED = 1;
+  NODE_HEARTBEAT_STATUS_PENDING = 2;
+  NODE_HEARTBEAT_STATUS_REJECTED = 3;
+}
+
+message NodeHeartbeatRequest {
+  string uuid = 1;
+  string secret_key = 2;
+  string version = 3;
+  string api_addr = 4;
+}
+
+message NodeHeartbeatResponse {
+  NodeHeartbeatStatus status = 1;
+  string message = 2;
+}
+
+message ApproveNodeRequest {
+  int64 id = 1;
+  string name = 2;
+  optional int64 group_id = 3;
+  optional string public_address = 4;
+}
+
+message ApproveNodeResponse {
+  Node data = 1;
+}
+
+message RejectNodeRequest {
+  int64 id = 1;
+}
+
+message RejectNodeResponse {
+  string status = 1;
 }

@@ -1,11 +1,13 @@
 import { toApiError } from "@/lib/api/client";
 import { i64, rpcCall } from "@/lib/rpc/client";
 import {
+  approveNode as approveNodeRPC,
   createNode as createNodeRPC,
   deleteNode as deleteNodeRPC,
   getNodeHealth as getNodeHealthRPC,
   listNodeTraffic as listNodeTrafficRPC,
   listNodes as listNodesRPC,
+  rejectNode as rejectNodeRPC,
   syncNode as syncNodeRPC,
   updateNode as updateNodeRPC,
 } from "@/lib/rpc/gen/sboard/panel/v1/panel-NodeService_connectquery";
@@ -119,6 +121,32 @@ export function listNodeTraffic(
     offset: params.offset,
   })
     .then((r) => (r.data ?? []).map(toNodeTrafficSample))
+    .catch((e) => {
+      throw toApiError(e);
+    });
+}
+
+export function approveNode(payload: {
+  id: number;
+  name: string;
+  group_id?: number | null;
+  public_address?: string;
+}): Promise<Node> {
+  return rpcCall(approveNodeRPC, {
+    id: BigInt(payload.id),
+    name: payload.name,
+    groupId: i64(payload.group_id),
+    publicAddress: payload.public_address,
+  })
+    .then((r) => toNode(r.data!))
+    .catch((e) => {
+      throw toApiError(e);
+    });
+}
+
+export function rejectNode(id: number): Promise<{ status: string }> {
+  return rpcCall(rejectNodeRPC, { id: BigInt(id) })
+    .then((r) => ({ status: r.status }))
     .catch((e) => {
       throw toApiError(e);
     });

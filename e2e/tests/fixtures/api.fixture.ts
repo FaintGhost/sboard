@@ -235,6 +235,40 @@ export class PanelAPI {
     });
   }
 
+  async heartbeat(data: { uuid: string; secretKey: string; apiAddr?: string; version?: string }) {
+    return this.request.post(
+      `${BASE_URL}/rpc/sboard.panel.v1.NodeRegistrationService/Heartbeat`,
+      {
+        headers: { "Content-Type": "application/json" },
+        data: {
+          uuid: data.uuid,
+          secretKey: data.secretKey,
+          apiAddr: data.apiAddr || ":3000",
+          version: data.version || "test",
+        },
+      },
+    );
+  }
+
+  async approveNode(id: number, data: { name: string; groupId?: number; publicAddress?: string }) {
+    return this.request.post(`${BASE_URL}/rpc/sboard.panel.v1.NodeService/ApproveNode`, {
+      headers: this.rpcHeaders,
+      data: {
+        id: i64(id),
+        name: data.name,
+        groupId: data.groupId === undefined ? undefined : i64(data.groupId),
+        publicAddress: data.publicAddress,
+      },
+    });
+  }
+
+  async rejectNode(id: number) {
+    return this.request.post(`${BASE_URL}/rpc/sboard.panel.v1.NodeService/RejectNode`, {
+      headers: this.rpcHeaders,
+      data: { id: i64(id) },
+    });
+  }
+
   async getSystemSettings() {
     return this.request.post(`${BASE_URL}/rpc/sboard.panel.v1.SystemService/GetSystemSettings`, {
       headers: this.rpcHeaders,

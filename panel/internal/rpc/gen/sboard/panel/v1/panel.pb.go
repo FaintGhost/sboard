@@ -21,6 +21,58 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type NodeHeartbeatStatus int32
+
+const (
+	NodeHeartbeatStatus_NODE_HEARTBEAT_STATUS_UNSPECIFIED NodeHeartbeatStatus = 0
+	NodeHeartbeatStatus_NODE_HEARTBEAT_STATUS_RECOGNIZED  NodeHeartbeatStatus = 1
+	NodeHeartbeatStatus_NODE_HEARTBEAT_STATUS_PENDING     NodeHeartbeatStatus = 2
+	NodeHeartbeatStatus_NODE_HEARTBEAT_STATUS_REJECTED    NodeHeartbeatStatus = 3
+)
+
+// Enum value maps for NodeHeartbeatStatus.
+var (
+	NodeHeartbeatStatus_name = map[int32]string{
+		0: "NODE_HEARTBEAT_STATUS_UNSPECIFIED",
+		1: "NODE_HEARTBEAT_STATUS_RECOGNIZED",
+		2: "NODE_HEARTBEAT_STATUS_PENDING",
+		3: "NODE_HEARTBEAT_STATUS_REJECTED",
+	}
+	NodeHeartbeatStatus_value = map[string]int32{
+		"NODE_HEARTBEAT_STATUS_UNSPECIFIED": 0,
+		"NODE_HEARTBEAT_STATUS_RECOGNIZED":  1,
+		"NODE_HEARTBEAT_STATUS_PENDING":     2,
+		"NODE_HEARTBEAT_STATUS_REJECTED":    3,
+	}
+)
+
+func (x NodeHeartbeatStatus) Enum() *NodeHeartbeatStatus {
+	p := new(NodeHeartbeatStatus)
+	*p = x
+	return p
+}
+
+func (x NodeHeartbeatStatus) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (NodeHeartbeatStatus) Descriptor() protoreflect.EnumDescriptor {
+	return file_sboard_panel_v1_panel_proto_enumTypes[0].Descriptor()
+}
+
+func (NodeHeartbeatStatus) Type() protoreflect.EnumType {
+	return &file_sboard_panel_v1_panel_proto_enumTypes[0]
+}
+
+func (x NodeHeartbeatStatus) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use NodeHeartbeatStatus.Descriptor instead.
+func (NodeHeartbeatStatus) EnumDescriptor() ([]byte, []int) {
+	return file_sboard_panel_v1_panel_proto_rawDescGZIP(), []int{0}
+}
+
 type User struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	Id              int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -6225,6 +6277,326 @@ func (x *GenerateSingBoxResponse) GetData() *GenerateSingBoxResult {
 	return nil
 }
 
+type NodeHeartbeatRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Uuid          string                 `protobuf:"bytes,1,opt,name=uuid,proto3" json:"uuid,omitempty"`
+	SecretKey     string                 `protobuf:"bytes,2,opt,name=secret_key,json=secretKey,proto3" json:"secret_key,omitempty"`
+	Version       string                 `protobuf:"bytes,3,opt,name=version,proto3" json:"version,omitempty"`
+	ApiAddr       string                 `protobuf:"bytes,4,opt,name=api_addr,json=apiAddr,proto3" json:"api_addr,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *NodeHeartbeatRequest) Reset() {
+	*x = NodeHeartbeatRequest{}
+	mi := &file_sboard_panel_v1_panel_proto_msgTypes[115]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *NodeHeartbeatRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*NodeHeartbeatRequest) ProtoMessage() {}
+
+func (x *NodeHeartbeatRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_sboard_panel_v1_panel_proto_msgTypes[115]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use NodeHeartbeatRequest.ProtoReflect.Descriptor instead.
+func (*NodeHeartbeatRequest) Descriptor() ([]byte, []int) {
+	return file_sboard_panel_v1_panel_proto_rawDescGZIP(), []int{115}
+}
+
+func (x *NodeHeartbeatRequest) GetUuid() string {
+	if x != nil {
+		return x.Uuid
+	}
+	return ""
+}
+
+func (x *NodeHeartbeatRequest) GetSecretKey() string {
+	if x != nil {
+		return x.SecretKey
+	}
+	return ""
+}
+
+func (x *NodeHeartbeatRequest) GetVersion() string {
+	if x != nil {
+		return x.Version
+	}
+	return ""
+}
+
+func (x *NodeHeartbeatRequest) GetApiAddr() string {
+	if x != nil {
+		return x.ApiAddr
+	}
+	return ""
+}
+
+type NodeHeartbeatResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Status        NodeHeartbeatStatus    `protobuf:"varint,1,opt,name=status,proto3,enum=sboard.panel.v1.NodeHeartbeatStatus" json:"status,omitempty"`
+	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *NodeHeartbeatResponse) Reset() {
+	*x = NodeHeartbeatResponse{}
+	mi := &file_sboard_panel_v1_panel_proto_msgTypes[116]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *NodeHeartbeatResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*NodeHeartbeatResponse) ProtoMessage() {}
+
+func (x *NodeHeartbeatResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_sboard_panel_v1_panel_proto_msgTypes[116]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use NodeHeartbeatResponse.ProtoReflect.Descriptor instead.
+func (*NodeHeartbeatResponse) Descriptor() ([]byte, []int) {
+	return file_sboard_panel_v1_panel_proto_rawDescGZIP(), []int{116}
+}
+
+func (x *NodeHeartbeatResponse) GetStatus() NodeHeartbeatStatus {
+	if x != nil {
+		return x.Status
+	}
+	return NodeHeartbeatStatus_NODE_HEARTBEAT_STATUS_UNSPECIFIED
+}
+
+func (x *NodeHeartbeatResponse) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+type ApproveNodeRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	GroupId       *int64                 `protobuf:"varint,3,opt,name=group_id,json=groupId,proto3,oneof" json:"group_id,omitempty"`
+	PublicAddress *string                `protobuf:"bytes,4,opt,name=public_address,json=publicAddress,proto3,oneof" json:"public_address,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ApproveNodeRequest) Reset() {
+	*x = ApproveNodeRequest{}
+	mi := &file_sboard_panel_v1_panel_proto_msgTypes[117]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ApproveNodeRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ApproveNodeRequest) ProtoMessage() {}
+
+func (x *ApproveNodeRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_sboard_panel_v1_panel_proto_msgTypes[117]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ApproveNodeRequest.ProtoReflect.Descriptor instead.
+func (*ApproveNodeRequest) Descriptor() ([]byte, []int) {
+	return file_sboard_panel_v1_panel_proto_rawDescGZIP(), []int{117}
+}
+
+func (x *ApproveNodeRequest) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *ApproveNodeRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *ApproveNodeRequest) GetGroupId() int64 {
+	if x != nil && x.GroupId != nil {
+		return *x.GroupId
+	}
+	return 0
+}
+
+func (x *ApproveNodeRequest) GetPublicAddress() string {
+	if x != nil && x.PublicAddress != nil {
+		return *x.PublicAddress
+	}
+	return ""
+}
+
+type ApproveNodeResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Data          *Node                  `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ApproveNodeResponse) Reset() {
+	*x = ApproveNodeResponse{}
+	mi := &file_sboard_panel_v1_panel_proto_msgTypes[118]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ApproveNodeResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ApproveNodeResponse) ProtoMessage() {}
+
+func (x *ApproveNodeResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_sboard_panel_v1_panel_proto_msgTypes[118]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ApproveNodeResponse.ProtoReflect.Descriptor instead.
+func (*ApproveNodeResponse) Descriptor() ([]byte, []int) {
+	return file_sboard_panel_v1_panel_proto_rawDescGZIP(), []int{118}
+}
+
+func (x *ApproveNodeResponse) GetData() *Node {
+	if x != nil {
+		return x.Data
+	}
+	return nil
+}
+
+type RejectNodeRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RejectNodeRequest) Reset() {
+	*x = RejectNodeRequest{}
+	mi := &file_sboard_panel_v1_panel_proto_msgTypes[119]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RejectNodeRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RejectNodeRequest) ProtoMessage() {}
+
+func (x *RejectNodeRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_sboard_panel_v1_panel_proto_msgTypes[119]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RejectNodeRequest.ProtoReflect.Descriptor instead.
+func (*RejectNodeRequest) Descriptor() ([]byte, []int) {
+	return file_sboard_panel_v1_panel_proto_rawDescGZIP(), []int{119}
+}
+
+func (x *RejectNodeRequest) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+type RejectNodeResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Status        string                 `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RejectNodeResponse) Reset() {
+	*x = RejectNodeResponse{}
+	mi := &file_sboard_panel_v1_panel_proto_msgTypes[120]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RejectNodeResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RejectNodeResponse) ProtoMessage() {}
+
+func (x *RejectNodeResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_sboard_panel_v1_panel_proto_msgTypes[120]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RejectNodeResponse.ProtoReflect.Descriptor instead.
+func (*RejectNodeResponse) Descriptor() ([]byte, []int) {
+	return file_sboard_panel_v1_panel_proto_rawDescGZIP(), []int{120}
+}
+
+func (x *RejectNodeResponse) GetStatus() string {
+	if x != nil {
+		return x.Status
+	}
+	return ""
+}
+
 var File_sboard_panel_v1_panel_proto protoreflect.FileDescriptor
 
 const file_sboard_panel_v1_panel_proto_rawDesc = "" +
@@ -6713,7 +7085,34 @@ const file_sboard_panel_v1_panel_proto_rawDesc = "" +
 	"\x15GenerateSingBoxResult\x12\x16\n" +
 	"\x06output\x18\x01 \x01(\tR\x06output\"U\n" +
 	"\x17GenerateSingBoxResponse\x12:\n" +
-	"\x04data\x18\x01 \x01(\v2&.sboard.panel.v1.GenerateSingBoxResultR\x04data2c\n" +
+	"\x04data\x18\x01 \x01(\v2&.sboard.panel.v1.GenerateSingBoxResultR\x04data\"~\n" +
+	"\x14NodeHeartbeatRequest\x12\x12\n" +
+	"\x04uuid\x18\x01 \x01(\tR\x04uuid\x12\x1d\n" +
+	"\n" +
+	"secret_key\x18\x02 \x01(\tR\tsecretKey\x12\x18\n" +
+	"\aversion\x18\x03 \x01(\tR\aversion\x12\x19\n" +
+	"\bapi_addr\x18\x04 \x01(\tR\aapiAddr\"o\n" +
+	"\x15NodeHeartbeatResponse\x12<\n" +
+	"\x06status\x18\x01 \x01(\x0e2$.sboard.panel.v1.NodeHeartbeatStatusR\x06status\x12\x18\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\"\xa4\x01\n" +
+	"\x12ApproveNodeRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1e\n" +
+	"\bgroup_id\x18\x03 \x01(\x03H\x00R\agroupId\x88\x01\x01\x12*\n" +
+	"\x0epublic_address\x18\x04 \x01(\tH\x01R\rpublicAddress\x88\x01\x01B\v\n" +
+	"\t_group_idB\x11\n" +
+	"\x0f_public_address\"@\n" +
+	"\x13ApproveNodeResponse\x12)\n" +
+	"\x04data\x18\x01 \x01(\v2\x15.sboard.panel.v1.NodeR\x04data\"#\n" +
+	"\x11RejectNodeRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x03R\x02id\",\n" +
+	"\x12RejectNodeResponse\x12\x16\n" +
+	"\x06status\x18\x01 \x01(\tR\x06status*\xa9\x01\n" +
+	"\x13NodeHeartbeatStatus\x12%\n" +
+	"!NODE_HEARTBEAT_STATUS_UNSPECIFIED\x10\x00\x12$\n" +
+	" NODE_HEARTBEAT_STATUS_RECOGNIZED\x10\x01\x12!\n" +
+	"\x1dNODE_HEARTBEAT_STATUS_PENDING\x10\x02\x12\"\n" +
+	"\x1eNODE_HEARTBEAT_STATUS_REJECTED\x10\x032c\n" +
 	"\rHealthService\x12R\n" +
 	"\tGetHealth\x12!.sboard.panel.v1.GetHealthRequest\x1a\".sboard.panel.v1.GetHealthResponse2\xf5\x03\n" +
 	"\vAuthService\x12m\n" +
@@ -6746,7 +7145,7 @@ const file_sboard_panel_v1_panel_proto_rawDesc = "" +
 	"\vUpdateGroup\x12#.sboard.panel.v1.UpdateGroupRequest\x1a$.sboard.panel.v1.UpdateGroupResponse\x12X\n" +
 	"\vDeleteGroup\x12#.sboard.panel.v1.DeleteGroupRequest\x1a$.sboard.panel.v1.DeleteGroupResponse\x12a\n" +
 	"\x0eListGroupUsers\x12&.sboard.panel.v1.ListGroupUsersRequest\x1a'.sboard.panel.v1.ListGroupUsersResponse\x12j\n" +
-	"\x11ReplaceGroupUsers\x12).sboard.panel.v1.ReplaceGroupUsersRequest\x1a*.sboard.panel.v1.ReplaceGroupUsersResponse2\xcb\x05\n" +
+	"\x11ReplaceGroupUsers\x12).sboard.panel.v1.ReplaceGroupUsersRequest\x1a*.sboard.panel.v1.ReplaceGroupUsersResponse2\xfc\x06\n" +
 	"\vNodeService\x12R\n" +
 	"\tListNodes\x12!.sboard.panel.v1.ListNodesRequest\x1a\".sboard.panel.v1.ListNodesResponse\x12U\n" +
 	"\n" +
@@ -6758,7 +7157,12 @@ const file_sboard_panel_v1_panel_proto_rawDesc = "" +
 	"DeleteNode\x12\".sboard.panel.v1.DeleteNodeRequest\x1a#.sboard.panel.v1.DeleteNodeResponse\x12^\n" +
 	"\rGetNodeHealth\x12%.sboard.panel.v1.GetNodeHealthRequest\x1a&.sboard.panel.v1.GetNodeHealthResponse\x12O\n" +
 	"\bSyncNode\x12 .sboard.panel.v1.SyncNodeRequest\x1a!.sboard.panel.v1.SyncNodeResponse\x12d\n" +
-	"\x0fListNodeTraffic\x12'.sboard.panel.v1.ListNodeTrafficRequest\x1a(.sboard.panel.v1.ListNodeTrafficResponse2\xfb\x02\n" +
+	"\x0fListNodeTraffic\x12'.sboard.panel.v1.ListNodeTrafficRequest\x1a(.sboard.panel.v1.ListNodeTrafficResponse\x12X\n" +
+	"\vApproveNode\x12#.sboard.panel.v1.ApproveNodeRequest\x1a$.sboard.panel.v1.ApproveNodeResponse\x12U\n" +
+	"\n" +
+	"RejectNode\x12\".sboard.panel.v1.RejectNodeRequest\x1a#.sboard.panel.v1.RejectNodeResponse2u\n" +
+	"\x17NodeRegistrationService\x12Z\n" +
+	"\tHeartbeat\x12%.sboard.panel.v1.NodeHeartbeatRequest\x1a&.sboard.panel.v1.NodeHeartbeatResponse2\xfb\x02\n" +
 	"\x0eTrafficService\x12y\n" +
 	"\x16GetTrafficNodesSummary\x12..sboard.panel.v1.GetTrafficNodesSummaryRequest\x1a/.sboard.panel.v1.GetTrafficNodesSummaryResponse\x12y\n" +
 	"\x16GetTrafficTotalSummary\x12..sboard.panel.v1.GetTrafficTotalSummaryRequest\x1a/.sboard.panel.v1.GetTrafficTotalSummaryResponse\x12s\n" +
@@ -6792,266 +7196,282 @@ func file_sboard_panel_v1_panel_proto_rawDescGZIP() []byte {
 	return file_sboard_panel_v1_panel_proto_rawDescData
 }
 
-var file_sboard_panel_v1_panel_proto_msgTypes = make([]protoimpl.MessageInfo, 115)
+var file_sboard_panel_v1_panel_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_sboard_panel_v1_panel_proto_msgTypes = make([]protoimpl.MessageInfo, 121)
 var file_sboard_panel_v1_panel_proto_goTypes = []any{
-	(*User)(nil),                           // 0: sboard.panel.v1.User
-	(*Group)(nil),                          // 1: sboard.panel.v1.Group
-	(*Node)(nil),                           // 2: sboard.panel.v1.Node
-	(*NodeTrafficSample)(nil),              // 3: sboard.panel.v1.NodeTrafficSample
-	(*GroupUsersListItem)(nil),             // 4: sboard.panel.v1.GroupUsersListItem
-	(*AdminProfile)(nil),                   // 5: sboard.panel.v1.AdminProfile
-	(*BootstrapStatus)(nil),                // 6: sboard.panel.v1.BootstrapStatus
-	(*BootstrapResult)(nil),                // 7: sboard.panel.v1.BootstrapResult
-	(*LoginResult)(nil),                    // 8: sboard.panel.v1.LoginResult
-	(*SystemInfo)(nil),                     // 9: sboard.panel.v1.SystemInfo
-	(*SystemSettings)(nil),                 // 10: sboard.panel.v1.SystemSettings
-	(*TrafficNodeSummary)(nil),             // 11: sboard.panel.v1.TrafficNodeSummary
-	(*TrafficTotalSummary)(nil),            // 12: sboard.panel.v1.TrafficTotalSummary
-	(*TrafficTimeseriesPoint)(nil),         // 13: sboard.panel.v1.TrafficTimeseriesPoint
-	(*SyncResult)(nil),                     // 14: sboard.panel.v1.SyncResult
-	(*Inbound)(nil),                        // 15: sboard.panel.v1.Inbound
-	(*SyncJobListItem)(nil),                // 16: sboard.panel.v1.SyncJobListItem
-	(*SyncAttempt)(nil),                    // 17: sboard.panel.v1.SyncAttempt
-	(*SyncJobDetail)(nil),                  // 18: sboard.panel.v1.SyncJobDetail
-	(*GetHealthRequest)(nil),               // 19: sboard.panel.v1.GetHealthRequest
-	(*GetHealthResponse)(nil),              // 20: sboard.panel.v1.GetHealthResponse
-	(*GetBootstrapStatusRequest)(nil),      // 21: sboard.panel.v1.GetBootstrapStatusRequest
-	(*GetBootstrapStatusResponse)(nil),     // 22: sboard.panel.v1.GetBootstrapStatusResponse
-	(*BootstrapRequest)(nil),               // 23: sboard.panel.v1.BootstrapRequest
-	(*BootstrapResponse)(nil),              // 24: sboard.panel.v1.BootstrapResponse
-	(*LoginRequest)(nil),                   // 25: sboard.panel.v1.LoginRequest
-	(*LoginResponseEnvelope)(nil),          // 26: sboard.panel.v1.LoginResponseEnvelope
-	(*GetAdminProfileRequest)(nil),         // 27: sboard.panel.v1.GetAdminProfileRequest
-	(*GetAdminProfileResponse)(nil),        // 28: sboard.panel.v1.GetAdminProfileResponse
-	(*UpdateAdminProfileRequest)(nil),      // 29: sboard.panel.v1.UpdateAdminProfileRequest
-	(*UpdateAdminProfileResponse)(nil),     // 30: sboard.panel.v1.UpdateAdminProfileResponse
-	(*GetSystemInfoRequest)(nil),           // 31: sboard.panel.v1.GetSystemInfoRequest
-	(*GetSystemInfoResponse)(nil),          // 32: sboard.panel.v1.GetSystemInfoResponse
-	(*GetSystemSettingsRequest)(nil),       // 33: sboard.panel.v1.GetSystemSettingsRequest
-	(*GetSystemSettingsResponse)(nil),      // 34: sboard.panel.v1.GetSystemSettingsResponse
-	(*UpdateSystemSettingsRequest)(nil),    // 35: sboard.panel.v1.UpdateSystemSettingsRequest
-	(*UpdateSystemSettingsResponse)(nil),   // 36: sboard.panel.v1.UpdateSystemSettingsResponse
-	(*ListUsersRequest)(nil),               // 37: sboard.panel.v1.ListUsersRequest
-	(*ListUsersResponse)(nil),              // 38: sboard.panel.v1.ListUsersResponse
-	(*CreateUserRequest)(nil),              // 39: sboard.panel.v1.CreateUserRequest
-	(*CreateUserResponse)(nil),             // 40: sboard.panel.v1.CreateUserResponse
-	(*GetUserRequest)(nil),                 // 41: sboard.panel.v1.GetUserRequest
-	(*GetUserResponse)(nil),                // 42: sboard.panel.v1.GetUserResponse
-	(*UpdateUserRequest)(nil),              // 43: sboard.panel.v1.UpdateUserRequest
-	(*UpdateUserResponse)(nil),             // 44: sboard.panel.v1.UpdateUserResponse
-	(*DisableUserRequest)(nil),             // 45: sboard.panel.v1.DisableUserRequest
-	(*DisableUserResponse)(nil),            // 46: sboard.panel.v1.DisableUserResponse
-	(*DeleteUserRequest)(nil),              // 47: sboard.panel.v1.DeleteUserRequest
-	(*DeleteUserResponse)(nil),             // 48: sboard.panel.v1.DeleteUserResponse
-	(*GetUserGroupsRequest)(nil),           // 49: sboard.panel.v1.GetUserGroupsRequest
-	(*GetUserGroupsResponse)(nil),          // 50: sboard.panel.v1.GetUserGroupsResponse
-	(*ReplaceUserGroupsRequest)(nil),       // 51: sboard.panel.v1.ReplaceUserGroupsRequest
-	(*ReplaceUserGroupsResponse)(nil),      // 52: sboard.panel.v1.ReplaceUserGroupsResponse
-	(*ListGroupsRequest)(nil),              // 53: sboard.panel.v1.ListGroupsRequest
-	(*ListGroupsResponse)(nil),             // 54: sboard.panel.v1.ListGroupsResponse
-	(*CreateGroupRequest)(nil),             // 55: sboard.panel.v1.CreateGroupRequest
-	(*CreateGroupResponse)(nil),            // 56: sboard.panel.v1.CreateGroupResponse
-	(*GetGroupRequest)(nil),                // 57: sboard.panel.v1.GetGroupRequest
-	(*GetGroupResponse)(nil),               // 58: sboard.panel.v1.GetGroupResponse
-	(*UpdateGroupRequest)(nil),             // 59: sboard.panel.v1.UpdateGroupRequest
-	(*UpdateGroupResponse)(nil),            // 60: sboard.panel.v1.UpdateGroupResponse
-	(*DeleteGroupRequest)(nil),             // 61: sboard.panel.v1.DeleteGroupRequest
-	(*DeleteGroupResponse)(nil),            // 62: sboard.panel.v1.DeleteGroupResponse
-	(*ListGroupUsersRequest)(nil),          // 63: sboard.panel.v1.ListGroupUsersRequest
-	(*ListGroupUsersResponse)(nil),         // 64: sboard.panel.v1.ListGroupUsersResponse
-	(*ReplaceGroupUsersRequest)(nil),       // 65: sboard.panel.v1.ReplaceGroupUsersRequest
-	(*ReplaceGroupUsersResponse)(nil),      // 66: sboard.panel.v1.ReplaceGroupUsersResponse
-	(*ListNodesRequest)(nil),               // 67: sboard.panel.v1.ListNodesRequest
-	(*ListNodesResponse)(nil),              // 68: sboard.panel.v1.ListNodesResponse
-	(*CreateNodeRequest)(nil),              // 69: sboard.panel.v1.CreateNodeRequest
-	(*CreateNodeResponse)(nil),             // 70: sboard.panel.v1.CreateNodeResponse
-	(*GetNodeRequest)(nil),                 // 71: sboard.panel.v1.GetNodeRequest
-	(*GetNodeResponse)(nil),                // 72: sboard.panel.v1.GetNodeResponse
-	(*UpdateNodeRequest)(nil),              // 73: sboard.panel.v1.UpdateNodeRequest
-	(*UpdateNodeResponse)(nil),             // 74: sboard.panel.v1.UpdateNodeResponse
-	(*DeleteNodeRequest)(nil),              // 75: sboard.panel.v1.DeleteNodeRequest
-	(*DeleteNodeResponse)(nil),             // 76: sboard.panel.v1.DeleteNodeResponse
-	(*GetNodeHealthRequest)(nil),           // 77: sboard.panel.v1.GetNodeHealthRequest
-	(*GetNodeHealthResponse)(nil),          // 78: sboard.panel.v1.GetNodeHealthResponse
-	(*SyncNodeRequest)(nil),                // 79: sboard.panel.v1.SyncNodeRequest
-	(*SyncNodeResponse)(nil),               // 80: sboard.panel.v1.SyncNodeResponse
-	(*ListNodeTrafficRequest)(nil),         // 81: sboard.panel.v1.ListNodeTrafficRequest
-	(*ListNodeTrafficResponse)(nil),        // 82: sboard.panel.v1.ListNodeTrafficResponse
-	(*GetTrafficNodesSummaryRequest)(nil),  // 83: sboard.panel.v1.GetTrafficNodesSummaryRequest
-	(*GetTrafficNodesSummaryResponse)(nil), // 84: sboard.panel.v1.GetTrafficNodesSummaryResponse
-	(*GetTrafficTotalSummaryRequest)(nil),  // 85: sboard.panel.v1.GetTrafficTotalSummaryRequest
-	(*GetTrafficTotalSummaryResponse)(nil), // 86: sboard.panel.v1.GetTrafficTotalSummaryResponse
-	(*GetTrafficTimeseriesRequest)(nil),    // 87: sboard.panel.v1.GetTrafficTimeseriesRequest
-	(*GetTrafficTimeseriesResponse)(nil),   // 88: sboard.panel.v1.GetTrafficTimeseriesResponse
-	(*ListInboundsRequest)(nil),            // 89: sboard.panel.v1.ListInboundsRequest
-	(*ListInboundsResponse)(nil),           // 90: sboard.panel.v1.ListInboundsResponse
-	(*CreateInboundRequest)(nil),           // 91: sboard.panel.v1.CreateInboundRequest
-	(*CreateInboundResponse)(nil),          // 92: sboard.panel.v1.CreateInboundResponse
-	(*GetInboundRequest)(nil),              // 93: sboard.panel.v1.GetInboundRequest
-	(*GetInboundResponse)(nil),             // 94: sboard.panel.v1.GetInboundResponse
-	(*UpdateInboundRequest)(nil),           // 95: sboard.panel.v1.UpdateInboundRequest
-	(*UpdateInboundResponse)(nil),          // 96: sboard.panel.v1.UpdateInboundResponse
-	(*DeleteInboundRequest)(nil),           // 97: sboard.panel.v1.DeleteInboundRequest
-	(*DeleteInboundResponse)(nil),          // 98: sboard.panel.v1.DeleteInboundResponse
-	(*ListSyncJobsRequest)(nil),            // 99: sboard.panel.v1.ListSyncJobsRequest
-	(*ListSyncJobsResponse)(nil),           // 100: sboard.panel.v1.ListSyncJobsResponse
-	(*GetSyncJobRequest)(nil),              // 101: sboard.panel.v1.GetSyncJobRequest
-	(*GetSyncJobResponse)(nil),             // 102: sboard.panel.v1.GetSyncJobResponse
-	(*RetrySyncJobRequest)(nil),            // 103: sboard.panel.v1.RetrySyncJobRequest
-	(*RetrySyncJobResponse)(nil),           // 104: sboard.panel.v1.RetrySyncJobResponse
-	(*SingBoxConfigRequest)(nil),           // 105: sboard.panel.v1.SingBoxConfigRequest
-	(*FormatSingBoxRequest)(nil),           // 106: sboard.panel.v1.FormatSingBoxRequest
-	(*FormatSingBoxResult)(nil),            // 107: sboard.panel.v1.FormatSingBoxResult
-	(*FormatSingBoxResponse)(nil),          // 108: sboard.panel.v1.FormatSingBoxResponse
-	(*CheckSingBoxRequest)(nil),            // 109: sboard.panel.v1.CheckSingBoxRequest
-	(*CheckSingBoxResult)(nil),             // 110: sboard.panel.v1.CheckSingBoxResult
-	(*CheckSingBoxResponse)(nil),           // 111: sboard.panel.v1.CheckSingBoxResponse
-	(*GenerateSingBoxRequest)(nil),         // 112: sboard.panel.v1.GenerateSingBoxRequest
-	(*GenerateSingBoxResult)(nil),          // 113: sboard.panel.v1.GenerateSingBoxResult
-	(*GenerateSingBoxResponse)(nil),        // 114: sboard.panel.v1.GenerateSingBoxResponse
+	(NodeHeartbeatStatus)(0),               // 0: sboard.panel.v1.NodeHeartbeatStatus
+	(*User)(nil),                           // 1: sboard.panel.v1.User
+	(*Group)(nil),                          // 2: sboard.panel.v1.Group
+	(*Node)(nil),                           // 3: sboard.panel.v1.Node
+	(*NodeTrafficSample)(nil),              // 4: sboard.panel.v1.NodeTrafficSample
+	(*GroupUsersListItem)(nil),             // 5: sboard.panel.v1.GroupUsersListItem
+	(*AdminProfile)(nil),                   // 6: sboard.panel.v1.AdminProfile
+	(*BootstrapStatus)(nil),                // 7: sboard.panel.v1.BootstrapStatus
+	(*BootstrapResult)(nil),                // 8: sboard.panel.v1.BootstrapResult
+	(*LoginResult)(nil),                    // 9: sboard.panel.v1.LoginResult
+	(*SystemInfo)(nil),                     // 10: sboard.panel.v1.SystemInfo
+	(*SystemSettings)(nil),                 // 11: sboard.panel.v1.SystemSettings
+	(*TrafficNodeSummary)(nil),             // 12: sboard.panel.v1.TrafficNodeSummary
+	(*TrafficTotalSummary)(nil),            // 13: sboard.panel.v1.TrafficTotalSummary
+	(*TrafficTimeseriesPoint)(nil),         // 14: sboard.panel.v1.TrafficTimeseriesPoint
+	(*SyncResult)(nil),                     // 15: sboard.panel.v1.SyncResult
+	(*Inbound)(nil),                        // 16: sboard.panel.v1.Inbound
+	(*SyncJobListItem)(nil),                // 17: sboard.panel.v1.SyncJobListItem
+	(*SyncAttempt)(nil),                    // 18: sboard.panel.v1.SyncAttempt
+	(*SyncJobDetail)(nil),                  // 19: sboard.panel.v1.SyncJobDetail
+	(*GetHealthRequest)(nil),               // 20: sboard.panel.v1.GetHealthRequest
+	(*GetHealthResponse)(nil),              // 21: sboard.panel.v1.GetHealthResponse
+	(*GetBootstrapStatusRequest)(nil),      // 22: sboard.panel.v1.GetBootstrapStatusRequest
+	(*GetBootstrapStatusResponse)(nil),     // 23: sboard.panel.v1.GetBootstrapStatusResponse
+	(*BootstrapRequest)(nil),               // 24: sboard.panel.v1.BootstrapRequest
+	(*BootstrapResponse)(nil),              // 25: sboard.panel.v1.BootstrapResponse
+	(*LoginRequest)(nil),                   // 26: sboard.panel.v1.LoginRequest
+	(*LoginResponseEnvelope)(nil),          // 27: sboard.panel.v1.LoginResponseEnvelope
+	(*GetAdminProfileRequest)(nil),         // 28: sboard.panel.v1.GetAdminProfileRequest
+	(*GetAdminProfileResponse)(nil),        // 29: sboard.panel.v1.GetAdminProfileResponse
+	(*UpdateAdminProfileRequest)(nil),      // 30: sboard.panel.v1.UpdateAdminProfileRequest
+	(*UpdateAdminProfileResponse)(nil),     // 31: sboard.panel.v1.UpdateAdminProfileResponse
+	(*GetSystemInfoRequest)(nil),           // 32: sboard.panel.v1.GetSystemInfoRequest
+	(*GetSystemInfoResponse)(nil),          // 33: sboard.panel.v1.GetSystemInfoResponse
+	(*GetSystemSettingsRequest)(nil),       // 34: sboard.panel.v1.GetSystemSettingsRequest
+	(*GetSystemSettingsResponse)(nil),      // 35: sboard.panel.v1.GetSystemSettingsResponse
+	(*UpdateSystemSettingsRequest)(nil),    // 36: sboard.panel.v1.UpdateSystemSettingsRequest
+	(*UpdateSystemSettingsResponse)(nil),   // 37: sboard.panel.v1.UpdateSystemSettingsResponse
+	(*ListUsersRequest)(nil),               // 38: sboard.panel.v1.ListUsersRequest
+	(*ListUsersResponse)(nil),              // 39: sboard.panel.v1.ListUsersResponse
+	(*CreateUserRequest)(nil),              // 40: sboard.panel.v1.CreateUserRequest
+	(*CreateUserResponse)(nil),             // 41: sboard.panel.v1.CreateUserResponse
+	(*GetUserRequest)(nil),                 // 42: sboard.panel.v1.GetUserRequest
+	(*GetUserResponse)(nil),                // 43: sboard.panel.v1.GetUserResponse
+	(*UpdateUserRequest)(nil),              // 44: sboard.panel.v1.UpdateUserRequest
+	(*UpdateUserResponse)(nil),             // 45: sboard.panel.v1.UpdateUserResponse
+	(*DisableUserRequest)(nil),             // 46: sboard.panel.v1.DisableUserRequest
+	(*DisableUserResponse)(nil),            // 47: sboard.panel.v1.DisableUserResponse
+	(*DeleteUserRequest)(nil),              // 48: sboard.panel.v1.DeleteUserRequest
+	(*DeleteUserResponse)(nil),             // 49: sboard.panel.v1.DeleteUserResponse
+	(*GetUserGroupsRequest)(nil),           // 50: sboard.panel.v1.GetUserGroupsRequest
+	(*GetUserGroupsResponse)(nil),          // 51: sboard.panel.v1.GetUserGroupsResponse
+	(*ReplaceUserGroupsRequest)(nil),       // 52: sboard.panel.v1.ReplaceUserGroupsRequest
+	(*ReplaceUserGroupsResponse)(nil),      // 53: sboard.panel.v1.ReplaceUserGroupsResponse
+	(*ListGroupsRequest)(nil),              // 54: sboard.panel.v1.ListGroupsRequest
+	(*ListGroupsResponse)(nil),             // 55: sboard.panel.v1.ListGroupsResponse
+	(*CreateGroupRequest)(nil),             // 56: sboard.panel.v1.CreateGroupRequest
+	(*CreateGroupResponse)(nil),            // 57: sboard.panel.v1.CreateGroupResponse
+	(*GetGroupRequest)(nil),                // 58: sboard.panel.v1.GetGroupRequest
+	(*GetGroupResponse)(nil),               // 59: sboard.panel.v1.GetGroupResponse
+	(*UpdateGroupRequest)(nil),             // 60: sboard.panel.v1.UpdateGroupRequest
+	(*UpdateGroupResponse)(nil),            // 61: sboard.panel.v1.UpdateGroupResponse
+	(*DeleteGroupRequest)(nil),             // 62: sboard.panel.v1.DeleteGroupRequest
+	(*DeleteGroupResponse)(nil),            // 63: sboard.panel.v1.DeleteGroupResponse
+	(*ListGroupUsersRequest)(nil),          // 64: sboard.panel.v1.ListGroupUsersRequest
+	(*ListGroupUsersResponse)(nil),         // 65: sboard.panel.v1.ListGroupUsersResponse
+	(*ReplaceGroupUsersRequest)(nil),       // 66: sboard.panel.v1.ReplaceGroupUsersRequest
+	(*ReplaceGroupUsersResponse)(nil),      // 67: sboard.panel.v1.ReplaceGroupUsersResponse
+	(*ListNodesRequest)(nil),               // 68: sboard.panel.v1.ListNodesRequest
+	(*ListNodesResponse)(nil),              // 69: sboard.panel.v1.ListNodesResponse
+	(*CreateNodeRequest)(nil),              // 70: sboard.panel.v1.CreateNodeRequest
+	(*CreateNodeResponse)(nil),             // 71: sboard.panel.v1.CreateNodeResponse
+	(*GetNodeRequest)(nil),                 // 72: sboard.panel.v1.GetNodeRequest
+	(*GetNodeResponse)(nil),                // 73: sboard.panel.v1.GetNodeResponse
+	(*UpdateNodeRequest)(nil),              // 74: sboard.panel.v1.UpdateNodeRequest
+	(*UpdateNodeResponse)(nil),             // 75: sboard.panel.v1.UpdateNodeResponse
+	(*DeleteNodeRequest)(nil),              // 76: sboard.panel.v1.DeleteNodeRequest
+	(*DeleteNodeResponse)(nil),             // 77: sboard.panel.v1.DeleteNodeResponse
+	(*GetNodeHealthRequest)(nil),           // 78: sboard.panel.v1.GetNodeHealthRequest
+	(*GetNodeHealthResponse)(nil),          // 79: sboard.panel.v1.GetNodeHealthResponse
+	(*SyncNodeRequest)(nil),                // 80: sboard.panel.v1.SyncNodeRequest
+	(*SyncNodeResponse)(nil),               // 81: sboard.panel.v1.SyncNodeResponse
+	(*ListNodeTrafficRequest)(nil),         // 82: sboard.panel.v1.ListNodeTrafficRequest
+	(*ListNodeTrafficResponse)(nil),        // 83: sboard.panel.v1.ListNodeTrafficResponse
+	(*GetTrafficNodesSummaryRequest)(nil),  // 84: sboard.panel.v1.GetTrafficNodesSummaryRequest
+	(*GetTrafficNodesSummaryResponse)(nil), // 85: sboard.panel.v1.GetTrafficNodesSummaryResponse
+	(*GetTrafficTotalSummaryRequest)(nil),  // 86: sboard.panel.v1.GetTrafficTotalSummaryRequest
+	(*GetTrafficTotalSummaryResponse)(nil), // 87: sboard.panel.v1.GetTrafficTotalSummaryResponse
+	(*GetTrafficTimeseriesRequest)(nil),    // 88: sboard.panel.v1.GetTrafficTimeseriesRequest
+	(*GetTrafficTimeseriesResponse)(nil),   // 89: sboard.panel.v1.GetTrafficTimeseriesResponse
+	(*ListInboundsRequest)(nil),            // 90: sboard.panel.v1.ListInboundsRequest
+	(*ListInboundsResponse)(nil),           // 91: sboard.panel.v1.ListInboundsResponse
+	(*CreateInboundRequest)(nil),           // 92: sboard.panel.v1.CreateInboundRequest
+	(*CreateInboundResponse)(nil),          // 93: sboard.panel.v1.CreateInboundResponse
+	(*GetInboundRequest)(nil),              // 94: sboard.panel.v1.GetInboundRequest
+	(*GetInboundResponse)(nil),             // 95: sboard.panel.v1.GetInboundResponse
+	(*UpdateInboundRequest)(nil),           // 96: sboard.panel.v1.UpdateInboundRequest
+	(*UpdateInboundResponse)(nil),          // 97: sboard.panel.v1.UpdateInboundResponse
+	(*DeleteInboundRequest)(nil),           // 98: sboard.panel.v1.DeleteInboundRequest
+	(*DeleteInboundResponse)(nil),          // 99: sboard.panel.v1.DeleteInboundResponse
+	(*ListSyncJobsRequest)(nil),            // 100: sboard.panel.v1.ListSyncJobsRequest
+	(*ListSyncJobsResponse)(nil),           // 101: sboard.panel.v1.ListSyncJobsResponse
+	(*GetSyncJobRequest)(nil),              // 102: sboard.panel.v1.GetSyncJobRequest
+	(*GetSyncJobResponse)(nil),             // 103: sboard.panel.v1.GetSyncJobResponse
+	(*RetrySyncJobRequest)(nil),            // 104: sboard.panel.v1.RetrySyncJobRequest
+	(*RetrySyncJobResponse)(nil),           // 105: sboard.panel.v1.RetrySyncJobResponse
+	(*SingBoxConfigRequest)(nil),           // 106: sboard.panel.v1.SingBoxConfigRequest
+	(*FormatSingBoxRequest)(nil),           // 107: sboard.panel.v1.FormatSingBoxRequest
+	(*FormatSingBoxResult)(nil),            // 108: sboard.panel.v1.FormatSingBoxResult
+	(*FormatSingBoxResponse)(nil),          // 109: sboard.panel.v1.FormatSingBoxResponse
+	(*CheckSingBoxRequest)(nil),            // 110: sboard.panel.v1.CheckSingBoxRequest
+	(*CheckSingBoxResult)(nil),             // 111: sboard.panel.v1.CheckSingBoxResult
+	(*CheckSingBoxResponse)(nil),           // 112: sboard.panel.v1.CheckSingBoxResponse
+	(*GenerateSingBoxRequest)(nil),         // 113: sboard.panel.v1.GenerateSingBoxRequest
+	(*GenerateSingBoxResult)(nil),          // 114: sboard.panel.v1.GenerateSingBoxResult
+	(*GenerateSingBoxResponse)(nil),        // 115: sboard.panel.v1.GenerateSingBoxResponse
+	(*NodeHeartbeatRequest)(nil),           // 116: sboard.panel.v1.NodeHeartbeatRequest
+	(*NodeHeartbeatResponse)(nil),          // 117: sboard.panel.v1.NodeHeartbeatResponse
+	(*ApproveNodeRequest)(nil),             // 118: sboard.panel.v1.ApproveNodeRequest
+	(*ApproveNodeResponse)(nil),            // 119: sboard.panel.v1.ApproveNodeResponse
+	(*RejectNodeRequest)(nil),              // 120: sboard.panel.v1.RejectNodeRequest
+	(*RejectNodeResponse)(nil),             // 121: sboard.panel.v1.RejectNodeResponse
 }
 var file_sboard_panel_v1_panel_proto_depIdxs = []int32{
-	16,  // 0: sboard.panel.v1.SyncJobDetail.job:type_name -> sboard.panel.v1.SyncJobListItem
-	17,  // 1: sboard.panel.v1.SyncJobDetail.attempts:type_name -> sboard.panel.v1.SyncAttempt
-	6,   // 2: sboard.panel.v1.GetBootstrapStatusResponse.data:type_name -> sboard.panel.v1.BootstrapStatus
-	7,   // 3: sboard.panel.v1.BootstrapResponse.data:type_name -> sboard.panel.v1.BootstrapResult
-	8,   // 4: sboard.panel.v1.LoginResponseEnvelope.data:type_name -> sboard.panel.v1.LoginResult
-	5,   // 5: sboard.panel.v1.GetAdminProfileResponse.data:type_name -> sboard.panel.v1.AdminProfile
-	5,   // 6: sboard.panel.v1.UpdateAdminProfileResponse.data:type_name -> sboard.panel.v1.AdminProfile
-	9,   // 7: sboard.panel.v1.GetSystemInfoResponse.data:type_name -> sboard.panel.v1.SystemInfo
-	10,  // 8: sboard.panel.v1.GetSystemSettingsResponse.data:type_name -> sboard.panel.v1.SystemSettings
-	10,  // 9: sboard.panel.v1.UpdateSystemSettingsResponse.data:type_name -> sboard.panel.v1.SystemSettings
-	0,   // 10: sboard.panel.v1.ListUsersResponse.data:type_name -> sboard.panel.v1.User
-	0,   // 11: sboard.panel.v1.CreateUserResponse.data:type_name -> sboard.panel.v1.User
-	0,   // 12: sboard.panel.v1.GetUserResponse.data:type_name -> sboard.panel.v1.User
-	0,   // 13: sboard.panel.v1.UpdateUserResponse.data:type_name -> sboard.panel.v1.User
-	0,   // 14: sboard.panel.v1.DisableUserResponse.data:type_name -> sboard.panel.v1.User
-	0,   // 15: sboard.panel.v1.DeleteUserResponse.data:type_name -> sboard.panel.v1.User
-	1,   // 16: sboard.panel.v1.ListGroupsResponse.data:type_name -> sboard.panel.v1.Group
-	1,   // 17: sboard.panel.v1.CreateGroupResponse.data:type_name -> sboard.panel.v1.Group
-	1,   // 18: sboard.panel.v1.GetGroupResponse.data:type_name -> sboard.panel.v1.Group
-	1,   // 19: sboard.panel.v1.UpdateGroupResponse.data:type_name -> sboard.panel.v1.Group
-	4,   // 20: sboard.panel.v1.ListGroupUsersResponse.data:type_name -> sboard.panel.v1.GroupUsersListItem
-	2,   // 21: sboard.panel.v1.ListNodesResponse.data:type_name -> sboard.panel.v1.Node
-	2,   // 22: sboard.panel.v1.CreateNodeResponse.data:type_name -> sboard.panel.v1.Node
-	2,   // 23: sboard.panel.v1.GetNodeResponse.data:type_name -> sboard.panel.v1.Node
-	2,   // 24: sboard.panel.v1.UpdateNodeResponse.data:type_name -> sboard.panel.v1.Node
-	3,   // 25: sboard.panel.v1.ListNodeTrafficResponse.data:type_name -> sboard.panel.v1.NodeTrafficSample
-	11,  // 26: sboard.panel.v1.GetTrafficNodesSummaryResponse.data:type_name -> sboard.panel.v1.TrafficNodeSummary
-	12,  // 27: sboard.panel.v1.GetTrafficTotalSummaryResponse.data:type_name -> sboard.panel.v1.TrafficTotalSummary
-	13,  // 28: sboard.panel.v1.GetTrafficTimeseriesResponse.data:type_name -> sboard.panel.v1.TrafficTimeseriesPoint
-	15,  // 29: sboard.panel.v1.ListInboundsResponse.data:type_name -> sboard.panel.v1.Inbound
-	15,  // 30: sboard.panel.v1.CreateInboundResponse.data:type_name -> sboard.panel.v1.Inbound
-	14,  // 31: sboard.panel.v1.CreateInboundResponse.sync:type_name -> sboard.panel.v1.SyncResult
-	15,  // 32: sboard.panel.v1.GetInboundResponse.data:type_name -> sboard.panel.v1.Inbound
-	15,  // 33: sboard.panel.v1.UpdateInboundResponse.data:type_name -> sboard.panel.v1.Inbound
-	14,  // 34: sboard.panel.v1.UpdateInboundResponse.sync:type_name -> sboard.panel.v1.SyncResult
-	14,  // 35: sboard.panel.v1.DeleteInboundResponse.sync:type_name -> sboard.panel.v1.SyncResult
-	16,  // 36: sboard.panel.v1.ListSyncJobsResponse.data:type_name -> sboard.panel.v1.SyncJobListItem
-	18,  // 37: sboard.panel.v1.GetSyncJobResponse.data:type_name -> sboard.panel.v1.SyncJobDetail
-	16,  // 38: sboard.panel.v1.RetrySyncJobResponse.data:type_name -> sboard.panel.v1.SyncJobListItem
-	105, // 39: sboard.panel.v1.FormatSingBoxRequest.data:type_name -> sboard.panel.v1.SingBoxConfigRequest
-	107, // 40: sboard.panel.v1.FormatSingBoxResponse.data:type_name -> sboard.panel.v1.FormatSingBoxResult
-	105, // 41: sboard.panel.v1.CheckSingBoxRequest.data:type_name -> sboard.panel.v1.SingBoxConfigRequest
-	110, // 42: sboard.panel.v1.CheckSingBoxResponse.data:type_name -> sboard.panel.v1.CheckSingBoxResult
-	113, // 43: sboard.panel.v1.GenerateSingBoxResponse.data:type_name -> sboard.panel.v1.GenerateSingBoxResult
-	19,  // 44: sboard.panel.v1.HealthService.GetHealth:input_type -> sboard.panel.v1.GetHealthRequest
-	21,  // 45: sboard.panel.v1.AuthService.GetBootstrapStatus:input_type -> sboard.panel.v1.GetBootstrapStatusRequest
-	23,  // 46: sboard.panel.v1.AuthService.Bootstrap:input_type -> sboard.panel.v1.BootstrapRequest
-	25,  // 47: sboard.panel.v1.AuthService.Login:input_type -> sboard.panel.v1.LoginRequest
-	27,  // 48: sboard.panel.v1.AuthService.GetAdminProfile:input_type -> sboard.panel.v1.GetAdminProfileRequest
-	29,  // 49: sboard.panel.v1.AuthService.UpdateAdminProfile:input_type -> sboard.panel.v1.UpdateAdminProfileRequest
-	31,  // 50: sboard.panel.v1.SystemService.GetSystemInfo:input_type -> sboard.panel.v1.GetSystemInfoRequest
-	33,  // 51: sboard.panel.v1.SystemService.GetSystemSettings:input_type -> sboard.panel.v1.GetSystemSettingsRequest
-	35,  // 52: sboard.panel.v1.SystemService.UpdateSystemSettings:input_type -> sboard.panel.v1.UpdateSystemSettingsRequest
-	37,  // 53: sboard.panel.v1.UserService.ListUsers:input_type -> sboard.panel.v1.ListUsersRequest
-	39,  // 54: sboard.panel.v1.UserService.CreateUser:input_type -> sboard.panel.v1.CreateUserRequest
-	41,  // 55: sboard.panel.v1.UserService.GetUser:input_type -> sboard.panel.v1.GetUserRequest
-	43,  // 56: sboard.panel.v1.UserService.UpdateUser:input_type -> sboard.panel.v1.UpdateUserRequest
-	45,  // 57: sboard.panel.v1.UserService.DisableUser:input_type -> sboard.panel.v1.DisableUserRequest
-	47,  // 58: sboard.panel.v1.UserService.DeleteUser:input_type -> sboard.panel.v1.DeleteUserRequest
-	49,  // 59: sboard.panel.v1.UserService.GetUserGroups:input_type -> sboard.panel.v1.GetUserGroupsRequest
-	51,  // 60: sboard.panel.v1.UserService.ReplaceUserGroups:input_type -> sboard.panel.v1.ReplaceUserGroupsRequest
-	53,  // 61: sboard.panel.v1.GroupService.ListGroups:input_type -> sboard.panel.v1.ListGroupsRequest
-	55,  // 62: sboard.panel.v1.GroupService.CreateGroup:input_type -> sboard.panel.v1.CreateGroupRequest
-	57,  // 63: sboard.panel.v1.GroupService.GetGroup:input_type -> sboard.panel.v1.GetGroupRequest
-	59,  // 64: sboard.panel.v1.GroupService.UpdateGroup:input_type -> sboard.panel.v1.UpdateGroupRequest
-	61,  // 65: sboard.panel.v1.GroupService.DeleteGroup:input_type -> sboard.panel.v1.DeleteGroupRequest
-	63,  // 66: sboard.panel.v1.GroupService.ListGroupUsers:input_type -> sboard.panel.v1.ListGroupUsersRequest
-	65,  // 67: sboard.panel.v1.GroupService.ReplaceGroupUsers:input_type -> sboard.panel.v1.ReplaceGroupUsersRequest
-	67,  // 68: sboard.panel.v1.NodeService.ListNodes:input_type -> sboard.panel.v1.ListNodesRequest
-	69,  // 69: sboard.panel.v1.NodeService.CreateNode:input_type -> sboard.panel.v1.CreateNodeRequest
-	71,  // 70: sboard.panel.v1.NodeService.GetNode:input_type -> sboard.panel.v1.GetNodeRequest
-	73,  // 71: sboard.panel.v1.NodeService.UpdateNode:input_type -> sboard.panel.v1.UpdateNodeRequest
-	75,  // 72: sboard.panel.v1.NodeService.DeleteNode:input_type -> sboard.panel.v1.DeleteNodeRequest
-	77,  // 73: sboard.panel.v1.NodeService.GetNodeHealth:input_type -> sboard.panel.v1.GetNodeHealthRequest
-	79,  // 74: sboard.panel.v1.NodeService.SyncNode:input_type -> sboard.panel.v1.SyncNodeRequest
-	81,  // 75: sboard.panel.v1.NodeService.ListNodeTraffic:input_type -> sboard.panel.v1.ListNodeTrafficRequest
-	83,  // 76: sboard.panel.v1.TrafficService.GetTrafficNodesSummary:input_type -> sboard.panel.v1.GetTrafficNodesSummaryRequest
-	85,  // 77: sboard.panel.v1.TrafficService.GetTrafficTotalSummary:input_type -> sboard.panel.v1.GetTrafficTotalSummaryRequest
-	87,  // 78: sboard.panel.v1.TrafficService.GetTrafficTimeseries:input_type -> sboard.panel.v1.GetTrafficTimeseriesRequest
-	89,  // 79: sboard.panel.v1.InboundService.ListInbounds:input_type -> sboard.panel.v1.ListInboundsRequest
-	91,  // 80: sboard.panel.v1.InboundService.CreateInbound:input_type -> sboard.panel.v1.CreateInboundRequest
-	93,  // 81: sboard.panel.v1.InboundService.GetInbound:input_type -> sboard.panel.v1.GetInboundRequest
-	95,  // 82: sboard.panel.v1.InboundService.UpdateInbound:input_type -> sboard.panel.v1.UpdateInboundRequest
-	97,  // 83: sboard.panel.v1.InboundService.DeleteInbound:input_type -> sboard.panel.v1.DeleteInboundRequest
-	99,  // 84: sboard.panel.v1.SyncJobService.ListSyncJobs:input_type -> sboard.panel.v1.ListSyncJobsRequest
-	101, // 85: sboard.panel.v1.SyncJobService.GetSyncJob:input_type -> sboard.panel.v1.GetSyncJobRequest
-	103, // 86: sboard.panel.v1.SyncJobService.RetrySyncJob:input_type -> sboard.panel.v1.RetrySyncJobRequest
-	106, // 87: sboard.panel.v1.SingBoxToolService.FormatSingBox:input_type -> sboard.panel.v1.FormatSingBoxRequest
-	109, // 88: sboard.panel.v1.SingBoxToolService.CheckSingBox:input_type -> sboard.panel.v1.CheckSingBoxRequest
-	112, // 89: sboard.panel.v1.SingBoxToolService.GenerateSingBox:input_type -> sboard.panel.v1.GenerateSingBoxRequest
-	20,  // 90: sboard.panel.v1.HealthService.GetHealth:output_type -> sboard.panel.v1.GetHealthResponse
-	22,  // 91: sboard.panel.v1.AuthService.GetBootstrapStatus:output_type -> sboard.panel.v1.GetBootstrapStatusResponse
-	24,  // 92: sboard.panel.v1.AuthService.Bootstrap:output_type -> sboard.panel.v1.BootstrapResponse
-	26,  // 93: sboard.panel.v1.AuthService.Login:output_type -> sboard.panel.v1.LoginResponseEnvelope
-	28,  // 94: sboard.panel.v1.AuthService.GetAdminProfile:output_type -> sboard.panel.v1.GetAdminProfileResponse
-	30,  // 95: sboard.panel.v1.AuthService.UpdateAdminProfile:output_type -> sboard.panel.v1.UpdateAdminProfileResponse
-	32,  // 96: sboard.panel.v1.SystemService.GetSystemInfo:output_type -> sboard.panel.v1.GetSystemInfoResponse
-	34,  // 97: sboard.panel.v1.SystemService.GetSystemSettings:output_type -> sboard.panel.v1.GetSystemSettingsResponse
-	36,  // 98: sboard.panel.v1.SystemService.UpdateSystemSettings:output_type -> sboard.panel.v1.UpdateSystemSettingsResponse
-	38,  // 99: sboard.panel.v1.UserService.ListUsers:output_type -> sboard.panel.v1.ListUsersResponse
-	40,  // 100: sboard.panel.v1.UserService.CreateUser:output_type -> sboard.panel.v1.CreateUserResponse
-	42,  // 101: sboard.panel.v1.UserService.GetUser:output_type -> sboard.panel.v1.GetUserResponse
-	44,  // 102: sboard.panel.v1.UserService.UpdateUser:output_type -> sboard.panel.v1.UpdateUserResponse
-	46,  // 103: sboard.panel.v1.UserService.DisableUser:output_type -> sboard.panel.v1.DisableUserResponse
-	48,  // 104: sboard.panel.v1.UserService.DeleteUser:output_type -> sboard.panel.v1.DeleteUserResponse
-	50,  // 105: sboard.panel.v1.UserService.GetUserGroups:output_type -> sboard.panel.v1.GetUserGroupsResponse
-	52,  // 106: sboard.panel.v1.UserService.ReplaceUserGroups:output_type -> sboard.panel.v1.ReplaceUserGroupsResponse
-	54,  // 107: sboard.panel.v1.GroupService.ListGroups:output_type -> sboard.panel.v1.ListGroupsResponse
-	56,  // 108: sboard.panel.v1.GroupService.CreateGroup:output_type -> sboard.panel.v1.CreateGroupResponse
-	58,  // 109: sboard.panel.v1.GroupService.GetGroup:output_type -> sboard.panel.v1.GetGroupResponse
-	60,  // 110: sboard.panel.v1.GroupService.UpdateGroup:output_type -> sboard.panel.v1.UpdateGroupResponse
-	62,  // 111: sboard.panel.v1.GroupService.DeleteGroup:output_type -> sboard.panel.v1.DeleteGroupResponse
-	64,  // 112: sboard.panel.v1.GroupService.ListGroupUsers:output_type -> sboard.panel.v1.ListGroupUsersResponse
-	66,  // 113: sboard.panel.v1.GroupService.ReplaceGroupUsers:output_type -> sboard.panel.v1.ReplaceGroupUsersResponse
-	68,  // 114: sboard.panel.v1.NodeService.ListNodes:output_type -> sboard.panel.v1.ListNodesResponse
-	70,  // 115: sboard.panel.v1.NodeService.CreateNode:output_type -> sboard.panel.v1.CreateNodeResponse
-	72,  // 116: sboard.panel.v1.NodeService.GetNode:output_type -> sboard.panel.v1.GetNodeResponse
-	74,  // 117: sboard.panel.v1.NodeService.UpdateNode:output_type -> sboard.panel.v1.UpdateNodeResponse
-	76,  // 118: sboard.panel.v1.NodeService.DeleteNode:output_type -> sboard.panel.v1.DeleteNodeResponse
-	78,  // 119: sboard.panel.v1.NodeService.GetNodeHealth:output_type -> sboard.panel.v1.GetNodeHealthResponse
-	80,  // 120: sboard.panel.v1.NodeService.SyncNode:output_type -> sboard.panel.v1.SyncNodeResponse
-	82,  // 121: sboard.panel.v1.NodeService.ListNodeTraffic:output_type -> sboard.panel.v1.ListNodeTrafficResponse
-	84,  // 122: sboard.panel.v1.TrafficService.GetTrafficNodesSummary:output_type -> sboard.panel.v1.GetTrafficNodesSummaryResponse
-	86,  // 123: sboard.panel.v1.TrafficService.GetTrafficTotalSummary:output_type -> sboard.panel.v1.GetTrafficTotalSummaryResponse
-	88,  // 124: sboard.panel.v1.TrafficService.GetTrafficTimeseries:output_type -> sboard.panel.v1.GetTrafficTimeseriesResponse
-	90,  // 125: sboard.panel.v1.InboundService.ListInbounds:output_type -> sboard.panel.v1.ListInboundsResponse
-	92,  // 126: sboard.panel.v1.InboundService.CreateInbound:output_type -> sboard.panel.v1.CreateInboundResponse
-	94,  // 127: sboard.panel.v1.InboundService.GetInbound:output_type -> sboard.panel.v1.GetInboundResponse
-	96,  // 128: sboard.panel.v1.InboundService.UpdateInbound:output_type -> sboard.panel.v1.UpdateInboundResponse
-	98,  // 129: sboard.panel.v1.InboundService.DeleteInbound:output_type -> sboard.panel.v1.DeleteInboundResponse
-	100, // 130: sboard.panel.v1.SyncJobService.ListSyncJobs:output_type -> sboard.panel.v1.ListSyncJobsResponse
-	102, // 131: sboard.panel.v1.SyncJobService.GetSyncJob:output_type -> sboard.panel.v1.GetSyncJobResponse
-	104, // 132: sboard.panel.v1.SyncJobService.RetrySyncJob:output_type -> sboard.panel.v1.RetrySyncJobResponse
-	108, // 133: sboard.panel.v1.SingBoxToolService.FormatSingBox:output_type -> sboard.panel.v1.FormatSingBoxResponse
-	111, // 134: sboard.panel.v1.SingBoxToolService.CheckSingBox:output_type -> sboard.panel.v1.CheckSingBoxResponse
-	114, // 135: sboard.panel.v1.SingBoxToolService.GenerateSingBox:output_type -> sboard.panel.v1.GenerateSingBoxResponse
-	90,  // [90:136] is the sub-list for method output_type
-	44,  // [44:90] is the sub-list for method input_type
-	44,  // [44:44] is the sub-list for extension type_name
-	44,  // [44:44] is the sub-list for extension extendee
-	0,   // [0:44] is the sub-list for field type_name
+	17,  // 0: sboard.panel.v1.SyncJobDetail.job:type_name -> sboard.panel.v1.SyncJobListItem
+	18,  // 1: sboard.panel.v1.SyncJobDetail.attempts:type_name -> sboard.panel.v1.SyncAttempt
+	7,   // 2: sboard.panel.v1.GetBootstrapStatusResponse.data:type_name -> sboard.panel.v1.BootstrapStatus
+	8,   // 3: sboard.panel.v1.BootstrapResponse.data:type_name -> sboard.panel.v1.BootstrapResult
+	9,   // 4: sboard.panel.v1.LoginResponseEnvelope.data:type_name -> sboard.panel.v1.LoginResult
+	6,   // 5: sboard.panel.v1.GetAdminProfileResponse.data:type_name -> sboard.panel.v1.AdminProfile
+	6,   // 6: sboard.panel.v1.UpdateAdminProfileResponse.data:type_name -> sboard.panel.v1.AdminProfile
+	10,  // 7: sboard.panel.v1.GetSystemInfoResponse.data:type_name -> sboard.panel.v1.SystemInfo
+	11,  // 8: sboard.panel.v1.GetSystemSettingsResponse.data:type_name -> sboard.panel.v1.SystemSettings
+	11,  // 9: sboard.panel.v1.UpdateSystemSettingsResponse.data:type_name -> sboard.panel.v1.SystemSettings
+	1,   // 10: sboard.panel.v1.ListUsersResponse.data:type_name -> sboard.panel.v1.User
+	1,   // 11: sboard.panel.v1.CreateUserResponse.data:type_name -> sboard.panel.v1.User
+	1,   // 12: sboard.panel.v1.GetUserResponse.data:type_name -> sboard.panel.v1.User
+	1,   // 13: sboard.panel.v1.UpdateUserResponse.data:type_name -> sboard.panel.v1.User
+	1,   // 14: sboard.panel.v1.DisableUserResponse.data:type_name -> sboard.panel.v1.User
+	1,   // 15: sboard.panel.v1.DeleteUserResponse.data:type_name -> sboard.panel.v1.User
+	2,   // 16: sboard.panel.v1.ListGroupsResponse.data:type_name -> sboard.panel.v1.Group
+	2,   // 17: sboard.panel.v1.CreateGroupResponse.data:type_name -> sboard.panel.v1.Group
+	2,   // 18: sboard.panel.v1.GetGroupResponse.data:type_name -> sboard.panel.v1.Group
+	2,   // 19: sboard.panel.v1.UpdateGroupResponse.data:type_name -> sboard.panel.v1.Group
+	5,   // 20: sboard.panel.v1.ListGroupUsersResponse.data:type_name -> sboard.panel.v1.GroupUsersListItem
+	3,   // 21: sboard.panel.v1.ListNodesResponse.data:type_name -> sboard.panel.v1.Node
+	3,   // 22: sboard.panel.v1.CreateNodeResponse.data:type_name -> sboard.panel.v1.Node
+	3,   // 23: sboard.panel.v1.GetNodeResponse.data:type_name -> sboard.panel.v1.Node
+	3,   // 24: sboard.panel.v1.UpdateNodeResponse.data:type_name -> sboard.panel.v1.Node
+	4,   // 25: sboard.panel.v1.ListNodeTrafficResponse.data:type_name -> sboard.panel.v1.NodeTrafficSample
+	12,  // 26: sboard.panel.v1.GetTrafficNodesSummaryResponse.data:type_name -> sboard.panel.v1.TrafficNodeSummary
+	13,  // 27: sboard.panel.v1.GetTrafficTotalSummaryResponse.data:type_name -> sboard.panel.v1.TrafficTotalSummary
+	14,  // 28: sboard.panel.v1.GetTrafficTimeseriesResponse.data:type_name -> sboard.panel.v1.TrafficTimeseriesPoint
+	16,  // 29: sboard.panel.v1.ListInboundsResponse.data:type_name -> sboard.panel.v1.Inbound
+	16,  // 30: sboard.panel.v1.CreateInboundResponse.data:type_name -> sboard.panel.v1.Inbound
+	15,  // 31: sboard.panel.v1.CreateInboundResponse.sync:type_name -> sboard.panel.v1.SyncResult
+	16,  // 32: sboard.panel.v1.GetInboundResponse.data:type_name -> sboard.panel.v1.Inbound
+	16,  // 33: sboard.panel.v1.UpdateInboundResponse.data:type_name -> sboard.panel.v1.Inbound
+	15,  // 34: sboard.panel.v1.UpdateInboundResponse.sync:type_name -> sboard.panel.v1.SyncResult
+	15,  // 35: sboard.panel.v1.DeleteInboundResponse.sync:type_name -> sboard.panel.v1.SyncResult
+	17,  // 36: sboard.panel.v1.ListSyncJobsResponse.data:type_name -> sboard.panel.v1.SyncJobListItem
+	19,  // 37: sboard.panel.v1.GetSyncJobResponse.data:type_name -> sboard.panel.v1.SyncJobDetail
+	17,  // 38: sboard.panel.v1.RetrySyncJobResponse.data:type_name -> sboard.panel.v1.SyncJobListItem
+	106, // 39: sboard.panel.v1.FormatSingBoxRequest.data:type_name -> sboard.panel.v1.SingBoxConfigRequest
+	108, // 40: sboard.panel.v1.FormatSingBoxResponse.data:type_name -> sboard.panel.v1.FormatSingBoxResult
+	106, // 41: sboard.panel.v1.CheckSingBoxRequest.data:type_name -> sboard.panel.v1.SingBoxConfigRequest
+	111, // 42: sboard.panel.v1.CheckSingBoxResponse.data:type_name -> sboard.panel.v1.CheckSingBoxResult
+	114, // 43: sboard.panel.v1.GenerateSingBoxResponse.data:type_name -> sboard.panel.v1.GenerateSingBoxResult
+	0,   // 44: sboard.panel.v1.NodeHeartbeatResponse.status:type_name -> sboard.panel.v1.NodeHeartbeatStatus
+	3,   // 45: sboard.panel.v1.ApproveNodeResponse.data:type_name -> sboard.panel.v1.Node
+	20,  // 46: sboard.panel.v1.HealthService.GetHealth:input_type -> sboard.panel.v1.GetHealthRequest
+	22,  // 47: sboard.panel.v1.AuthService.GetBootstrapStatus:input_type -> sboard.panel.v1.GetBootstrapStatusRequest
+	24,  // 48: sboard.panel.v1.AuthService.Bootstrap:input_type -> sboard.panel.v1.BootstrapRequest
+	26,  // 49: sboard.panel.v1.AuthService.Login:input_type -> sboard.panel.v1.LoginRequest
+	28,  // 50: sboard.panel.v1.AuthService.GetAdminProfile:input_type -> sboard.panel.v1.GetAdminProfileRequest
+	30,  // 51: sboard.panel.v1.AuthService.UpdateAdminProfile:input_type -> sboard.panel.v1.UpdateAdminProfileRequest
+	32,  // 52: sboard.panel.v1.SystemService.GetSystemInfo:input_type -> sboard.panel.v1.GetSystemInfoRequest
+	34,  // 53: sboard.panel.v1.SystemService.GetSystemSettings:input_type -> sboard.panel.v1.GetSystemSettingsRequest
+	36,  // 54: sboard.panel.v1.SystemService.UpdateSystemSettings:input_type -> sboard.panel.v1.UpdateSystemSettingsRequest
+	38,  // 55: sboard.panel.v1.UserService.ListUsers:input_type -> sboard.panel.v1.ListUsersRequest
+	40,  // 56: sboard.panel.v1.UserService.CreateUser:input_type -> sboard.panel.v1.CreateUserRequest
+	42,  // 57: sboard.panel.v1.UserService.GetUser:input_type -> sboard.panel.v1.GetUserRequest
+	44,  // 58: sboard.panel.v1.UserService.UpdateUser:input_type -> sboard.panel.v1.UpdateUserRequest
+	46,  // 59: sboard.panel.v1.UserService.DisableUser:input_type -> sboard.panel.v1.DisableUserRequest
+	48,  // 60: sboard.panel.v1.UserService.DeleteUser:input_type -> sboard.panel.v1.DeleteUserRequest
+	50,  // 61: sboard.panel.v1.UserService.GetUserGroups:input_type -> sboard.panel.v1.GetUserGroupsRequest
+	52,  // 62: sboard.panel.v1.UserService.ReplaceUserGroups:input_type -> sboard.panel.v1.ReplaceUserGroupsRequest
+	54,  // 63: sboard.panel.v1.GroupService.ListGroups:input_type -> sboard.panel.v1.ListGroupsRequest
+	56,  // 64: sboard.panel.v1.GroupService.CreateGroup:input_type -> sboard.panel.v1.CreateGroupRequest
+	58,  // 65: sboard.panel.v1.GroupService.GetGroup:input_type -> sboard.panel.v1.GetGroupRequest
+	60,  // 66: sboard.panel.v1.GroupService.UpdateGroup:input_type -> sboard.panel.v1.UpdateGroupRequest
+	62,  // 67: sboard.panel.v1.GroupService.DeleteGroup:input_type -> sboard.panel.v1.DeleteGroupRequest
+	64,  // 68: sboard.panel.v1.GroupService.ListGroupUsers:input_type -> sboard.panel.v1.ListGroupUsersRequest
+	66,  // 69: sboard.panel.v1.GroupService.ReplaceGroupUsers:input_type -> sboard.panel.v1.ReplaceGroupUsersRequest
+	68,  // 70: sboard.panel.v1.NodeService.ListNodes:input_type -> sboard.panel.v1.ListNodesRequest
+	70,  // 71: sboard.panel.v1.NodeService.CreateNode:input_type -> sboard.panel.v1.CreateNodeRequest
+	72,  // 72: sboard.panel.v1.NodeService.GetNode:input_type -> sboard.panel.v1.GetNodeRequest
+	74,  // 73: sboard.panel.v1.NodeService.UpdateNode:input_type -> sboard.panel.v1.UpdateNodeRequest
+	76,  // 74: sboard.panel.v1.NodeService.DeleteNode:input_type -> sboard.panel.v1.DeleteNodeRequest
+	78,  // 75: sboard.panel.v1.NodeService.GetNodeHealth:input_type -> sboard.panel.v1.GetNodeHealthRequest
+	80,  // 76: sboard.panel.v1.NodeService.SyncNode:input_type -> sboard.panel.v1.SyncNodeRequest
+	82,  // 77: sboard.panel.v1.NodeService.ListNodeTraffic:input_type -> sboard.panel.v1.ListNodeTrafficRequest
+	118, // 78: sboard.panel.v1.NodeService.ApproveNode:input_type -> sboard.panel.v1.ApproveNodeRequest
+	120, // 79: sboard.panel.v1.NodeService.RejectNode:input_type -> sboard.panel.v1.RejectNodeRequest
+	116, // 80: sboard.panel.v1.NodeRegistrationService.Heartbeat:input_type -> sboard.panel.v1.NodeHeartbeatRequest
+	84,  // 81: sboard.panel.v1.TrafficService.GetTrafficNodesSummary:input_type -> sboard.panel.v1.GetTrafficNodesSummaryRequest
+	86,  // 82: sboard.panel.v1.TrafficService.GetTrafficTotalSummary:input_type -> sboard.panel.v1.GetTrafficTotalSummaryRequest
+	88,  // 83: sboard.panel.v1.TrafficService.GetTrafficTimeseries:input_type -> sboard.panel.v1.GetTrafficTimeseriesRequest
+	90,  // 84: sboard.panel.v1.InboundService.ListInbounds:input_type -> sboard.panel.v1.ListInboundsRequest
+	92,  // 85: sboard.panel.v1.InboundService.CreateInbound:input_type -> sboard.panel.v1.CreateInboundRequest
+	94,  // 86: sboard.panel.v1.InboundService.GetInbound:input_type -> sboard.panel.v1.GetInboundRequest
+	96,  // 87: sboard.panel.v1.InboundService.UpdateInbound:input_type -> sboard.panel.v1.UpdateInboundRequest
+	98,  // 88: sboard.panel.v1.InboundService.DeleteInbound:input_type -> sboard.panel.v1.DeleteInboundRequest
+	100, // 89: sboard.panel.v1.SyncJobService.ListSyncJobs:input_type -> sboard.panel.v1.ListSyncJobsRequest
+	102, // 90: sboard.panel.v1.SyncJobService.GetSyncJob:input_type -> sboard.panel.v1.GetSyncJobRequest
+	104, // 91: sboard.panel.v1.SyncJobService.RetrySyncJob:input_type -> sboard.panel.v1.RetrySyncJobRequest
+	107, // 92: sboard.panel.v1.SingBoxToolService.FormatSingBox:input_type -> sboard.panel.v1.FormatSingBoxRequest
+	110, // 93: sboard.panel.v1.SingBoxToolService.CheckSingBox:input_type -> sboard.panel.v1.CheckSingBoxRequest
+	113, // 94: sboard.panel.v1.SingBoxToolService.GenerateSingBox:input_type -> sboard.panel.v1.GenerateSingBoxRequest
+	21,  // 95: sboard.panel.v1.HealthService.GetHealth:output_type -> sboard.panel.v1.GetHealthResponse
+	23,  // 96: sboard.panel.v1.AuthService.GetBootstrapStatus:output_type -> sboard.panel.v1.GetBootstrapStatusResponse
+	25,  // 97: sboard.panel.v1.AuthService.Bootstrap:output_type -> sboard.panel.v1.BootstrapResponse
+	27,  // 98: sboard.panel.v1.AuthService.Login:output_type -> sboard.panel.v1.LoginResponseEnvelope
+	29,  // 99: sboard.panel.v1.AuthService.GetAdminProfile:output_type -> sboard.panel.v1.GetAdminProfileResponse
+	31,  // 100: sboard.panel.v1.AuthService.UpdateAdminProfile:output_type -> sboard.panel.v1.UpdateAdminProfileResponse
+	33,  // 101: sboard.panel.v1.SystemService.GetSystemInfo:output_type -> sboard.panel.v1.GetSystemInfoResponse
+	35,  // 102: sboard.panel.v1.SystemService.GetSystemSettings:output_type -> sboard.panel.v1.GetSystemSettingsResponse
+	37,  // 103: sboard.panel.v1.SystemService.UpdateSystemSettings:output_type -> sboard.panel.v1.UpdateSystemSettingsResponse
+	39,  // 104: sboard.panel.v1.UserService.ListUsers:output_type -> sboard.panel.v1.ListUsersResponse
+	41,  // 105: sboard.panel.v1.UserService.CreateUser:output_type -> sboard.panel.v1.CreateUserResponse
+	43,  // 106: sboard.panel.v1.UserService.GetUser:output_type -> sboard.panel.v1.GetUserResponse
+	45,  // 107: sboard.panel.v1.UserService.UpdateUser:output_type -> sboard.panel.v1.UpdateUserResponse
+	47,  // 108: sboard.panel.v1.UserService.DisableUser:output_type -> sboard.panel.v1.DisableUserResponse
+	49,  // 109: sboard.panel.v1.UserService.DeleteUser:output_type -> sboard.panel.v1.DeleteUserResponse
+	51,  // 110: sboard.panel.v1.UserService.GetUserGroups:output_type -> sboard.panel.v1.GetUserGroupsResponse
+	53,  // 111: sboard.panel.v1.UserService.ReplaceUserGroups:output_type -> sboard.panel.v1.ReplaceUserGroupsResponse
+	55,  // 112: sboard.panel.v1.GroupService.ListGroups:output_type -> sboard.panel.v1.ListGroupsResponse
+	57,  // 113: sboard.panel.v1.GroupService.CreateGroup:output_type -> sboard.panel.v1.CreateGroupResponse
+	59,  // 114: sboard.panel.v1.GroupService.GetGroup:output_type -> sboard.panel.v1.GetGroupResponse
+	61,  // 115: sboard.panel.v1.GroupService.UpdateGroup:output_type -> sboard.panel.v1.UpdateGroupResponse
+	63,  // 116: sboard.panel.v1.GroupService.DeleteGroup:output_type -> sboard.panel.v1.DeleteGroupResponse
+	65,  // 117: sboard.panel.v1.GroupService.ListGroupUsers:output_type -> sboard.panel.v1.ListGroupUsersResponse
+	67,  // 118: sboard.panel.v1.GroupService.ReplaceGroupUsers:output_type -> sboard.panel.v1.ReplaceGroupUsersResponse
+	69,  // 119: sboard.panel.v1.NodeService.ListNodes:output_type -> sboard.panel.v1.ListNodesResponse
+	71,  // 120: sboard.panel.v1.NodeService.CreateNode:output_type -> sboard.panel.v1.CreateNodeResponse
+	73,  // 121: sboard.panel.v1.NodeService.GetNode:output_type -> sboard.panel.v1.GetNodeResponse
+	75,  // 122: sboard.panel.v1.NodeService.UpdateNode:output_type -> sboard.panel.v1.UpdateNodeResponse
+	77,  // 123: sboard.panel.v1.NodeService.DeleteNode:output_type -> sboard.panel.v1.DeleteNodeResponse
+	79,  // 124: sboard.panel.v1.NodeService.GetNodeHealth:output_type -> sboard.panel.v1.GetNodeHealthResponse
+	81,  // 125: sboard.panel.v1.NodeService.SyncNode:output_type -> sboard.panel.v1.SyncNodeResponse
+	83,  // 126: sboard.panel.v1.NodeService.ListNodeTraffic:output_type -> sboard.panel.v1.ListNodeTrafficResponse
+	119, // 127: sboard.panel.v1.NodeService.ApproveNode:output_type -> sboard.panel.v1.ApproveNodeResponse
+	121, // 128: sboard.panel.v1.NodeService.RejectNode:output_type -> sboard.panel.v1.RejectNodeResponse
+	117, // 129: sboard.panel.v1.NodeRegistrationService.Heartbeat:output_type -> sboard.panel.v1.NodeHeartbeatResponse
+	85,  // 130: sboard.panel.v1.TrafficService.GetTrafficNodesSummary:output_type -> sboard.panel.v1.GetTrafficNodesSummaryResponse
+	87,  // 131: sboard.panel.v1.TrafficService.GetTrafficTotalSummary:output_type -> sboard.panel.v1.GetTrafficTotalSummaryResponse
+	89,  // 132: sboard.panel.v1.TrafficService.GetTrafficTimeseries:output_type -> sboard.panel.v1.GetTrafficTimeseriesResponse
+	91,  // 133: sboard.panel.v1.InboundService.ListInbounds:output_type -> sboard.panel.v1.ListInboundsResponse
+	93,  // 134: sboard.panel.v1.InboundService.CreateInbound:output_type -> sboard.panel.v1.CreateInboundResponse
+	95,  // 135: sboard.panel.v1.InboundService.GetInbound:output_type -> sboard.panel.v1.GetInboundResponse
+	97,  // 136: sboard.panel.v1.InboundService.UpdateInbound:output_type -> sboard.panel.v1.UpdateInboundResponse
+	99,  // 137: sboard.panel.v1.InboundService.DeleteInbound:output_type -> sboard.panel.v1.DeleteInboundResponse
+	101, // 138: sboard.panel.v1.SyncJobService.ListSyncJobs:output_type -> sboard.panel.v1.ListSyncJobsResponse
+	103, // 139: sboard.panel.v1.SyncJobService.GetSyncJob:output_type -> sboard.panel.v1.GetSyncJobResponse
+	105, // 140: sboard.panel.v1.SyncJobService.RetrySyncJob:output_type -> sboard.panel.v1.RetrySyncJobResponse
+	109, // 141: sboard.panel.v1.SingBoxToolService.FormatSingBox:output_type -> sboard.panel.v1.FormatSingBoxResponse
+	112, // 142: sboard.panel.v1.SingBoxToolService.CheckSingBox:output_type -> sboard.panel.v1.CheckSingBoxResponse
+	115, // 143: sboard.panel.v1.SingBoxToolService.GenerateSingBox:output_type -> sboard.panel.v1.GenerateSingBoxResponse
+	95,  // [95:144] is the sub-list for method output_type
+	46,  // [46:95] is the sub-list for method input_type
+	46,  // [46:46] is the sub-list for extension type_name
+	46,  // [46:46] is the sub-list for extension extendee
+	0,   // [0:46] is the sub-list for field type_name
 }
 
 func init() { file_sboard_panel_v1_panel_proto_init() }
@@ -7088,18 +7508,20 @@ func file_sboard_panel_v1_panel_proto_init() {
 	file_sboard_panel_v1_panel_proto_msgTypes[99].OneofWrappers = []any{}
 	file_sboard_panel_v1_panel_proto_msgTypes[104].OneofWrappers = []any{}
 	file_sboard_panel_v1_panel_proto_msgTypes[105].OneofWrappers = []any{}
+	file_sboard_panel_v1_panel_proto_msgTypes[117].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_sboard_panel_v1_panel_proto_rawDesc), len(file_sboard_panel_v1_panel_proto_rawDesc)),
-			NumEnums:      0,
-			NumMessages:   115,
+			NumEnums:      1,
+			NumMessages:   121,
 			NumExtensions: 0,
-			NumServices:   10,
+			NumServices:   11,
 		},
 		GoTypes:           file_sboard_panel_v1_panel_proto_goTypes,
 		DependencyIndexes: file_sboard_panel_v1_panel_proto_depIdxs,
+		EnumInfos:         file_sboard_panel_v1_panel_proto_enumTypes,
 		MessageInfos:      file_sboard_panel_v1_panel_proto_msgTypes,
 	}.Build()
 	File_sboard_panel_v1_panel_proto = out.File

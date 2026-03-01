@@ -1,10 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { MoreHorizontal, Pencil, ShieldAlert, Trash2 } from "lucide-react";
+import { Clock, MoreHorizontal, Pencil, ShieldAlert, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AsyncButton } from "@/components/ui/async-button";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/page-header";
@@ -49,7 +52,7 @@ import { StatusDot } from "@/components/status-dot";
 import { FlashValue } from "@/components/flash-value";
 import { ApiError } from "@/lib/api/client";
 import { listGroups } from "@/lib/api/groups";
-import { createNode, deleteNode, listNodeTraffic, listNodes, updateNode } from "@/lib/api/nodes";
+import { createNode, deleteNode, listNodeTraffic, listNodes, updateNode, approveNode, rejectNode } from "@/lib/api/nodes";
 import type { Group, Node, NodeTrafficSample } from "@/lib/rpc/types";
 import { listTrafficNodesSummary, type TrafficNodeSummary } from "@/lib/api/traffic";
 import { buildNodeDockerCompose, generateNodeSecretKey } from "@/lib/node-compose";
@@ -74,6 +77,13 @@ type EditState = {
 type DeleteNodeState = {
   node: Node;
   force: boolean;
+};
+
+type ApproveState = {
+  node: Node;
+  name: string;
+  groupID: number | null;
+  publicAddress: string;
 };
 
 const defaultNewNode: Node = {
@@ -121,6 +131,7 @@ export function NodesPage() {
   const [trafficNode, setTrafficNode] = useState<Node | null>(null);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<DeleteNodeState | null>(null);
+  const [approving, setApproving] = useState<ApproveState | null>(null);
 
   const queryParams = useMemo(() => ({ limit: 50, offset: 0 }), []);
   const nodesQuery = useQuery({
@@ -128,6 +139,15 @@ export function NodesPage() {
     queryFn: () => listNodes(queryParams),
     refetchInterval: 5_000,
   });
+
+  const pendingNodes = useMemo(
+    () => (nodesQuery.data ?? []).filter((n) => n.status === "pending"),
+    [nodesQuery.data],
+  );
+  const activeNodes = useMemo(
+    () => (nodesQuery.data ?? []).filter((n) => n.status !== "pending"),
+    [nodesQuery.data],
+  );
 
   const groupsQuery = useQuery({
     queryKey: ["groups", queryParams],
@@ -195,6 +215,29 @@ export function NodesPage() {
   });
 
   const deleteErrorMessage = resolveDeleteNodeErrorMessage(deleteMutation.error);
+
+  const approveMutation = useMutation({
+    mutationFn: approveNode,
+    onSuccess: async () => {
+      setApproving(null);
+      toast.success(t("nodes.approveSuccess"));
+      await qc.invalidateQueries({ queryKey: ["nodes"] });
+    },
+    onError: (e) => {
+      toast.error(e instanceof ApiError ? e.message : t("nodes.approveFailed"));
+    },
+  });
+
+  const rejectMutation = useMutation({
+    mutationFn: (id: number) => rejectNode(id),
+    onSuccess: async () => {
+      toast.success(t("nodes.rejectSuccess"));
+      await qc.invalidateQueries({ queryKey: ["nodes"] });
+    },
+    onError: (e) => {
+      toast.error(e instanceof ApiError ? e.message : t("nodes.rejectFailed"));
+    },
+  });
 
   const trafficQuery = useQuery({
     queryKey: ["nodes", "traffic", trafficNode?.id ?? 0],
@@ -285,7 +328,7 @@ export function NodesPage() {
             </>
           ) : null}
 
-          {nodesQuery.data?.map((n) => {
+          {activeNodes.map((n) => {
             const s24 = trafficSummaryByNodeID.map24.get(n.id);
             const s1 = trafficSummaryByNodeID.map1.get(n.id);
             const last = s24?.last_recorded_at || s1?.last_recorded_at || n.last_seen_at || "";
@@ -353,7 +396,7 @@ export function NodesPage() {
             );
           })}
 
-          {!nodesQuery.isLoading && nodesQuery.data && nodesQuery.data.length === 0 ? (
+          {!nodesQuery.isLoading && activeNodes.length === 0 ? (
             <Card className="shadow-xs md:col-span-2 xl:col-span-3">
               <CardContent className="py-10 text-center text-sm text-muted-foreground">
                 {t("common.noData")}
@@ -361,6 +404,71 @@ export function NodesPage() {
             </Card>
           ) : null}
         </motion.div>
+
+        {pendingNodes.length > 0 ? (
+          <Alert className="border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/20">
+            <Clock className="size-4 text-amber-600 dark:text-amber-400" />
+            <AlertTitle className="text-amber-800 dark:text-amber-300">
+              {t("nodes.pendingBanner", { count: pendingNodes.length })}
+            </AlertTitle>
+            <AlertDescription>
+              <div className="mt-3 space-y-3">
+                {pendingNodes.map((n) => (
+                  <div
+                    key={n.id}
+                    className="flex flex-col gap-2 rounded-md border border-amber-200/50 bg-background/80 p-3 sm:flex-row sm:items-center sm:justify-between dark:border-amber-800/30"
+                  >
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+                      <span className="font-mono text-xs text-muted-foreground">
+                        {n.uuid.slice(0, 8)}
+                      </span>
+                      <span className="text-muted-foreground">
+                        {n.api_address}:{n.api_port}
+                      </span>
+                      {n.last_seen_at ? (
+                        <span className="text-xs text-muted-foreground">
+                          {formatDateTime(n.last_seen_at, i18n.language, timezone)}
+                        </span>
+                      ) : null}
+                      <Badge variant="outline" className="border-amber-500/50 text-amber-700 dark:text-amber-400">
+                        {t("nodes.statusPending")}
+                      </Badge>
+                    </div>
+                    <div className="flex shrink-0 gap-2">
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          approveMutation.reset();
+                          setApproving({
+                            node: n,
+                            name: "",
+                            groupID: null,
+                            publicAddress: n.api_address,
+                          });
+                        }}
+                      >
+                        {t("nodes.pendingApprove")}
+                      </Button>
+                      <AsyncButton
+                        size="sm"
+                        variant="outline"
+                        pending={rejectMutation.isPending}
+                        pendingText={t("common.deleting")}
+                        onClick={() => {
+                          if (confirm(t("nodes.pendingRejectConfirm"))) {
+                            rejectMutation.mutate(n.id);
+                          }
+                        }}
+                      >
+                        {t("nodes.pendingReject")}
+                      </AsyncButton>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </AlertDescription>
+          </Alert>
+        ) : null}
 
         <Card>
           <CardHeader className="pb-3">
@@ -370,7 +478,7 @@ export function NodesPage() {
                 <CardDescription>
                   {nodesQuery.isLoading ? t("common.loading") : null}
                   {nodesQuery.isError ? t("common.loadFailed") : null}
-                  {nodesQuery.data ? t("nodes.count", { count: nodesQuery.data.length }) : null}
+                  {nodesQuery.data ? t("nodes.count", { count: activeNodes.length }) : null}
                   <AnimatePresence mode="wait">
                     {actionMessage ? (
                       <motion.span
@@ -446,7 +554,7 @@ export function NodesPage() {
                     ))}
                   </>
                 ) : null}
-                {nodesQuery.data?.map((n) => (
+                {activeNodes.map((n) => (
                   <TableRow key={n.id} className={interactiveTableRowClass}>
                     <TableCell className={`${spacing.cellFirst} font-medium`}>{n.name}</TableCell>
                     <TableCell className={`${spacing.cellMiddle} text-muted-foreground`}>
@@ -517,7 +625,7 @@ export function NodesPage() {
                     </TableCell>
                   </TableRow>
                 ))}
-                {!nodesQuery.isLoading && nodesQuery.data && nodesQuery.data.length === 0 ? (
+                {!nodesQuery.isLoading && activeNodes.length === 0 ? (
                   <TableEmptyState
                     colSpan={7}
                     className={`${spacing.cellFirst} py-10 text-center`}
@@ -957,6 +1065,140 @@ export function NodesPage() {
               <Button variant="outline" onClick={() => setTrafficNode(null)}>
                 {t("common.cancel")}
               </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog
+          open={!!approving}
+          onOpenChange={(open) => {
+            if (!open) {
+              setApproving(null);
+              approveMutation.reset();
+            }
+          }}
+        >
+          <DialogContent
+            aria-label={t("nodes.approveDialogTitle")}
+            className="overflow-hidden p-0 sm:max-w-xl"
+          >
+            <DialogHeader className="border-b px-6 pt-6 pb-4">
+              <DialogTitle>{t("nodes.approveDialogTitle")}</DialogTitle>
+              <DialogDescription>{t("nodes.approveDialogDescription")}</DialogDescription>
+            </DialogHeader>
+
+            {approving ? (
+              <div className="space-y-4 px-6 py-4">
+                <div className="rounded-md border bg-muted/30 p-3">
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+                    <span>
+                      <span className="text-xs text-muted-foreground">{t("nodes.pendingUuid")}:</span>{" "}
+                      <span className="font-mono text-xs">{approving.node.uuid.slice(0, 8)}</span>
+                    </span>
+                    <span>
+                      <span className="text-xs text-muted-foreground">{t("nodes.pendingAddress")}:</span>{" "}
+                      <span className="text-xs">{approving.node.api_address}:{approving.node.api_port}</span>
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-sm text-foreground" htmlFor="approve-name">
+                    {t("nodes.approveNodeName")} *
+                  </Label>
+                  <Input
+                    id="approve-name"
+                    value={approving.name}
+                    onChange={(e) =>
+                      setApproving((p) => (p ? { ...p, name: e.target.value } : p))
+                    }
+                    placeholder={t("nodes.approveNodeNamePlaceholder")}
+                    autoFocus
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-sm text-foreground" htmlFor="approve-public">
+                    {t("nodes.approvePublicAddress")}
+                  </Label>
+                  <Input
+                    id="approve-public"
+                    value={approving.publicAddress}
+                    onChange={(e) =>
+                      setApproving((p) => (p ? { ...p, publicAddress: e.target.value } : p))
+                    }
+                    placeholder={t("nodes.approvePublicAddressPlaceholder")}
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex items-center gap-1">
+                    <Label className="text-sm text-foreground">{t("nodes.group")}</Label>
+                    <FieldHint label={t("nodes.group")}>
+                      {t("nodes.groupRequiredHint")}
+                    </FieldHint>
+                  </div>
+                  <Select
+                    value={approving.groupID == null ? "none" : String(approving.groupID)}
+                    onValueChange={(v) =>
+                      setApproving((p) =>
+                        p ? { ...p, groupID: v === "none" ? null : Number(v) } : p,
+                      )
+                    }
+                  >
+                    <SelectTrigger aria-label={t("nodes.selectGroup")}>
+                      <SelectValue placeholder={t("nodes.selectGroup")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">{t("nodes.noGroup")}</SelectItem>
+                      {groupsQuery.data?.map((g) => (
+                        <SelectItem key={g.id} value={String(g.id)}>
+                          {g.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {approveMutation.isError ? (
+                  <p className="text-sm text-destructive">
+                    {approveMutation.error instanceof ApiError
+                      ? approveMutation.error.message
+                      : t("nodes.approveFailed")}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
+
+            <DialogFooter className="border-t bg-background px-6 py-4">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setApproving(null);
+                  approveMutation.reset();
+                }}
+                disabled={approveMutation.isPending}
+              >
+                {t("common.cancel")}
+              </Button>
+              <AsyncButton
+                onClick={() => {
+                  if (!approving) return;
+                  const name = approving.name.trim();
+                  if (!name) return;
+                  approveMutation.mutate({
+                    id: approving.node.id,
+                    name,
+                    group_id: approving.groupID,
+                    public_address: approving.publicAddress.trim() || undefined,
+                  });
+                }}
+                disabled={approveMutation.isPending || !approving?.name.trim()}
+                pending={approveMutation.isPending}
+                pendingText={t("common.saving")}
+              >
+                {t("nodes.pendingApprove")}
+              </AsyncButton>
             </DialogFooter>
           </DialogContent>
         </Dialog>

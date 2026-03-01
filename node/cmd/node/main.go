@@ -13,6 +13,7 @@ import (
 	"sboard/node/internal/api"
 	"sboard/node/internal/config"
 	"sboard/node/internal/core"
+	"sboard/node/internal/heartbeat"
 	"sboard/node/internal/rpc"
 	"sboard/node/internal/state"
 	"sboard/node/internal/sync"
@@ -77,6 +78,19 @@ func main() {
 	rpcHandler := rpc.NewHandler(cfg.SecretKey, adapter, c)
 	r := api.NewRouterWithRPC(cfg.SecretKey, adapter, c, rpcHandler)
 
+	// Start heartbeat goroutine (no-op when PanelURL is empty).
+	hbCtx, hbCancel := context.WithCancel(context.Background())
+	defer hbCancel()
+
+	go heartbeat.Run(hbCtx, heartbeat.Config{
+		PanelURL:  cfg.PanelURL,
+		NodeUUID:  cfg.NodeUUID,
+		SecretKey: cfg.SecretKey,
+		APIAddr:   cfg.HTTPAddr,
+		Version:   "dev", // TODO: populate from build info
+		Interval:  cfg.HeartbeatInterval(),
+	}, nil)
+
 	// Create HTTP server with explicit address
 	srv := &http.Server{
 		Addr:    cfg.HTTPAddr,
@@ -96,6 +110,9 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	sig := <-quit
 	log.Printf("[shutdown] received signal: %v", sig)
+
+	// Stop heartbeat goroutine first.
+	hbCancel()
 
 	// Graceful shutdown with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
