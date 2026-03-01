@@ -48,8 +48,9 @@ func formatTimePtr(t *time.Time) *string {
 }
 
 type syncResult struct {
-	Status string
-	Error  *string
+	Status    string
+	Error     *string
+	Retryable bool
 }
 
 func mapSyncResult(r syncResult) *panelv1.SyncResult {
@@ -590,6 +591,13 @@ func parseSyncHTTPStatus(err error) int {
 	if err == nil {
 		return 200
 	}
+	var syncErr *node.SyncError
+	if errors.As(err, &syncErr) {
+		status := syncErr.HTTPStatus()
+		if status >= 100 && status <= 599 {
+			return status
+		}
+	}
 	msg := strings.TrimSpace(err.Error())
 	const prefix = "node sync status "
 	if !strings.HasPrefix(msg, prefix) {
@@ -611,11 +619,27 @@ func normalizeSyncClientError(err error) string {
 	if err == nil {
 		return ""
 	}
+	var syncErr *node.SyncError
+	if errors.As(err, &syncErr) {
+		return syncErr.Error()
+	}
 	msg := strings.TrimSpace(err.Error())
 	if strings.Contains(msg, "node sync status ") {
 		return msg
 	}
 	return "node sync request failed: " + msg
+}
+
+func isRetryableSyncClientError(err error) bool {
+	if err == nil {
+		return false
+	}
+	var syncErr *node.SyncError
+	if errors.As(err, &syncErr) {
+		return syncErr.Retryable()
+	}
+	msg := strings.TrimSpace(err.Error())
+	return strings.HasPrefix(msg, "node sync request failed:")
 }
 
 func (s *Server) runNodeSync(ctx context.Context, n db.Node, triggerSource string, parentJobID *int64) syncResult {
@@ -681,11 +705,12 @@ func (s *Server) runNodeSync(ctx context.Context, n db.Node, triggerSource strin
 
 	errMsg := normalizeSyncClientError(err)
 	httpStatus := parseSyncHTTPStatus(err)
+	retryable := isRetryableSyncClientError(err)
 	if attempt.ID > 0 {
 		_ = s.store.UpdateSyncAttemptFinish(ctx, attempt.ID, db.SyncAttemptFinishUpdate{Status: db.SyncAttemptStatusFailed, HTTPStatus: httpStatus, ErrorSummary: errMsg, FinishedAt: finishedAt})
 	}
 	_ = s.store.UpdateSyncJobFinish(ctx, job.ID, db.SyncJobFinishUpdate{Status: db.SyncJobStatusFailed, AttemptCount: 1, ErrorSummary: errMsg, FinishedAt: finishedAt})
-	return syncResult{Status: "error", Error: &errMsg}
+	return syncResult{Status: "error", Error: &errMsg, Retryable: retryable}
 }
 
 func uniquePositiveInt64(items []int64) []int64 {
@@ -731,7 +756,7 @@ func (s *Server) syncNodesByGroupIDs(ctx context.Context, groupIDs []int64, trig
 			res := s.runNodeSync(ctx, n, triggerSource, nil)
 			if res.Status == "ok" {
 				_ = s.store.MarkNodeOnline(ctx, n.ID, s.store.NowUTC())
-			} else if res.Error != nil && strings.HasPrefix(strings.TrimSpace(*res.Error), "node sync request failed:") {
+			} else if res.Retryable {
 				_ = s.store.MarkNodeOffline(ctx, n.ID)
 			}
 		}

@@ -13,6 +13,7 @@ import (
 	"sboard/node/internal/api"
 	"sboard/node/internal/config"
 	"sboard/node/internal/core"
+	"sboard/node/internal/rpc"
 	"sboard/node/internal/state"
 	"sboard/node/internal/sync"
 )
@@ -32,6 +33,14 @@ func (a *coreAdapter) applyRawConfig(body []byte) error {
 }
 
 func (a *coreAdapter) ApplyConfig(ctx *gin.Context, body []byte) error {
+	return a.applyAndPersist(body)
+}
+
+func (a *coreAdapter) ApplySyncPayload(_ context.Context, body []byte) error {
+	return a.applyAndPersist(body)
+}
+
+func (a *coreAdapter) applyAndPersist(body []byte) error {
 	if err := a.applyRawConfig(body); err != nil {
 		return err
 	}
@@ -65,7 +74,8 @@ func main() {
 		log.Printf("[state] restored from path=%s", cfg.StatePath)
 	}
 
-	r := api.NewRouter(cfg.SecretKey, adapter, c)
+	rpcHandler := rpc.NewHandler(cfg.SecretKey, adapter, c)
+	r := api.NewRouterWithRPC(cfg.SecretKey, adapter, c, rpcHandler)
 
 	// Create HTTP server with explicit address
 	srv := &http.Server{

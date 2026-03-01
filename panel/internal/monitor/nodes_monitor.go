@@ -39,7 +39,7 @@ func NewNodesMonitor(store *db.Store, client NodeClient) *NodesMonitor {
 	}
 }
 
-// CheckOnce updates node online/offline status by probing each node's /api/health.
+// CheckOnce updates node online/offline status by probing each node's RPC Health.
 // It syncs on offline -> online transition, and also ensures at least one sync per panel process start.
 func (m *NodesMonitor) CheckOnce(ctx context.Context) error {
 	if m == nil || m.store == nil || m.client == nil {
