@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if ! git diff --exit-code -- 'panel/internal/rpc/gen/**' 'panel/web/src/lib/rpc/gen/**' 'node/internal/rpc/gen/**'; then
+if ! git diff --exit-code -- 'panel/internal/rpc/gen/**' 'web/src/lib/rpc/gen/**' 'node/internal/rpc/gen/**'; then
   echo ""
   echo "ERROR: Generated files are out of date."
-  echo "Run 'moon run automation:generate' and commit the changes."
+  echo "Run 'moon run panel:generate' and commit the changes."
   exit 1
 fi
 
