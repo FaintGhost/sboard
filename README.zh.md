@@ -217,17 +217,18 @@ node/                # Node 服务
   internal/sync/     # sing-box 配置解析/校验
   internal/core/     # sing-box 实例管理
 docs/                # 设计与规划文档
-Makefile             # 代码生成与检查
+.moon/               # Moon 工作区配置
+.prototools          # 版本锁定（moon/go/node/bun）
 ```
 
 RPC Proto 工作流：
 
 ```bash
 # 生成 Go + TS 代码
-make generate
+moon run automation:generate
 
 # 检查生成代码是否与 spec 同步
-make check-generate
+moon run automation:check-generate
 ```
 
 前端质量工具（Oxc）：
@@ -246,4 +247,4 @@ bun run test
 - `bun run format`
 - `bunx tsc -b`
 - `bun run test`
-- `make check-generate`
+- `moon run automation:check-generate`

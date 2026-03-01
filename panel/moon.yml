@@ -1,0 +1,26 @@
+tasks:
+  generate-rpc:
+    command: go
+    args:
+      - generate
+      - ./internal/rpc/...
+    options:
+      cache: false
+
+  web-lint:
+    command: bash
+    args:
+      - -lc
+      - cd web && bun run lint
+
+  web-typecheck:
+    command: bash
+    args:
+      - -lc
+      - cd web && bunx tsc -b
+
+  web-test:
+    command: bash
+    args:
+      - -lc
+      - cd web && bun run test

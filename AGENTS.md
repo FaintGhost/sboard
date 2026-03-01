@@ -13,11 +13,10 @@
 
 ## 前端交付门禁
 - 前端开发相关改动在交付前必须通过以下检查：
-  - `bun run lint`
-  - `bun run format`（或 `bun run format:check`）
-  - `bunx tsc -b`（typecheck）
-  - `bun run test`（单元测试）
-  - `make check-generate`（确保生成代码与 spec 同步）
+  - `moon run panel:web-lint`（等价于 `cd panel/web && bun run lint`）
+  - `moon run panel:web-typecheck`（等价于 `cd panel/web && bunx tsc -b`）
+  - `moon run panel:web-test`（等价于 `cd panel/web && bun run test`）
+  - `moon run automation:check-generate`（确保生成代码与 spec 同步）
 - 任一检查未通过时，不应标记为完成交付。
 
 ## GitHub 操作
@@ -37,7 +36,8 @@
   - sing-box 配置解析/校验：`node/internal/sync`
   - sing-box 实例管理与入站应用：`node/internal/core`
 - `docs/`：设计与说明文档
-- `Makefile`：代码生成与新鲜度检查
+- `.moon/`：Moon 工作区与任务图配置
+- `.prototools`：`moon/go/node/bun` 版本锁定
 - `go.work`：本仓库使用 Go workspace 同时开发 `panel` 与 `node`
 
 ## 核心概念与数据模型
@@ -52,9 +52,9 @@
   - 生成目录：`panel/internal/rpc/gen/`（protobuf types + connect handlers）
 - **TS 代码生成**：`buf generate` + `@bufbuild/protoc-gen-es` + `@connectrpc/protoc-gen-connect-query`
   - 生成目录：`panel/web/src/lib/rpc/gen/`
-- **再生成命令**：`make generate`
-- **新鲜度检查**：`make check-generate`（检查 `panel/internal/rpc/gen/**` 与 `panel/web/src/lib/rpc/gen/**`）
-- **API 变更工作流**：修改 `panel/proto/sboard/panel/v1/panel.proto` → `make generate` → 更新服务实现/页面映射 → 测试
+- **再生成命令**：`moon run automation:generate`
+- **新鲜度检查**：`moon run automation:check-generate`（检查 `panel/internal/rpc/gen/**` 与 `panel/web/src/lib/rpc/gen/**`）
+- **API 变更工作流**：修改 `panel/proto/sboard/panel/v1/panel.proto` → `moon run automation:generate` → 更新服务实现/页面映射 → 测试
 
 ## REST 兼容边界
 - Panel 管理面默认走 RPC：`/rpc/sboard.panel.v1.<Service>/<Method>`

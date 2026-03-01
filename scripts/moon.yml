@@ -1,0 +1,41 @@
+tasks:
+  generate:
+    deps:
+      - panel:generate-rpc
+    options:
+      cache: false
+
+  check-generate:
+    deps:
+      - automation:generate
+    command: bash
+    args:
+      - scripts/check-generate.sh
+    options:
+      cache: false
+      runFromWorkspaceRoot: true
+
+  e2e:
+    deps:
+      - e2e:run
+    options:
+      cache: false
+
+  e2e-smoke:
+    deps:
+      - e2e:smoke
+    options:
+      cache: false
+
+  e2e-down:
+    deps:
+      - e2e:down
+    options:
+      cache: false
+
+  e2e-report:
+    deps:
+      - e2e:report
+    options:
+      cache: false
+      runInCI: false

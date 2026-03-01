@@ -217,17 +217,18 @@ node/                # Node service
   internal/sync/     # sing-box config parse/validate
   internal/core/     # sing-box runtime management
 docs/                # design and planning docs
-Makefile             # generate/check helpers
+.moon/               # Moon workspace config
+.prototools          # version pinning (moon/go/node/bun)
 ```
 
 RPC proto workflow:
 
 ```bash
 # Generate Go + TS code
-make generate
+moon run automation:generate
 
 # Ensure generated code is in sync with spec
-make check-generate
+moon run automation:check-generate
 ```
 
 Frontend quality tools (Oxc):
@@ -246,4 +247,4 @@ Delivery gates:
 - `bun run format`
 - `bunx tsc -b`
 - `bun run test`
-- `make check-generate`
+- `moon run automation:check-generate`

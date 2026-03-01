@@ -1,0 +1,7 @@
+projects:
+  automation: scripts
+  panel: panel
+  node: node
+  e2e: e2e
+
+defaultProject: automation
