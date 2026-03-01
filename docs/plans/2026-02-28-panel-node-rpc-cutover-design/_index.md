@@ -46,13 +46,13 @@
 - Node 侧认证语义保持：敏感接口需要 Bearer secret；健康检查可配置为公开。
 - 错误语义从“HTTP 文本解析”升级为“Connect code + 统一错误映射”。
 - 交付前通过门禁：
-  - `make check-generate`
+  - `moon run panel:check-generate`
   - `cd panel && go test ./... -count=1`
   - `cd node && go test ./... -count=1`
-  - `cd panel/web && bun run lint`
-  - `cd panel/web && bun run format`
-  - `cd panel/web && bunx tsc -b`
-  - `cd panel/web && bun run test`
+  - `moon run web:lint`
+  - `moon run web:format`
+  - `moon run web:typecheck`
+  - `moon run web:test`
 
 ## 成功标准
 

@@ -67,15 +67,15 @@ Scenario: 订阅 REST 保持可用
 ## Verification Commands
 
 ```bash
-make check-generate
+moon run panel:check-generate
 cd panel && go test ./... -count=1
 cd node && go test ./... -count=1
-cd panel/web && bun run lint
-cd panel/web && bun run format
-cd panel/web && bunx tsc -b
-cd panel/web && bun run test
-make e2e-smoke
-make e2e
+moon run web:lint
+moon run web:format
+moon run web:typecheck
+moon run web:test
+moon run e2e:smoke
+moon run e2e:run
 ```
 
 ## Success Criteria

@@ -5,9 +5,9 @@
 - Node 控制面 RPC 契约使用 Protobuf，避免手写 JSON 协议漂移。
 - 所有契约变更必须走固定流程：
   - 修改 proto
-  - `make generate`
+  - `moon run panel:generate`
   - 更新实现与测试
-  - `make check-generate`
+  - `moon run panel:check-generate`
 - 避免在 Panel 与 Node 各维护一份手工“等价结构体”。
 
 ## 2. 鉴权与安全
@@ -52,7 +52,7 @@
 - 单测锁定规则：鉴权、错误映射、SS 2022、并发锁。
 - 集成验证协作：`runNodeSync` 与 Node RPC 服务端协同路径。
 - E2E 仅保留关键链路，避免把所有分支都塞进 UI 用例。
-- 每次交付前执行前后端门禁与 `make e2e`。
+- 每次交付前执行前后端门禁与 `moon run e2e:run`。
 
 ## 8. 文档一致性
 

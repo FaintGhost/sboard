@@ -63,7 +63,7 @@ Scenario: 订阅 REST 保持可用
 ## Verification Commands
 
 ```bash
-make e2e-smoke
+moon run e2e:smoke
 cd e2e && bunx playwright test --project=e2e tests/e2e/node-rpc-cutover.spec.ts
 ```
 

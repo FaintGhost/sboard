@@ -58,7 +58,7 @@ service NodeControlService {
 - 生成目标：
   - Panel：生成 Node RPC Client 所需代码。
   - Node：生成 Node RPC Server 所需代码。
-- 要求 `make generate` 一次生成两侧产物，并纳入 `make check-generate`。
+- 要求 `moon run panel:generate` 一次生成两侧产物，并纳入 `moon run panel:check-generate`。
 
 注：实现阶段优先采用 buf 的 managed/override 机制解决两侧 `go_package` 路径差异，避免手工维护两份 proto。
 

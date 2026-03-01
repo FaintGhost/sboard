@@ -53,7 +53,7 @@ Scenario: 同步成功
 ## Verification Commands
 
 ```bash
-make check-generate
+moon run panel:check-generate
 cd panel && go test ./internal/rpc -run TestNodeSyncRPCSuccess -count=1
 cd node && go test ./internal/rpc -run TestNodeControlSyncConfigSuccess -count=1
 ```
