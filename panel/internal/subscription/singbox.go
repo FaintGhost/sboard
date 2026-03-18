@@ -140,6 +140,35 @@ func injectCredentials(user User, inboundUUID, inboundType string, settings map[
         settings["password"] = user.UUID
       }
     }
+  case "hysteria2":
+    if _, ok := settings["password"]; !ok {
+      settings["password"] = user.UUID
+    }
+  case "tuic":
+    if _, ok := settings["uuid"]; !ok {
+      settings["uuid"] = user.UUID
+    }
+    if _, ok := settings["password"]; !ok {
+      settings["password"] = user.UUID
+    }
+  case "naive":
+    if _, ok := settings["username"]; !ok {
+      settings["username"] = user.Username
+    }
+    if _, ok := settings["password"]; !ok {
+      settings["password"] = user.UUID
+    }
+  case "shadowtls", "anytls":
+    if _, ok := settings["password"]; !ok {
+      settings["password"] = user.UUID
+    }
+  case "socks", "http", "mixed":
+    if _, ok := settings["username"]; !ok {
+      settings["username"] = user.Username
+    }
+    if _, ok := settings["password"]; !ok {
+      settings["password"] = user.UUID
+    }
   }
 }
 

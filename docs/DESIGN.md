@@ -10,7 +10,7 @@
 - **核心**: sing-box 1.12.19
 
 ### 功能范围
-- **协议支持**: VLESS, VMess, Trojan, Shadowsocks
+- **协议支持**: VLESS, VMess, Trojan, Shadowsocks, Hysteria2, TUIC, Naive, ShadowTLS, AnyTLS, SOCKS, HTTP, Mixed
 - **用户管理**: 流量统计、到期时间、循环重置
 - **计费系统**: 暂不需要 (后续可扩展)
 

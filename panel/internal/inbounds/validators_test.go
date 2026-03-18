@@ -62,3 +62,324 @@ func TestRegisterSettingsValidator_IgnoresInvalidInput(t *testing.T) {
 	// Should remain no-op because registration above is ignored.
 	require.NoError(t, ValidateSettings("x", map[string]any{}))
 }
+
+func TestValidateSettings_VLESS(t *testing.T) {
+	t.Run("valid users", func(t *testing.T) {
+		err := ValidateSettings("vless", map[string]any{
+			"users": []any{
+				map[string]any{"uuid": "abcd-uuid", "flow": "xtls-rprx-vision"},
+			},
+		})
+		require.NoError(t, err)
+	})
+
+	t.Run("valid users without flow", func(t *testing.T) {
+		err := ValidateSettings("vless", map[string]any{
+			"users": []any{
+				map[string]any{"uuid": "abcd-uuid"},
+			},
+		})
+		require.NoError(t, err)
+	})
+
+	t.Run("missing users", func(t *testing.T) {
+		err := ValidateSettings("vless", map[string]any{})
+		require.ErrorContains(t, err, "users is required")
+	})
+
+	t.Run("empty users", func(t *testing.T) {
+		err := ValidateSettings("vless", map[string]any{"users": []any{}})
+		require.ErrorContains(t, err, "must not be empty")
+	})
+
+	t.Run("invalid flow", func(t *testing.T) {
+		err := ValidateSettings("vless", map[string]any{
+			"users": []any{
+				map[string]any{"uuid": "abcd-uuid", "flow": "xtls-rprx-vless"},
+			},
+		})
+		require.ErrorContains(t, err, "flow must be empty or \"xtls-rprx-vision\"")
+	})
+
+	t.Run("missing uuid", func(t *testing.T) {
+		err := ValidateSettings("vless", map[string]any{
+			"users": []any{
+				map[string]any{"name": "user"},
+			},
+		})
+		require.ErrorContains(t, err, ".uuid is required")
+	})
+}
+
+func TestValidateSettings_VMESS(t *testing.T) {
+	t.Run("valid users", func(t *testing.T) {
+		err := ValidateSettings("vmess", map[string]any{
+			"users": []any{
+				map[string]any{"uuid": "abcd-uuid", "alterId": 0.0},
+			},
+		})
+		require.NoError(t, err)
+	})
+
+	t.Run("missing users", func(t *testing.T) {
+		err := ValidateSettings("vmess", map[string]any{})
+		require.ErrorContains(t, err, "users is required")
+	})
+
+	t.Run("empty users", func(t *testing.T) {
+		err := ValidateSettings("vmess", map[string]any{"users": []any{}})
+		require.ErrorContains(t, err, "must not be empty")
+	})
+
+	t.Run("negative alterId", func(t *testing.T) {
+		err := ValidateSettings("vmess", map[string]any{
+			"users": []any{
+				map[string]any{"uuid": "abcd-uuid", "alterId": -1.0},
+			},
+		})
+		require.ErrorContains(t, err, "alterId must be >= 0")
+	})
+
+	t.Run("missing uuid", func(t *testing.T) {
+		err := ValidateSettings("vmess", map[string]any{
+			"users": []any{
+				map[string]any{"name": "user"},
+			},
+		})
+		require.ErrorContains(t, err, ".uuid is required")
+	})
+}
+
+func TestValidateSettings_Trojan(t *testing.T) {
+	t.Run("valid users", func(t *testing.T) {
+		err := ValidateSettings("trojan", map[string]any{
+			"users": []any{
+				map[string]any{"password": "secret"},
+			},
+		})
+		require.NoError(t, err)
+	})
+
+	t.Run("missing users", func(t *testing.T) {
+		err := ValidateSettings("trojan", map[string]any{})
+		require.ErrorContains(t, err, "users is required")
+	})
+
+	t.Run("empty users", func(t *testing.T) {
+		err := ValidateSettings("trojan", map[string]any{"users": []any{}})
+		require.ErrorContains(t, err, "must not be empty")
+	})
+
+	t.Run("missing password", func(t *testing.T) {
+		err := ValidateSettings("trojan", map[string]any{
+			"users": []any{
+				map[string]any{"name": "user"},
+			},
+		})
+		require.ErrorContains(t, err, ".password is required")
+	})
+}
+
+func TestValidateSettings_SOCKS(t *testing.T) {
+	t.Run("valid users with auth", func(t *testing.T) {
+		err := ValidateSettings("socks", map[string]any{
+			"users": []any{
+				map[string]any{"username": "user", "password": "pass"},
+			},
+		})
+		require.NoError(t, err)
+	})
+
+	t.Run("no users allowed", func(t *testing.T) {
+		err := ValidateSettings("socks", map[string]any{})
+		require.NoError(t, err)
+	})
+
+	t.Run("missing password in user", func(t *testing.T) {
+		err := ValidateSettings("socks", map[string]any{
+			"users": []any{
+				map[string]any{"username": "user"},
+			},
+		})
+		require.ErrorContains(t, err, ".password is required")
+	})
+}
+
+func TestValidateSettings_Hysteria2(t *testing.T) {
+	t.Run("valid users", func(t *testing.T) {
+		err := ValidateSettings("hysteria2", map[string]any{
+			"users": []any{
+				map[string]any{"name": "user", "password": "secret"},
+			},
+		})
+		require.NoError(t, err)
+	})
+
+	t.Run("missing users", func(t *testing.T) {
+		err := ValidateSettings("hysteria2", map[string]any{})
+		require.ErrorContains(t, err, "users is required")
+	})
+
+	t.Run("missing password", func(t *testing.T) {
+		err := ValidateSettings("hysteria2", map[string]any{
+			"users": []any{
+				map[string]any{"name": "user"},
+			},
+		})
+		require.ErrorContains(t, err, ".password is required")
+	})
+}
+
+func TestValidateSettings_TUIC(t *testing.T) {
+	t.Run("valid users", func(t *testing.T) {
+		err := ValidateSettings("tuic", map[string]any{
+			"users": []any{
+				map[string]any{"uuid": "abcd-uuid", "password": "secret"},
+			},
+		})
+		require.NoError(t, err)
+	})
+
+	t.Run("missing users", func(t *testing.T) {
+		err := ValidateSettings("tuic", map[string]any{})
+		require.ErrorContains(t, err, "users is required")
+	})
+
+	t.Run("missing uuid", func(t *testing.T) {
+		err := ValidateSettings("tuic", map[string]any{
+			"users": []any{
+				map[string]any{"password": "secret"},
+			},
+		})
+		require.ErrorContains(t, err, ".uuid is required")
+	})
+
+	t.Run("missing password", func(t *testing.T) {
+		err := ValidateSettings("tuic", map[string]any{
+			"users": []any{
+				map[string]any{"uuid": "abcd-uuid"},
+			},
+		})
+		require.ErrorContains(t, err, ".password is required")
+	})
+}
+
+func TestValidateSettings_Naive(t *testing.T) {
+	t.Run("valid users", func(t *testing.T) {
+		err := ValidateSettings("naive", map[string]any{
+			"users": []any{
+				map[string]any{"username": "user", "password": "secret"},
+			},
+		})
+		require.NoError(t, err)
+	})
+
+	t.Run("missing users", func(t *testing.T) {
+		err := ValidateSettings("naive", map[string]any{})
+		require.ErrorContains(t, err, "users is required")
+	})
+
+	t.Run("missing username", func(t *testing.T) {
+		err := ValidateSettings("naive", map[string]any{
+			"users": []any{
+				map[string]any{"password": "secret"},
+			},
+		})
+		require.ErrorContains(t, err, ".username is required")
+	})
+
+	t.Run("missing password", func(t *testing.T) {
+		err := ValidateSettings("naive", map[string]any{
+			"users": []any{
+				map[string]any{"username": "user"},
+			},
+		})
+		require.ErrorContains(t, err, ".password is required")
+	})
+}
+
+func TestValidateSettings_ShadowTLS(t *testing.T) {
+	t.Run("valid users and handshake", func(t *testing.T) {
+		err := ValidateSettings("shadowtls", map[string]any{
+			"users": []any{
+				map[string]any{"name": "user", "password": "user-password"},
+			},
+			"handshake": map[string]any{
+				"server": "google.com",
+				"server_port": 443,
+			},
+		})
+		require.NoError(t, err)
+	})
+
+	t.Run("missing users", func(t *testing.T) {
+		err := ValidateSettings("shadowtls", map[string]any{
+			"handshake": map[string]any{"server": "google.com", "server_port": 443},
+		})
+		require.ErrorContains(t, err, "users is required")
+	})
+
+	t.Run("missing handshake", func(t *testing.T) {
+		err := ValidateSettings("shadowtls", map[string]any{
+			"users": []any{
+				map[string]any{"name": "user", "password": "user-password"},
+			},
+		})
+		require.ErrorContains(t, err, "handshake is required")
+	})
+
+	t.Run("missing handshake server", func(t *testing.T) {
+		err := ValidateSettings("shadowtls", map[string]any{
+			"users": []any{
+				map[string]any{"name": "user", "password": "user-password"},
+			},
+			"handshake": map[string]any{
+				"server_port": 443,
+			},
+		})
+		require.ErrorContains(t, err, "handshake.server is required")
+	})
+}
+
+func TestValidateSettings_AnyTLS(t *testing.T) {
+	t.Run("valid users", func(t *testing.T) {
+		err := ValidateSettings("anytls", map[string]any{
+			"users": []any{
+				map[string]any{"name": "user", "password": "secret"},
+			},
+		})
+		require.NoError(t, err)
+	})
+
+	t.Run("missing users", func(t *testing.T) {
+		err := ValidateSettings("anytls", map[string]any{})
+		require.ErrorContains(t, err, "users is required")
+	})
+
+	t.Run("missing password", func(t *testing.T) {
+		err := ValidateSettings("anytls", map[string]any{
+			"users": []any{
+				map[string]any{"name": "user"},
+			},
+		})
+		require.ErrorContains(t, err, ".password is required")
+	})
+}
+
+func TestValidateSettings_HTTPAndMixed(t *testing.T) {
+	// http and mixed share the socks validator
+	for _, proto := range []string{"http", "mixed"} {
+		t.Run(proto+"_valid users", func(t *testing.T) {
+			err := ValidateSettings(proto, map[string]any{
+				"users": []any{
+					map[string]any{"username": "user", "password": "pass"},
+				},
+			})
+			require.NoError(t, err)
+		})
+		t.Run(proto+"_no users allowed", func(t *testing.T) {
+			err := ValidateSettings(proto, map[string]any{})
+			require.NoError(t, err)
+		})
+	}
+}

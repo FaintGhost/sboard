@@ -138,7 +138,7 @@ func TestInboundsCreate_ValidationNotFoundAndConflict(t *testing.T) {
 
 	// node not found
 	w = httptest.NewRecorder()
-	req = httptest.NewRequest(http.MethodPost, "/api/inbounds", strings.NewReader(`{"node_id":99999,"tag":"vless-in","protocol":"vless","listen_port":443,"public_port":443,"settings":{}}`))
+	req = httptest.NewRequest(http.MethodPost, "/api/inbounds", strings.NewReader(`{"node_id":99999,"tag":"vless-in","protocol":"vless","listen_port":443,"public_port":443,"settings":{"users":[{"uuid":"a","flow":"xtls-rprx-vision"}]}}`))
 	req.Header.Set("Authorization", "Bearer "+token)
 	r.ServeHTTP(w, req)
 	require.Equal(t, http.StatusNotFound, w.Code)
@@ -147,7 +147,7 @@ func TestInboundsCreate_ValidationNotFoundAndConflict(t *testing.T) {
 
 	w = httptest.NewRecorder()
 	req = httptest.NewRequest(http.MethodPost, "/api/inbounds", strings.NewReader(fmt.Sprintf(
-		`{"node_id":%d,"tag":"dup-tag","protocol":"vless","listen_port":443,"public_port":443,"settings":{}}`,
+		`{"node_id":%d,"tag":"dup-tag","protocol":"vless","listen_port":443,"public_port":443,"settings":{"users":[{"uuid":"a","flow":"xtls-rprx-vision"}]}}`,
 		nodeID,
 	)))
 	req.Header.Set("Authorization", "Bearer "+token)
@@ -156,7 +156,7 @@ func TestInboundsCreate_ValidationNotFoundAndConflict(t *testing.T) {
 
 	w = httptest.NewRecorder()
 	req = httptest.NewRequest(http.MethodPost, "/api/inbounds", strings.NewReader(fmt.Sprintf(
-		`{"node_id":%d,"tag":"dup-tag","protocol":"vless","listen_port":8443,"public_port":8443,"settings":{}}`,
+		`{"node_id":%d,"tag":"dup-tag","protocol":"vless","listen_port":8443,"public_port":8443,"settings":{"users":[{"uuid":"b","flow":"xtls-rprx-vision"}]}}`,
 		nodeID,
 	)))
 	req.Header.Set("Authorization", "Bearer "+token)

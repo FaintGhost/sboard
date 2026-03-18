@@ -69,7 +69,7 @@ func TestSyncJobsAPI_ListGetRetry(t *testing.T) {
 
 	// inbound (creates one auto sync job)
 	w = httptest.NewRecorder()
-	req = httptest.NewRequest(http.MethodPost, "/api/inbounds", strings.NewReader(fmt.Sprintf(`{"node_id":%d,"tag":"vless-in","protocol":"vless","listen_port":443,"public_port":443,"settings":{}}`, n.Data.ID)))
+	req = httptest.NewRequest(http.MethodPost, "/api/inbounds", strings.NewReader(fmt.Sprintf(`{"node_id":%d,"tag":"vless-in","protocol":"vless","listen_port":443,"public_port":443,"settings":{"users":[{"uuid":"a","flow":"xtls-rprx-vision"}]}}`, n.Data.ID)))
 	req.Header.Set("Authorization", "Bearer "+token)
 	r.ServeHTTP(w, req)
 	require.Equal(t, http.StatusCreated, w.Code)

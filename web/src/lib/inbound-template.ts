@@ -18,7 +18,12 @@ export type InboundTemplatePresetProtocol =
   | "shadowsocks"
   | "socks"
   | "http"
-  | "mixed";
+  | "mixed"
+  | "hysteria2"
+  | "tuic"
+  | "naive"
+  | "shadowtls"
+  | "anytls";
 
 const inboundTemplatePresets: Record<InboundTemplatePresetProtocol, Record<string, unknown>> = {
   vless: {
@@ -84,6 +89,45 @@ const inboundTemplatePresets: Record<InboundTemplatePresetProtocol, Record<strin
     listen_port: 2080,
     users: [],
   },
+  hysteria2: {
+    type: "hysteria2",
+    tag: "hy2-in",
+    listen_port: 443,
+    users: [],
+    up_mbps: 100,
+    down_mbps: 100,
+  },
+  tuic: {
+    type: "tuic",
+    tag: "tuic-in",
+    listen_port: 443,
+    users: [],
+    congestion_control: "cubic",
+  },
+  naive: {
+    type: "naive",
+    tag: "naive-in",
+    listen_port: 443,
+    users: [],
+  },
+  shadowtls: {
+    type: "shadowtls",
+    tag: "shadowtls-in",
+    listen_port: 443,
+    version: 3,
+    password: "handshake-password",
+    users: [],
+    handshake: {
+      server: "google.com",
+      server_port: 443,
+    },
+  },
+  anytls: {
+    type: "anytls",
+    tag: "anytls-in",
+    listen_port: 443,
+    users: [],
+  },
 };
 
 export const inboundTemplatePresetProtocols: InboundTemplatePresetProtocol[] = [
@@ -94,6 +138,11 @@ export const inboundTemplatePresetProtocols: InboundTemplatePresetProtocol[] = [
   "socks",
   "http",
   "mixed",
+  "hysteria2",
+  "tuic",
+  "naive",
+  "shadowtls",
+  "anytls",
 ];
 
 function asRecord(value: unknown): Record<string, unknown> | null {

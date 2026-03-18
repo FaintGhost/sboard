@@ -136,7 +136,7 @@ func TestUsersDelete_HardDelete_AutoSyncsNodesByUserGroups(t *testing.T) {
 	req = httptest.NewRequest(
 		http.MethodPost,
 		"/api/inbounds",
-		strings.NewReader(fmt.Sprintf(`{"node_id":%d,"tag":"hard-delete-sync","protocol":"vless","listen_port":6543,"public_port":6543,"settings":{}}`, n.Data.ID)),
+		strings.NewReader(fmt.Sprintf(`{"node_id":%d,"tag":"hard-delete-sync","protocol":"vless","listen_port":6543,"public_port":6543,"settings":{"users":[{"uuid":"a","flow":"xtls-rprx-vision"}]}}`, n.Data.ID)),
 	)
 	req.Header.Set("Authorization", "Bearer "+token)
 	r.ServeHTTP(w, req)

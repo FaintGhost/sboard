@@ -14,6 +14,11 @@ const capabilityTable: Record<string, InboundProtocolCapability> = {
   socks: { protocol: "socks", level: "supported" },
   http: { protocol: "http", level: "supported" },
   mixed: { protocol: "mixed", level: "supported" },
+  hysteria2: { protocol: "hysteria2", level: "supported" },
+  tuic: { protocol: "tuic", level: "supported" },
+  naive: { protocol: "naive", level: "supported" },
+  shadowtls: { protocol: "shadowtls", level: "supported" },
+  anytls: { protocol: "anytls", level: "supported" },
 };
 
 export function getInboundProtocolCapability(protocol: string): InboundProtocolCapability {

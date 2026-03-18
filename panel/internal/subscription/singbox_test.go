@@ -214,3 +214,193 @@ func TestSingboxShadowsocks2022UsesPerUserPassword(t *testing.T) {
 	require.Equal(t, partsA[0], partsB[0])
 	require.NotEqual(t, partsA[1], partsB[1])
 }
+
+func TestSingboxSOCKSCredentialInjection(t *testing.T) {
+	user := subscription.User{UUID: "u-1", Username: "alice"}
+	items := []subscription.Item{
+		{
+			InboundType:       "socks",
+			NodePublicAddress: "a.example.com",
+			InboundListenPort: 1080,
+			Settings:          json.RawMessage(`{}`),
+		},
+	}
+
+	out, err := subscription.BuildSingbox(user, items)
+	require.NoError(t, err)
+
+	var payload struct {
+		Outbounds []map[string]any `json:"outbounds"`
+	}
+	require.NoError(t, json.Unmarshal(out, &payload))
+	require.Len(t, payload.Outbounds, 1)
+
+	ob := payload.Outbounds[0]
+	require.Equal(t, "alice", ob["username"])
+	require.Equal(t, "u-1", ob["password"])
+}
+
+func TestSingboxHTTPCredentialInjection(t *testing.T) {
+	user := subscription.User{UUID: "u-1", Username: "bob"}
+	items := []subscription.Item{
+		{
+			InboundType:       "http",
+			NodePublicAddress: "a.example.com",
+			InboundListenPort: 8080,
+			Settings:          json.RawMessage(`{}`),
+		},
+	}
+
+	out, err := subscription.BuildSingbox(user, items)
+	require.NoError(t, err)
+
+	var payload struct {
+		Outbounds []map[string]any `json:"outbounds"`
+	}
+	require.NoError(t, json.Unmarshal(out, &payload))
+
+	ob := payload.Outbounds[0]
+	require.Equal(t, "bob", ob["username"])
+	require.Equal(t, "u-1", ob["password"])
+}
+
+func TestSingboxMixedCredentialInjection(t *testing.T) {
+	user := subscription.User{UUID: "u-1", Username: "charlie"}
+	items := []subscription.Item{
+		{
+			InboundType:       "mixed",
+			NodePublicAddress: "a.example.com",
+			InboundListenPort: 2080,
+			Settings:          json.RawMessage(`{}`),
+		},
+	}
+
+	out, err := subscription.BuildSingbox(user, items)
+	require.NoError(t, err)
+
+	var payload struct {
+		Outbounds []map[string]any `json:"outbounds"`
+	}
+	require.NoError(t, json.Unmarshal(out, &payload))
+
+	ob := payload.Outbounds[0]
+	require.Equal(t, "charlie", ob["username"])
+	require.Equal(t, "u-1", ob["password"])
+}
+
+func TestSingboxHysteria2CredentialInjection(t *testing.T) {
+	user := subscription.User{UUID: "u-1", Username: "alice"}
+	items := []subscription.Item{
+		{
+			InboundType:       "hysteria2",
+			NodePublicAddress: "a.example.com",
+			InboundListenPort: 443,
+			Settings:          json.RawMessage(`{}`),
+		},
+	}
+
+	out, err := subscription.BuildSingbox(user, items)
+	require.NoError(t, err)
+
+	var payload struct {
+		Outbounds []map[string]any `json:"outbounds"`
+	}
+	require.NoError(t, json.Unmarshal(out, &payload))
+
+	ob := payload.Outbounds[0]
+	require.Equal(t, "u-1", ob["password"])
+}
+
+func TestSingboxTUICCredentialInjection(t *testing.T) {
+	user := subscription.User{UUID: "u-1", Username: "alice"}
+	items := []subscription.Item{
+		{
+			InboundType:       "tuic",
+			NodePublicAddress: "a.example.com",
+			InboundListenPort: 443,
+			Settings:          json.RawMessage(`{}`),
+		},
+	}
+
+	out, err := subscription.BuildSingbox(user, items)
+	require.NoError(t, err)
+
+	var payload struct {
+		Outbounds []map[string]any `json:"outbounds"`
+	}
+	require.NoError(t, json.Unmarshal(out, &payload))
+
+	ob := payload.Outbounds[0]
+	require.Equal(t, "u-1", ob["uuid"])
+	require.Equal(t, "u-1", ob["password"])
+}
+
+func TestSingboxNaiveCredentialInjection(t *testing.T) {
+	user := subscription.User{UUID: "u-1", Username: "alice"}
+	items := []subscription.Item{
+		{
+			InboundType:       "naive",
+			NodePublicAddress: "a.example.com",
+			InboundListenPort: 443,
+			Settings:          json.RawMessage(`{}`),
+		},
+	}
+
+	out, err := subscription.BuildSingbox(user, items)
+	require.NoError(t, err)
+
+	var payload struct {
+		Outbounds []map[string]any `json:"outbounds"`
+	}
+	require.NoError(t, json.Unmarshal(out, &payload))
+
+	ob := payload.Outbounds[0]
+	require.Equal(t, "alice", ob["username"])
+	require.Equal(t, "u-1", ob["password"])
+}
+
+func TestSingboxShadowTLSCredentialInjection(t *testing.T) {
+	user := subscription.User{UUID: "u-1", Username: "alice"}
+	items := []subscription.Item{
+		{
+			InboundType:       "shadowtls",
+			NodePublicAddress: "a.example.com",
+			InboundListenPort: 443,
+			Settings:          json.RawMessage(`{"version":3}`),
+		},
+	}
+
+	out, err := subscription.BuildSingbox(user, items)
+	require.NoError(t, err)
+
+	var payload struct {
+		Outbounds []map[string]any `json:"outbounds"`
+	}
+	require.NoError(t, json.Unmarshal(out, &payload))
+
+	ob := payload.Outbounds[0]
+	require.Equal(t, "u-1", ob["password"])
+}
+
+func TestSingboxAnyTLSCredentialInjection(t *testing.T) {
+	user := subscription.User{UUID: "u-1", Username: "alice"}
+	items := []subscription.Item{
+		{
+			InboundType:       "anytls",
+			NodePublicAddress: "a.example.com",
+			InboundListenPort: 443,
+			Settings:          json.RawMessage(`{}`),
+		},
+	}
+
+	out, err := subscription.BuildSingbox(user, items)
+	require.NoError(t, err)
+
+	var payload struct {
+		Outbounds []map[string]any `json:"outbounds"`
+	}
+	require.NoError(t, json.Unmarshal(out, &payload))
+
+	ob := payload.Outbounds[0]
+	require.Equal(t, "u-1", ob["password"])
+}

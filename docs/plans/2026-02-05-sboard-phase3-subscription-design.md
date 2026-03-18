@@ -63,6 +63,36 @@ user_nodes (
 - UA 映射表内置，后续可扩展 `clash meta / stash / v2ray / surge`
 - 后续可加入 `route/dns` 模板、订阅签名或短链
 
+## 支持的协议
+
+### 入站协议（Panel 端验证 + 订阅生成）
+
+| 协议 | 验证器 | 订阅 credential 注入 |
+|------|--------|---------------------|
+| vless | users 数组非空，uuid/flow 校验 | uuid |
+| vmess | users 数组非空，uuid/alterId 校验 | uuid |
+| trojan | users 数组非空，password 校验 | password |
+| shadowsocks | method 必填，2022 方法多用户校验 | 2022: server_psk:user_key，其他: uuid |
+| hysteria2 | users 数组非空，password 校验 | password |
+| tuic | users 数组非空，uuid/password 校验 | uuid + password |
+| naive | users 数组非空，username/password 校验 | username + password |
+| shadowtls | users 数组非空，handshake 必填 | password |
+| anytls | users 数组非空，password 校验 | password |
+| socks | users 可选，每个 user 校验 username+password | username + password |
+| http | 同 socks | username + password |
+| mixed | 同 socks | username + password |
+
+### 密钥生成命令（singboxcli）
+
+| 命令 | 说明 |
+|------|------|
+| `uuid` | 生成 UUID v4 |
+| `reality-keypair` | 生成 X25519 REALITY 密钥对 |
+| `wg-keypair` | 生成 X25519 WireGuard 密钥对 |
+| `vapid-keypair` | 生成 P256 ECDH VAPID 密钥对 |
+| `tls-keypair <server_name>` | 生成 TLS 证书（sing-box 库） |
+| `rand-base64-<N>` | 生成 N 字节随机 Base64 字符串 |
+
 ## 测试重点
 - 订阅返回：sing-box UA 返回 JSON，其他 UA 返回 Base64
 - `format=singbox` 覆盖 UA

@@ -10,9 +10,11 @@ import (
 	"errors"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	box "github.com/sagernet/sing-box"
+	"github.com/sagernet/sing-box/common/tls"
 	"github.com/sagernet/sing-box/include"
 	"github.com/sagernet/sing-box/option"
 	sbjson "github.com/sagernet/sing/common/json"
@@ -77,6 +79,20 @@ func (s *Service) Check(ctx context.Context, config string) (string, error) {
 
 func (s *Service) Generate(_ context.Context, kind string) (string, error) {
 	command := strings.TrimSpace(kind)
+
+	// tls-keypair requires a server_name argument: "tls-keypair <server_name>"
+	if strings.HasPrefix(command, "tls-keypair") {
+		serverName := strings.TrimSpace(strings.TrimPrefix(command, "tls-keypair"))
+		if serverName == "" {
+			return "", errors.New("tls-keypair requires a server_name argument")
+		}
+		privateKeyPem, publicKeyPem, err := tls.GenerateCertificate(nil, nil, time.Now, serverName, time.Now().AddDate(0, 1, 0))
+		if err != nil {
+			return "", err
+		}
+		return "PrivateKey: " + string(privateKeyPem) + "PublicKey: " + string(publicKeyPem), nil
+	}
+
 	if strings.HasPrefix(command, "rand-base64-") {
 		lengthText := strings.TrimPrefix(command, "rand-base64-")
 		length, err := strconv.Atoi(lengthText)

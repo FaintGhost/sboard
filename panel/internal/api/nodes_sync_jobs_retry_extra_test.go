@@ -50,7 +50,7 @@ func TestSyncJobsRetry_NodeMissingAndUpstreamFailure(t *testing.T) {
 	// create one inbound to generate a sync job
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodPost, "/api/inbounds", strings.NewReader(fmt.Sprintf(
-		`{"node_id":%d,"tag":"retry-edge","protocol":"vless","listen_port":6543,"public_port":6543,"settings":{}}`,
+		`{"node_id":%d,"tag":"retry-edge","protocol":"vless","listen_port":6543,"public_port":6543,"settings":{"users":[{"uuid":"a","flow":"xtls-rprx-vision"}]}}`,
 		nodeID,
 	)))
 	req.Header.Set("Authorization", "Bearer "+token)
@@ -84,7 +84,7 @@ func TestSyncJobsRetry_NodeMissingAndUpstreamFailure(t *testing.T) {
 	// reset to a valid job: create another inbound/job.
 	w = httptest.NewRecorder()
 	req = httptest.NewRequest(http.MethodPost, "/api/inbounds", strings.NewReader(fmt.Sprintf(
-		`{"node_id":%d,"tag":"retry-edge-2","protocol":"vless","listen_port":6544,"public_port":6544,"settings":{}}`,
+		`{"node_id":%d,"tag":"retry-edge-2","protocol":"vless","listen_port":6544,"public_port":6544,"settings":{"users":[{"uuid":"a","flow":"xtls-rprx-vision"}]}}`,
 		nodeID,
 	)))
 	req.Header.Set("Authorization", "Bearer "+token)

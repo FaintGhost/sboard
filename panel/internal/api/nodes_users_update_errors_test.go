@@ -40,7 +40,7 @@ func TestNodesDelete_NonForce_InvalidNotFoundConflict(t *testing.T) {
 
 	w = httptest.NewRecorder()
 	req = httptest.NewRequest(http.MethodPost, "/api/inbounds", strings.NewReader(fmt.Sprintf(
-		`{"node_id":%d,"tag":"conflict-delete","protocol":"vless","listen_port":6443,"public_port":6443,"settings":{}}`,
+		`{"node_id":%d,"tag":"conflict-delete","protocol":"vless","listen_port":6443,"public_port":6443,"settings":{"users":[{"uuid":"a","flow":"xtls-rprx-vision"}]}}`,
 		nodeID,
 	)))
 	req.Header.Set("Authorization", "Bearer "+token)
@@ -76,7 +76,7 @@ func TestNodesDelete_ForceDrainFailureAndNoInbounds(t *testing.T) {
 
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodPost, "/api/inbounds", strings.NewReader(fmt.Sprintf(
-		`{"node_id":%d,"tag":"force-fail","protocol":"vless","listen_port":7443,"public_port":7443,"settings":{}}`,
+		`{"node_id":%d,"tag":"force-fail","protocol":"vless","listen_port":7443,"public_port":7443,"settings":{"users":[{"uuid":"a","flow":"xtls-rprx-vision"}]}}`,
 		nodeWithInbound,
 	)))
 	req.Header.Set("Authorization", "Bearer "+token)

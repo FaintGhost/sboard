@@ -241,6 +241,14 @@ func buildUsersForProtocol(protocol string, users []db.User, settings map[string
 			out = append(out, map[string]any{"name": name, "password": u.UUID})
 		case "socks", "http", "mixed":
 			out = append(out, map[string]any{"username": name, "password": u.UUID})
+		case "hysteria2":
+			out = append(out, map[string]any{"name": name, "password": u.UUID})
+		case "tuic":
+			out = append(out, map[string]any{"name": name, "uuid": u.UUID, "password": u.UUID})
+		case "naive":
+			out = append(out, map[string]any{"username": name, "password": u.UUID})
+		case "shadowtls", "anytls":
+			out = append(out, map[string]any{"name": name, "password": u.UUID})
 		default:
 			out = append(out, map[string]any{"name": name, "uuid": u.UUID})
 		}

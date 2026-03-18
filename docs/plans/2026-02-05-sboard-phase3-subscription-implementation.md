@@ -159,7 +159,7 @@ Expected: FAIL
 - 将 `settings/tls_settings/transport_settings` 解析为 map，注入：
   - `server` = `NodePublicAddress`
   - `server_port` = `public_port > 0 ? public_port : listen_port`
-  - `uuid`/`password`/`username` 按 inbound type 注入（先支持 vless/vmess/shadowsocks/trojan）
+  - `uuid`/`password`/`username` 按 inbound type 注入（支持 vless/vmess/shadowsocks/trojan/hysteria2/tuic/naive/shadowtls/anytls/socks/http/mixed）
 - 输出 JSON 仅包含 `outbounds`
 
 **Step 4: 运行测试，确认通过**

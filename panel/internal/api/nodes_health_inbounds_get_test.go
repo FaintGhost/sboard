@@ -100,7 +100,7 @@ func TestInboundsGet_BasicAndErrors(t *testing.T) {
 
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodPost, "/api/inbounds", strings.NewReader(fmt.Sprintf(
-		`{"node_id":%d,"tag":"vless-in","protocol":"vless","listen_port":443,"public_port":443,"settings":{}}`,
+		`{"node_id":%d,"tag":"vless-in","protocol":"vless","listen_port":443,"public_port":443,"settings":{"users":[{"uuid":"a","flow":"xtls-rprx-vision"}]}}`,
 		nodeID,
 	)))
 	req.Header.Set("Authorization", "Bearer "+token)
