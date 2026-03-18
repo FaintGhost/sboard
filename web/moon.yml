@@ -1,4 +1,12 @@
 tasks:
+  dev:
+    command: bun
+    args:
+      - run
+      - dev
+    options:
+      runFromWorkspaceRoot: true
+
   lint:
     command: bun
     args:
