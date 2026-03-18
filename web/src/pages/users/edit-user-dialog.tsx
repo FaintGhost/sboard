@@ -1,6 +1,6 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 
 import { AsyncButton } from "@/components/ui/async-button";
@@ -27,7 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ApiError } from "@/lib/api/client";
-import { listGroups } from "@/lib/api/groups";
+import { createGroup, listGroups } from "@/lib/api/groups";
 import { getUserGroups } from "@/lib/api/user-groups";
 import type { UserStatus } from "@/lib/rpc/types";
 import { gbStringToBytes, rfc3339FromDateOnlyUTC } from "@/lib/units";
@@ -77,6 +77,33 @@ export function EditUserDialog({
   const groupsQuery = useQuery({
     queryKey: ["groups", { limit: 200, offset: 0 }],
     queryFn: () => listGroups({ limit: 200, offset: 0 }),
+  });
+
+  const qc = useQueryClient();
+  const [inlineCreate, setInlineCreate] = useState(false);
+  const [inlineName, setInlineName] = useState("");
+  const [inlineDesc, setInlineDesc] = useState("");
+  const [inlineError, setInlineError] = useState<string | null>(null);
+
+  const createGroupMutation = useMutation({
+    mutationFn: (payload: { name: string; description: string }) => createGroup(payload),
+    onSuccess: (newGroup) => {
+      qc.invalidateQueries({ queryKey: ["groups"] });
+      setInlineCreate(false);
+      setInlineName("");
+      setInlineDesc("");
+      setInlineError(null);
+      setEditState((p) => {
+        if (!p) return p;
+        return {
+          ...p,
+          groupIDs: [...p.groupIDs, newGroup.id].sort((a, b) => a - b),
+        };
+      });
+    },
+    onError: (e) => {
+      setInlineError(e instanceof ApiError ? e.message : t("users.addGroupError"));
+    },
   });
 
   const userGroupsQuery = useQuery({
@@ -179,8 +206,68 @@ export function EditUserDialog({
                     );
                   })}
                   {groupsQuery.data && groupsQuery.data.length === 0 ? (
-                    <div className="text-sm text-muted-foreground md:col-span-2">
-                      {t("users.noGroups")}
+                    <div className="md:col-span-2 space-y-3">
+                      <p className="text-sm text-muted-foreground">{t("users.noGroups")}</p>
+                      {!inlineCreate ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setInlineCreate(true)}
+                        >
+                          {t("groups.createGroup")}
+                        </Button>
+                      ) : (
+                        <div className="space-y-2 rounded-md border border-border p-3">
+                          <Input
+                            value={inlineName}
+                            onChange={(e) => setInlineName(e.target.value)}
+                            placeholder={t("groups.namePlaceholder")}
+                            aria-label={t("groups.name")}
+                          />
+                          <Input
+                            value={inlineDesc}
+                            onChange={(e) => setInlineDesc(e.target.value)}
+                            placeholder={t("groups.descriptionPlaceholder")}
+                            aria-label={t("groups.description")}
+                          />
+                          {inlineError && (
+                            <p className="text-sm text-destructive">{inlineError}</p>
+                          )}
+                          <div className="flex gap-2">
+                            <AsyncButton
+                              type="button"
+                              size="sm"
+                              onClick={() => {
+                                if (!inlineName.trim()) return;
+                                createGroupMutation.mutate({
+                                  name: inlineName.trim(),
+                                  description: inlineDesc.trim(),
+                                });
+                              }}
+                              disabled={!inlineName.trim() || createGroupMutation.isPending}
+                              pending={createGroupMutation.isPending}
+                              pendingText={t("common.creating")}
+                            >
+                              {t("common.create")}
+                            </AsyncButton>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setInlineCreate(false);
+                                setInlineName("");
+                                setInlineDesc("");
+                                setInlineError(null);
+                              }}
+                              disabled={createGroupMutation.isPending}
+                            >
+                              {t("common.cancel")}
+                            </Button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ) : null}
                 </div>
