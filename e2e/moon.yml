@@ -35,10 +35,8 @@ tasks:
       runInCI: false
 
   test:
-    command: bunx
+    command: bash
     args:
-      - playwright
-      - test
+      - run.sh
     options:
       cache: false
-      runInCI: false

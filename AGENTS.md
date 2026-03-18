@@ -17,6 +17,7 @@
   - `moon run web:typecheck`（等价于 `cd web && bunx tsc -b`）
   - `moon run web:test`（等价于 `cd web && bun run test`）
   - `moon run panel:check-generate`（确保生成代码与 spec 同步）
+  - `moon run e2e:test`（全链路 E2E 测试，需要 Docker 环境）
 - 任一检查未通过时，不应标记为完成交付。
 
 ## GitHub 操作
