@@ -33,3 +33,12 @@ tasks:
     options:
       cache: false
       runInCI: false
+
+  test:
+    command: bunx
+    args:
+      - playwright
+      - test
+    options:
+      cache: false
+      runInCI: false

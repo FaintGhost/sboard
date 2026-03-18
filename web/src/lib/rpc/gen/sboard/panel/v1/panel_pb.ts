@@ -2827,29 +2827,27 @@ export const RejectNodeResponseSchema: GenMessage<RejectNodeResponse> = /*@__PUR
 /**
  * @generated from enum sboard.panel.v1.NodeHeartbeatStatus
  */
-export const NodeHeartbeatStatus = {
+export enum NodeHeartbeatStatus {
   /**
    * @generated from enum value: NODE_HEARTBEAT_STATUS_UNSPECIFIED = 0;
    */
-  UNSPECIFIED: 0,
+  UNSPECIFIED = 0,
 
   /**
    * @generated from enum value: NODE_HEARTBEAT_STATUS_RECOGNIZED = 1;
    */
-  RECOGNIZED: 1,
+  RECOGNIZED = 1,
 
   /**
    * @generated from enum value: NODE_HEARTBEAT_STATUS_PENDING = 2;
    */
-  PENDING: 2,
+  PENDING = 2,
 
   /**
    * @generated from enum value: NODE_HEARTBEAT_STATUS_REJECTED = 3;
    */
-  REJECTED: 3,
-} as const;
-
-export type NodeHeartbeatStatus = (typeof NodeHeartbeatStatus)[keyof typeof NodeHeartbeatStatus];
+  REJECTED = 3,
+}
 
 /**
  * Describes the enum sboard.panel.v1.NodeHeartbeatStatus.
