@@ -630,8 +630,6 @@ export function NodesPage() {
                     colSpan={7}
                     className={`${spacing.cellFirst} py-10 text-center`}
                     message={t("common.noData")}
-                    actionLabel={t("nodes.createNode")}
-                    actionTo="/nodes"
                   />
                 ) : null}
               </TableBody>

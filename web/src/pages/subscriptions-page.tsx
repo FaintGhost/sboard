@@ -277,8 +277,6 @@ export function SubscriptionsPage() {
                 colSpan={4}
                 className={`${spacing.cellFirst} py-10 text-center`}
                 message={t("common.noData")}
-                actionLabel={t("users.createUser")}
-                actionTo="/users"
               />
             ) : (
               filteredUsers.map((user) => (

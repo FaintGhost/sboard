@@ -427,8 +427,6 @@ export function InboundsPage() {
                     colSpan={5}
                     className={`${spacing.cellFirst} py-10 text-center`}
                     message={t("common.noData")}
-                    actionLabel={t("inbounds.createInbound")}
-                    actionTo="/inbounds"
                   />
                 ) : null}
               </TableBody>

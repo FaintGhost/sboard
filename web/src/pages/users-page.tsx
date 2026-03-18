@@ -404,8 +404,6 @@ export function UsersPage() {
                   <TableEmptyState
                     colSpan={6}
                     message={t("common.noData")}
-                    actionLabel={t("users.createUser")}
-                    actionTo="/users"
                   />
                 ) : null}
               </TableBody>

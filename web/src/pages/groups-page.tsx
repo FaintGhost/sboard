@@ -396,8 +396,6 @@ export function GroupsPage() {
                     colSpan={4}
                     className={`${spacing.cellFirst} py-10 text-center`}
                     message={t("common.noData")}
-                    actionLabel={t("groups.createGroup")}
-                    actionTo="/groups"
                   />
                 ) : null}
               </TableBody>
