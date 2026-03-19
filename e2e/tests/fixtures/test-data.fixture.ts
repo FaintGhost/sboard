@@ -1,4 +1,5 @@
 let counter = 0;
+let portCounter = 0;
 
 function uniquePrefix(): string {
   counter++;
@@ -23,4 +24,10 @@ export function uniqueInboundTag(): string {
 
 export function uniqueClientTag(): string {
   return `${uniquePrefix()}-client`;
+}
+
+export function uniqueInboundPort(base = 16080): number {
+  portCounter++;
+  const timeOffset = Date.now() % 10000;
+  return base + timeOffset + portCounter;
 }

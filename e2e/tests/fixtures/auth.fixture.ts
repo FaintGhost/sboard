@@ -37,7 +37,9 @@ type AuthFixtures = {
   adminToken: string;
 };
 
-async function ensureBootstrapAndLogin(request: APIRequestContext): Promise<string> {
+const AUTH_EXPIRES_AT_KEY = "sboard_token_expires_at";
+
+async function ensureBootstrapAndLogin(request: APIRequestContext): Promise<{ token: string; expiresAt: string }> {
   const statusData = await rpcPost<{ needsSetup: boolean }>(
     request,
     "/rpc/sboard.panel.v1.AuthService/GetBootstrapStatus",
@@ -67,23 +69,31 @@ async function ensureBootstrapAndLogin(request: APIRequestContext): Promise<stri
   if (!loginData.data?.token) {
     throw new Error("RPC login returned empty token");
   }
-  return loginData.data.token;
+  if (!loginData.data.expiresAt) {
+    throw new Error("RPC login returned empty expiresAt");
+  }
+  return { token: loginData.data.token, expiresAt: loginData.data.expiresAt };
 }
 
 export const test = base.extend<AuthFixtures>({
   adminToken: async ({ request }, use) => {
-    const token = await ensureBootstrapAndLogin(request);
-    await use(token);
+    const auth = await ensureBootstrapAndLogin(request);
+    await use(auth.token);
   },
 
   authenticatedPage: async ({ page, request }, use) => {
-    const token = await ensureBootstrapAndLogin(request);
+    const auth = await ensureBootstrapAndLogin(request);
 
     // Navigate to login page first to set localStorage on the correct origin
     await page.goto(`${BASE_URL}/login`);
-    await page.evaluate((t) => {
-      localStorage.setItem("sboard_token", t);
-    }, token);
+    await page.evaluate(({ token, expiresAt, expiresKey }) => {
+      localStorage.setItem("sboard_token", token);
+      localStorage.setItem(expiresKey, expiresAt);
+    }, {
+      token: auth.token,
+      expiresAt: auth.expiresAt,
+      expiresKey: AUTH_EXPIRES_AT_KEY,
+    });
 
     // Navigate to dashboard to confirm auth state
     await page.goto(`${BASE_URL}/`);

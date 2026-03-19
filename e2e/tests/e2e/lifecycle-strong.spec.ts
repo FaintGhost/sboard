@@ -1,7 +1,17 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
-import { test, expect, PanelAPI, NodeAPI, uniqueGroupName, uniqueInboundTag, uniqueNodeName, uniqueUsername } from "../fixtures";
+import {
+  test,
+  expect,
+  PanelAPI,
+  NodeAPI,
+  uniqueGroupName,
+  uniqueInboundPort,
+  uniqueInboundTag,
+  uniqueNodeName,
+  uniqueUsername,
+} from "../fixtures";
 
 const BASE_URL = process.env.BASE_URL || "http://localhost:8080";
 const PROBE_URL = process.env.PROBE_URL || "http://probe:8080";
@@ -50,7 +60,7 @@ test.describe.serial("强 E2E 全生命周期（配置+流量）", () => {
     const username = uniqueUsername();
     const nodeName = uniqueNodeName();
     const inboundTag = uniqueInboundTag();
-    const inboundPort = 16080;
+    const inboundPort = uniqueInboundPort();
 
     const groupResp = await panelApi.createGroup(groupName, "strong lifecycle e2e");
     expect(groupResp.ok()).toBeTruthy();

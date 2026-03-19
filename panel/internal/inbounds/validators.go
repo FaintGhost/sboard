@@ -25,7 +25,7 @@ var (
     "hysteria2":   validateHysteria2Settings,
     "tuic":        validateTUICSettings,
     "naive":       validateNaiveSettings,
-    "shadowtls":    validateShadowTLSSettings,
+    "shadowtls":   validateShadowTLSSettings,
     "anytls":      validateAnyTLSSettings,
   }
 )
@@ -80,9 +80,6 @@ func validateShadowsocksSettings(settings map[string]any) error {
 
 func validateVLESSettings(settings map[string]any) error {
   users, _ := settings["users"].([]any)
-  if len(users) == 0 {
-    return errors.New("vless settings.users is required and must not be empty")
-  }
   for i, u := range users {
     uMap, ok := u.(map[string]any)
     if !ok {
@@ -103,9 +100,6 @@ func validateVLESSettings(settings map[string]any) error {
 
 func validateVmessSettings(settings map[string]any) error {
   users, _ := settings["users"].([]any)
-  if len(users) == 0 {
-    return errors.New("vmess settings.users is required and must not be empty")
-  }
   for i, u := range users {
     uMap, ok := u.(map[string]any)
     if !ok {
@@ -124,9 +118,6 @@ func validateVmessSettings(settings map[string]any) error {
 
 func validateTrojanSettings(settings map[string]any) error {
   users, _ := settings["users"].([]any)
-  if len(users) == 0 {
-    return errors.New("trojan settings.users is required and must not be empty")
-  }
   for i, u := range users {
     uMap, ok := u.(map[string]any)
     if !ok {
@@ -161,9 +152,6 @@ func validateSOCKSSettings(settings map[string]any) error {
 
 func validateHysteria2Settings(settings map[string]any) error {
   users, _ := settings["users"].([]any)
-  if len(users) == 0 {
-    return errors.New("hysteria2 settings.users is required and must not be empty")
-  }
   for i, u := range users {
     uMap, ok := u.(map[string]any)
     if !ok {
@@ -179,9 +167,6 @@ func validateHysteria2Settings(settings map[string]any) error {
 
 func validateTUICSettings(settings map[string]any) error {
   users, _ := settings["users"].([]any)
-  if len(users) == 0 {
-    return errors.New("tuic settings.users is required and must not be empty")
-  }
   for i, u := range users {
     uMap, ok := u.(map[string]any)
     if !ok {
@@ -201,9 +186,6 @@ func validateTUICSettings(settings map[string]any) error {
 
 func validateNaiveSettings(settings map[string]any) error {
   users, _ := settings["users"].([]any)
-  if len(users) == 0 {
-    return errors.New("naive settings.users is required and must not be empty")
-  }
   for i, u := range users {
     uMap, ok := u.(map[string]any)
     if !ok {
@@ -223,9 +205,6 @@ func validateNaiveSettings(settings map[string]any) error {
 
 func validateShadowTLSSettings(settings map[string]any) error {
   users, _ := settings["users"].([]any)
-  if len(users) == 0 {
-    return errors.New("shadowtls settings.users is required and must not be empty")
-  }
   for i, u := range users {
     uMap, ok := u.(map[string]any)
     if !ok {
@@ -249,9 +228,6 @@ func validateShadowTLSSettings(settings map[string]any) error {
 
 func validateAnyTLSSettings(settings map[string]any) error {
   users, _ := settings["users"].([]any)
-  if len(users) == 0 {
-    return errors.New("anytls settings.users is required and must not be empty")
-  }
   for i, u := range users {
     uMap, ok := u.(map[string]any)
     if !ok {
