@@ -52,7 +52,15 @@ import { StatusDot } from "@/components/status-dot";
 import { FlashValue } from "@/components/flash-value";
 import { ApiError } from "@/lib/api/client";
 import { listGroups } from "@/lib/api/groups";
-import { createNode, deleteNode, listNodeTraffic, listNodes, updateNode, approveNode, rejectNode } from "@/lib/api/nodes";
+import {
+  createNode,
+  deleteNode,
+  listNodeTraffic,
+  listNodes,
+  updateNode,
+  approveNode,
+  rejectNode,
+} from "@/lib/api/nodes";
 import type { Group, Node, NodeTrafficSample } from "@/lib/rpc/types";
 import { listTrafficNodesSummary, type TrafficNodeSummary } from "@/lib/api/traffic";
 import { buildNodeDockerCompose, generateNodeSecretKey } from "@/lib/node-compose";
@@ -430,7 +438,10 @@ export function NodesPage() {
                           {formatDateTime(n.last_seen_at, i18n.language, timezone)}
                         </span>
                       ) : null}
-                      <Badge variant="outline" className="border-amber-500/50 text-amber-700 dark:text-amber-400">
+                      <Badge
+                        variant="outline"
+                        className="border-amber-500/50 text-amber-700 dark:text-amber-400"
+                      >
                         {t("nodes.statusPending")}
                       </Badge>
                     </div>
@@ -1090,12 +1101,18 @@ export function NodesPage() {
                 <div className="rounded-md border bg-muted/30 p-3">
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
                     <span>
-                      <span className="text-xs text-muted-foreground">{t("nodes.pendingUuid")}:</span>{" "}
+                      <span className="text-xs text-muted-foreground">
+                        {t("nodes.pendingUuid")}:
+                      </span>{" "}
                       <span className="font-mono text-xs">{approving.node.uuid.slice(0, 8)}</span>
                     </span>
                     <span>
-                      <span className="text-xs text-muted-foreground">{t("nodes.pendingAddress")}:</span>{" "}
-                      <span className="text-xs">{approving.node.api_address}:{approving.node.api_port}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {t("nodes.pendingAddress")}:
+                      </span>{" "}
+                      <span className="text-xs">
+                        {approving.node.api_address}:{approving.node.api_port}
+                      </span>
                     </span>
                   </div>
                 </div>
@@ -1107,9 +1124,7 @@ export function NodesPage() {
                   <Input
                     id="approve-name"
                     value={approving.name}
-                    onChange={(e) =>
-                      setApproving((p) => (p ? { ...p, name: e.target.value } : p))
-                    }
+                    onChange={(e) => setApproving((p) => (p ? { ...p, name: e.target.value } : p))}
                     placeholder={t("nodes.approveNodeNamePlaceholder")}
                     autoFocus
                   />
@@ -1132,9 +1147,7 @@ export function NodesPage() {
                 <div className="space-y-1">
                   <div className="flex items-center gap-1">
                     <Label className="text-sm text-foreground">{t("nodes.group")}</Label>
-                    <FieldHint label={t("nodes.group")}>
-                      {t("nodes.groupRequiredHint")}
-                    </FieldHint>
+                    <FieldHint label={t("nodes.group")}>{t("nodes.groupRequiredHint")}</FieldHint>
                   </div>
                   <Select
                     value={approving.groupID == null ? "none" : String(approving.groupID)}

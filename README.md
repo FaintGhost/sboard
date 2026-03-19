@@ -34,6 +34,7 @@ cd panel
 PANEL_HTTP_ADDR=:8080 \
 PANEL_DB_PATH=panel.db \
 PANEL_CORS_ALLOW_ORIGINS=http://localhost:5173 \
+PANEL_NODE_RPC_SCHEME=http \
 PANEL_JWT_SECRET=change-me-in-prod \
 GOFLAGS='-tags=with_utls' \
 go run ./cmd/panel
@@ -61,6 +62,7 @@ Notes:
 
 - Admin APIs use `/rpc/*` by default.
 - `/api/*` is reserved for subscription compatibility (`/api/sub/:user_uuid`) and Node-side REST.
+- Panel connects to Node over HTTPS by default; set `PANEL_NODE_RPC_SCHEME=http` explicitly for local/dev plain HTTP nodes.
 
 If you still prefer Vite proxy:
 
@@ -171,6 +173,7 @@ Note:
 | `PANEL_SERVE_WEB` | serve built web assets | `false` |
 | `PANEL_WEB_DIR` | web build directory | `web/dist` |
 | `PANEL_CORS_ALLOW_ORIGINS` | allowed origins | `http://localhost:5173` |
+| `PANEL_NODE_RPC_SCHEME` | default scheme for Panel -> Node RPC (`https` or `http`) | `https` |
 | `PANEL_LOG_REQUESTS` | log HTTP requests | `true` |
 
 ### Node
@@ -180,6 +183,7 @@ Note:
 | `NODE_HTTP_ADDR` | listen address | `:3000` |
 | `NODE_SECRET_KEY` | API secret | - |
 | `NODE_LOG_LEVEL` | log level | `info` |
+| `PANEL_URL` | Panel base URL for heartbeat; `https` is assumed when scheme is omitted | - |
 
 ## API
 
@@ -238,15 +242,16 @@ Frontend quality tools (Oxc):
 ```bash
 cd web
 bun run lint
-bun run format
+bun run format:check
 bunx tsc -b
 bun run test
 ```
 
 Delivery gates:
 
-- `bun run lint`
-- `bun run format`
-- `bunx tsc -b`
-- `bun run test`
+- `moon run web:lint`
+- `moon run web:format-check`
+- `moon run web:typecheck`
+- `moon run web:test`
 - `moon run panel:check-generate`
+- `moon run e2e:test`

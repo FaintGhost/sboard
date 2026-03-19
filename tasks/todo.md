@@ -1,3 +1,33 @@
+# 2026-03-19 审查收口修复
+
+## 目标
+- 修复审查结论中 6 个高优先级风险点，并把测试、CI、文档门禁统一到当前代码事实。
+
+## 任务
+- [x] 修复 Node -> Panel heartbeat RPC 路径规范化（统一走 `/rpc/...`，兼容 `PANEL_URL` 已含 `/rpc` 的场景）
+- [x] 收口控制面默认传输策略
+  - [x] Node -> Panel：`PANEL_URL` 缺省 scheme 时默认按 `https` 处理
+  - [x] Panel -> Node：默认 scheme 改为 `https`，并通过 `PANEL_NODE_RPC_SCHEME=http` 显式兼容开发/E2E 明文场景
+- [x] 修复 `node/internal/core/core.go` 配置切换顺序，确保新实例成功后再关闭旧实例
+- [x] 修复前端 auth store，持久化 `expires_at` 并在守卫/RPC 拦截器中清理过期 token
+- [x] 修复 `panel/check-generate.sh`，补上未跟踪生成文件检查
+- [x] 对齐 `.github/workflows/ci.yml` 到当前交付门禁（前端格式检查 + 全量 E2E）
+- [x] 更新 README / README.zh / AGENTS 的相关事实描述
+- [x] 跑完整门禁回归并记录结果
+
+## Review
+- 已完成的代码修复：heartbeat 路径规范化、Panel/Node RPC scheme 收口、Node 原子切换、前端登录态过期模型、生成门禁与 CI 对齐。
+- 已完成的定向验证：
+  - `go test ./node/internal/heartbeat ./panel/internal/node ./panel/internal/rpc ./panel/internal/monitor -count=1`
+  - `go test ./node/internal/core -count=1`
+  - `cd web && bun run test src/store/auth.test.ts src/lib/rpc/transport.test.ts`
+- 最终验证结果：
+  - `moon run web:lint web:format-check web:typecheck web:test`
+  - `moon run panel:test node:test`
+  - `moon run panel:check-generate`
+  - `moon run e2e:smoke`（18 passed）
+  - `moon run e2e:test`（51 passed）
+
 # RPC 迁移执行清单
 
 ## 目标

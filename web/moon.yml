@@ -19,6 +19,12 @@ tasks:
       - run
       - format
 
+  format-check:
+    command: bun
+    args:
+      - run
+      - format:check
+
   typecheck:
     command: bunx
     args:

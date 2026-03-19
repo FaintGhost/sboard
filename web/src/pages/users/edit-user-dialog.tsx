@@ -231,9 +231,7 @@ export function EditUserDialog({
                             placeholder={t("groups.descriptionPlaceholder")}
                             aria-label={t("groups.description")}
                           />
-                          {inlineError && (
-                            <p className="text-sm text-destructive">{inlineError}</p>
-                          )}
+                          {inlineError && <p className="text-sm text-destructive">{inlineError}</p>}
                           <div className="flex gap-2">
                             <AsyncButton
                               type="button"

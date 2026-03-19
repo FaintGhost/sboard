@@ -14,6 +14,7 @@
 ## 前端交付门禁
 - 前端开发相关改动在交付前必须通过以下检查：
   - `moon run web:lint`（等价于 `cd web && bun run lint`）
+  - `moon run web:format-check`（等价于 `cd web && bun run format:check`）
   - `moon run web:typecheck`（等价于 `cd web && bunx tsc -b`）
   - `moon run web:test`（等价于 `cd web && bun run test`）
   - `moon run panel:check-generate`（确保生成代码与 spec 同步）
@@ -21,7 +22,7 @@
 - 任一检查未通过时，不应标记为完成交付。
 
 ## 快速启动开发环境（Moon）
-- `moon run panel:dev` — 启动 Panel 后端（Go），配置了 `PANEL_SERVE_WEB=true` 和 `PANEL_WEB_DIR=web/dist`，可直接访问 `http://localhost:8080` 查看完整界面
+- `moon run panel:dev` — 启动 Panel 后端（Go），配置了 `PANEL_SERVE_WEB=true`、`PANEL_WEB_DIR=web/dist`、`PANEL_NODE_RPC_SCHEME=http`，可直接访问 `http://localhost:8080` 查看完整界面
 - `moon run web:dev` — 启动前端开发服务器（Vite + HMR），访问 `http://localhost:5173`
 - 两个任务均设置了 `runFromWorkspaceRoot: true`，从仓库根目录执行 `moon run <task>` 即可
 - Vite 开发服务器已配置 `/rpc` 代理到后端，解决 RPC 请求 404 问题

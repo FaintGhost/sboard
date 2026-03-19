@@ -36,7 +36,7 @@ jobs:
       - uses: moonrepo/setup-toolchain@v0
         with:
           auto-install: true
-      - run: moon run web:lint web:typecheck web:test
+      - run: moon run web:lint web:format-check web:typecheck web:test
 
   panel:
     runs-on: ubuntu-latest
@@ -67,3 +67,15 @@ jobs:
         with:
           go-version-file: node/go.mod
       - run: moon run node:test
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: moonrepo/setup-toolchain@v0
+        with:
+          auto-install: true
+      - name: Run full E2E suite
+        run: moon run e2e:test
