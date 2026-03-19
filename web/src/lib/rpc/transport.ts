@@ -7,9 +7,9 @@ import { getValidAuthSnapshot, useAuthStore } from "@/store/auth";
 const envBase = import.meta.env.VITE_API_BASE_URL?.trim();
 const runtimeOrigin =
   typeof globalThis !== "undefined" &&
-    "location" in globalThis &&
-    typeof globalThis.location?.origin === "string" &&
-    globalThis.location.origin
+  "location" in globalThis &&
+  typeof globalThis.location?.origin === "string" &&
+  globalThis.location.origin
     ? globalThis.location.origin
     : "http://localhost";
 const base = envBase ? envBase.replace(/\/+$/, "") : runtimeOrigin.replace(/\/+$/, "");
