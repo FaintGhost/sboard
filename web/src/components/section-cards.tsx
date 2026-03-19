@@ -39,8 +39,8 @@ export function SectionCards(props: SectionCardsProps) {
             {props.isLoading ? "-" : <FlashValue value={`${bytesToGBString(up1)} GB`} />}
           </CardTitle>
           <CardAction>
-            <Badge variant="outline">
-              <IconArrowUp />
+            <Badge variant="outline" className="text-primary border-primary/30">
+              <IconArrowUp className="text-primary" />
               {t("dashboard.uplink")}
             </Badge>
           </CardAction>
@@ -58,8 +58,8 @@ export function SectionCards(props: SectionCardsProps) {
             {props.isLoading ? "-" : <FlashValue value={`${bytesToGBString(down1)} GB`} />}
           </CardTitle>
           <CardAction>
-            <Badge variant="outline">
-              <IconArrowDown />
+            <Badge variant="outline" className="text-chart-2 border-chart-2/30">
+              <IconArrowDown className="text-chart-2" />
               {t("dashboard.downlink")}
             </Badge>
           </CardAction>
@@ -77,8 +77,8 @@ export function SectionCards(props: SectionCardsProps) {
             {props.isLoading ? "-" : <FlashValue value={`${bytesToGBString(up24)} GB`} />}
           </CardTitle>
           <CardAction>
-            <Badge variant="outline">
-              <IconArrowUp />
+            <Badge variant="outline" className="text-primary border-primary/30">
+              <IconArrowUp className="text-primary" />
               {t("dashboard.uplink")}
             </Badge>
           </CardAction>
@@ -91,8 +91,8 @@ export function SectionCards(props: SectionCardsProps) {
             {props.isLoading ? "-" : <FlashValue value={`${bytesToGBString(down24)} GB`} />}
           </CardTitle>
           <CardAction>
-            <Badge variant="outline">
-              <IconArrowDown />
+            <Badge variant="outline" className="text-chart-2 border-chart-2/30">
+              <IconArrowDown className="text-chart-2" />
               {t("dashboard.downlink")}
             </Badge>
           </CardAction>

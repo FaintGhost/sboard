@@ -20,6 +20,18 @@
   - `moon run e2e:test`（全链路 E2E 测试，需要 Docker 环境）
 - 任一检查未通过时，不应标记为完成交付。
 
+## 快速启动开发环境（Moon）
+- `moon run panel:dev` — 启动 Panel 后端（Go），配置了 `PANEL_SERVE_WEB=true` 和 `PANEL_WEB_DIR=web/dist`，可直接访问 `http://localhost:8080` 查看完整界面
+- `moon run web:dev` — 启动前端开发服务器（Vite + HMR），访问 `http://localhost:5173`
+- 两个任务均设置了 `runFromWorkspaceRoot: true`，从仓库根目录执行 `moon run <task>` 即可
+- Vite 开发服务器已配置 `/rpc` 代理到后端，解决 RPC 请求 404 问题
+
+## 设计规范
+- 主题色：`oklch(0.70 0.16 245)` 蓝色（`--primary`），深色侧边栏：`oklch(0.55 0.14 245)`
+- 交通色：上行（Uplink）用 primary 蓝色，下行（Downlink）用 `oklch(0.72 0.15 215)` 蓝色（`--chart-2`）
+- 按钮交互：按压反馈 `active:scale-[0.97]`
+- 深色模式下 `--secondary` 使用暖色调 `oklch(0.258 0.008 50)` 与 `--accent` 区分
+
 ## GitHub 操作
 - 当前环境已配置 GitHub CLI（`gh`）
 - 如需 GitHub 仓库相关操作，优先使用 `gh`（例如 PR、release、issue 等）

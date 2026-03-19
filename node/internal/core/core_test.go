@@ -57,7 +57,7 @@ func (f *fakeClosableBox) Close() error {
 	return nil
 }
 
-func TestApplyOptions_ClosesOldBoxBeforeStartingNewOne(t *testing.T) {
+func TestApplyOptions_StartsNewBoxBeforeClosingOldOne(t *testing.T) {
 	oldFactory := core.NewBox
 	t.Cleanup(func() { core.NewBox = oldFactory })
 
@@ -72,8 +72,8 @@ func TestApplyOptions_ClosesOldBoxBeforeStartingNewOne(t *testing.T) {
 		}
 		require.Equal(t, option.Options{Inbounds: []option.Inbound{{Tag: "ss-in", Type: "shadowsocks"}}}, opts.Options)
 		second.startFn = func() error {
-			if !first.closed {
-				return errors.New("old box still open")
+			if first.closed {
+				return errors.New("old box closed before new start")
 			}
 			return nil
 		}

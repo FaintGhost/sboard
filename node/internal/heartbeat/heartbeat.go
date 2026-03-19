@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
+	"strings"
 	"time"
 )
 
@@ -82,7 +84,10 @@ func sendHeartbeat(ctx context.Context, client *http.Client, cfg Config) error {
 		return fmt.Errorf("marshal request: %w", err)
 	}
 
-	url := cfg.PanelURL + heartbeatPath
+	url, err := buildHeartbeatURL(cfg.PanelURL)
+	if err != nil {
+		return err
+	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
 	if err != nil {
@@ -117,4 +122,44 @@ func sendHeartbeat(ctx context.Context, client *http.Client, cfg Config) error {
 	}
 
 	return nil
+}
+
+func buildHeartbeatURL(rawBase string) (string, error) {
+	base, err := normalizePanelRPCBaseURL(rawBase)
+	if err != nil {
+		return "", err
+	}
+	return base + heartbeatPath, nil
+}
+
+func normalizePanelRPCBaseURL(rawBase string) (string, error) {
+	trimmed := strings.TrimSpace(rawBase)
+	if trimmed == "" {
+		return "", fmt.Errorf("panel url is empty")
+	}
+	if !strings.Contains(trimmed, "://") {
+		trimmed = "https://" + trimmed
+	}
+
+	parsed, err := url.Parse(trimmed)
+	if err != nil {
+		return "", fmt.Errorf("parse panel url: %w", err)
+	}
+	if parsed.Scheme == "" {
+		parsed.Scheme = "https"
+	}
+	if parsed.Host == "" {
+		return "", fmt.Errorf("invalid panel url: missing host")
+	}
+
+	path := strings.TrimRight(parsed.Path, "/")
+	if path == "" {
+		path = "/rpc"
+	} else if !strings.HasSuffix(path, "/rpc") {
+		path += "/rpc"
+	}
+	parsed.Path = path
+	parsed.RawPath = ""
+
+	return strings.TrimRight(parsed.String(), "/"), nil
 }

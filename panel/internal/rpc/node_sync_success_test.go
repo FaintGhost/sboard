@@ -91,7 +91,7 @@ func TestNodeSyncRPCSuccess(t *testing.T) {
 	groupID := group.ID
 	nodeItem, err := store.CreateNode(ctx, db.NodeCreate{
 		Name:          "node-a",
-		APIAddress:    host,
+		APIAddress:    parsedURL.Scheme + "://" + host,
 		APIPort:       port,
 		SecretKey:     "secret",
 		PublicAddress: host,

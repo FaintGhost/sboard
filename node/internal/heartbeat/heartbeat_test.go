@@ -29,7 +29,7 @@ func TestHeartbeat_SendsOnTick(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, http.MethodPost, r.Method)
 		assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
-		assert.Equal(t, "/sboard.panel.v1.NodeRegistrationService/Heartbeat", r.URL.Path)
+		assert.Equal(t, "/rpc/sboard.panel.v1.NodeRegistrationService/Heartbeat", r.URL.Path)
 
 		body, err := io.ReadAll(r.Body)
 		require.NoError(t, err)
@@ -84,6 +84,43 @@ func TestHeartbeat_SendsOnTick(t *testing.T) {
 	assert.Equal(t, "secret-test-1", rec.SecretKey)
 	assert.Equal(t, ":3000", rec.APIAddr)
 	assert.Equal(t, "1.0.0", rec.Version)
+}
+
+func TestHeartbeat_UsesExistingRPCPrefix(t *testing.T) {
+	received := make(chan struct{}, 1)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/rpc/sboard.panel.v1.NodeRegistrationService/Heartbeat", r.URL.Path)
+		received <- struct{}{}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"status": "NODE_HEARTBEAT_STATUS_RECOGNIZED",
+		})
+	}))
+	defer srv.Close()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	done := make(chan struct{})
+	go func() {
+		heartbeat.Run(ctx, heartbeat.Config{
+			PanelURL:  srv.URL + "/rpc",
+			NodeUUID:  "uuid-test-rpc",
+			SecretKey: "secret-test-rpc",
+			Interval:  50 * time.Millisecond,
+		}, srv.Client())
+		close(done)
+	}()
+
+	select {
+	case <-received:
+	case <-time.After(2 * time.Second):
+		t.Fatal("timed out waiting for heartbeat request")
+	}
+
+	cancel()
+	<-done
 }
 
 func TestHeartbeat_DisabledWhenNoPanelURL(t *testing.T) {

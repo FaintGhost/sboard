@@ -67,17 +67,77 @@ func TestCoreApplyAndApplyOptions(t *testing.T) {
 	}
 }
 
+func TestCoreApplyOptions_SkipsRestartForIdenticalConfig(t *testing.T) {
+	oldFactory := NewBox
+	t.Cleanup(func() { NewBox = oldFactory })
+
+	created := &testBox{}
+	callCount := 0
+	NewBox = func(opts sbbox.Options) (Box, error) {
+		callCount++
+		return created, nil
+	}
+
+	old := &testBox{}
+	c := &Core{ctx: context.Background(), box: old}
+	raw := []byte(`{"inbounds":[{"tag":"in-1"}]}`)
+	options := option.Options{Inbounds: []option.Inbound{{Type: "mixed", Tag: "in-1"}}}
+
+	err := c.ApplyOptions(options, raw)
+	if err != nil {
+		t.Fatalf("first ApplyOptions failed: %v", err)
+	}
+	if callCount != 1 {
+		t.Fatalf("expected first apply to build one box, got %d", callCount)
+	}
+	if !old.closed {
+		t.Fatal("old box should be closed after first apply")
+	}
+
+	currentBox := c.box
+	firstUpdatedAt := c.at
+	created.closed = false
+	created.started = false
+
+	err = c.ApplyOptions(options, raw)
+	if err != nil {
+		t.Fatalf("second ApplyOptions failed: %v", err)
+	}
+	if callCount != 1 {
+		t.Fatalf("expected identical apply to skip rebuild, got %d builds", callCount)
+	}
+	if c.box != currentBox {
+		t.Fatal("identical apply should keep current box")
+	}
+	if created.closed {
+		t.Fatal("identical apply should not close current box")
+	}
+	if created.started {
+		t.Fatal("identical apply should not restart current box")
+	}
+	if !c.at.After(firstUpdatedAt) && !c.at.Equal(firstUpdatedAt) {
+		t.Fatal("identical apply should keep a valid updated time")
+	}
+}
+
 func TestCoreApplyOptionsFactoryAndStartErrors(t *testing.T) {
 	oldFactory := NewBox
 	t.Cleanup(func() { NewBox = oldFactory })
 
-	c := &Core{ctx: context.Background(), box: &testBox{}}
+	oldBox := &testBox{}
+	c := &Core{ctx: context.Background(), box: oldBox}
 
 	NewBox = func(opts sbbox.Options) (Box, error) {
 		return nil, errors.New("new box failed")
 	}
 	if err := c.ApplyOptions(option.Options{}, []byte(`{}`)); err == nil {
 		t.Fatal("expected NewBox error")
+	}
+	if oldBox.closed {
+		t.Fatal("old box should remain active when NewBox fails")
+	}
+	if c.box != oldBox {
+		t.Fatal("core should keep old box when NewBox fails")
 	}
 
 	created := &testBox{startErr: errors.New("start failed")}
@@ -89,6 +149,12 @@ func TestCoreApplyOptionsFactoryAndStartErrors(t *testing.T) {
 	}
 	if !created.closed {
 		t.Fatal("failed-start box should be closed")
+	}
+	if oldBox.closed {
+		t.Fatal("old box should remain active when new start fails")
+	}
+	if c.box != oldBox {
+		t.Fatal("core should keep old box when new start fails")
 	}
 }
 
