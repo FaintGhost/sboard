@@ -5,7 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
+	"net/url"
+	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -21,8 +25,11 @@ type Doer interface {
 }
 
 type Client struct {
-	doer Doer
+	doer          Doer
+	defaultScheme string
 }
+
+const defaultNodeRPCSchemeEnv = "PANEL_NODE_RPC_SCHEME"
 
 var syncConfigNodeLocks = struct {
 	mu    sync.Mutex
@@ -36,10 +43,14 @@ type SyncError struct {
 }
 
 func NewClient(doer Doer) *Client {
+	return NewClientWithScheme(doer, os.Getenv(defaultNodeRPCSchemeEnv))
+}
+
+func NewClientWithScheme(doer Doer, scheme string) *Client {
 	if doer == nil {
 		doer = &http.Client{Timeout: 10 * time.Second}
 	}
-	return &Client{doer: doer}
+	return &Client{doer: doer, defaultScheme: normalizeRPCScheme(scheme)}
 }
 
 func (e *SyncError) Error() string {
@@ -197,7 +208,7 @@ func (c *Client) newRPCClient(node db.Node) nodev1connect.NodeControlServiceClie
 			return next(ctx, req)
 		}
 	})
-	return nodev1connect.NewNodeControlServiceClient(c.doer, buildRPCBaseURL(node), connect.WithInterceptors(authInterceptor))
+	return nodev1connect.NewNodeControlServiceClient(c.doer, c.buildRPCBaseURL(node), connect.WithInterceptors(authInterceptor))
 }
 
 func parseRFC3339(raw string) (time.Time, error) {
@@ -279,16 +290,93 @@ func syncConfigNodeLock(node db.Node) *sync.Mutex {
 }
 
 func buildRPCBaseURL(node db.Node) string {
-	host := strings.TrimSpace(node.APIAddress)
-	if host == "" {
-		host = strings.TrimSpace(node.PublicAddress)
+	return buildRPCBaseURLWithScheme(node, os.Getenv(defaultNodeRPCSchemeEnv))
+}
+
+func (c *Client) buildRPCBaseURL(node db.Node) string {
+	return buildRPCBaseURLWithScheme(node, c.defaultScheme)
+}
+
+func buildRPCBaseURLWithScheme(node db.Node, defaultScheme string) string {
+	target := resolveRPCTarget(node, normalizeRPCScheme(defaultScheme))
+	return target.String()
+}
+
+type rpcTarget struct {
+	scheme string
+	host   string
+	port   int
+	path   string
+}
+
+func (t rpcTarget) String() string {
+	return (&url.URL{
+		Scheme: t.scheme,
+		Host:   net.JoinHostPort(t.host, strconv.Itoa(t.port)),
+		Path:   t.path,
+	}).String()
+}
+
+func resolveRPCTarget(node db.Node, defaultScheme string) rpcTarget {
+	target := parseRPCAddress(strings.TrimSpace(node.APIAddress))
+	if target.host == "" {
+		target = parseRPCAddress(strings.TrimSpace(node.PublicAddress))
 	}
-	if host == "" {
-		host = "127.0.0.1"
+	if target.host == "" {
+		target.host = "127.0.0.1"
 	}
-	port := node.APIPort
-	if port <= 0 {
-		port = 3000
+	if target.scheme == "" {
+		target.scheme = normalizeRPCScheme(defaultScheme)
 	}
-	return fmt.Sprintf("http://%s:%d/rpc", host, port)
+	if node.APIPort > 0 {
+		target.port = node.APIPort
+	} else if target.port <= 0 {
+		target.port = 3000
+	}
+	target.path = normalizeRPCPath(target.path)
+	return target
+}
+
+func parseRPCAddress(raw string) rpcTarget {
+	if raw == "" {
+		return rpcTarget{}
+	}
+	if strings.Contains(raw, "://") {
+		parsed, err := url.Parse(raw)
+		if err == nil && parsed.Host != "" {
+			port, _ := strconv.Atoi(parsed.Port())
+			return rpcTarget{
+				scheme: parsed.Scheme,
+				host:   parsed.Hostname(),
+				port:   port,
+				path:   parsed.Path,
+			}
+		}
+	}
+
+	host, portRaw, err := net.SplitHostPort(raw)
+	if err == nil {
+		port, _ := strconv.Atoi(portRaw)
+		return rpcTarget{host: host, port: port}
+	}
+
+	return rpcTarget{host: raw}
+}
+
+func normalizeRPCPath(raw string) string {
+	path := strings.TrimRight(strings.TrimSpace(raw), "/")
+	if path == "" {
+		return "/rpc"
+	}
+	if strings.HasSuffix(path, "/rpc") {
+		return path
+	}
+	return path + "/rpc"
+}
+
+func normalizeRPCScheme(raw string) string {
+	if strings.EqualFold(strings.TrimSpace(raw), "http") {
+		return "http"
+	}
+	return "https"
 }

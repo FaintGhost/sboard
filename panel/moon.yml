@@ -9,6 +9,7 @@ tasks:
       PANEL_DB_PATH: panel.db
       PANEL_JWT_SECRET: dev-secret-please-change-in-production
       PANEL_CORS_ALLOW_ORIGINS: http://localhost:5173
+      PANEL_NODE_RPC_SCHEME: http
       PANEL_LOG_REQUESTS: "true"
       PANEL_SERVE_WEB: "true"
       PANEL_WEB_DIR: web/dist

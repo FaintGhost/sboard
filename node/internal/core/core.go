@@ -71,14 +71,16 @@ func (c *Core) Apply(inbounds []option.Inbound, raw []byte) error {
 }
 
 func (c *Core) ApplyOptions(options option.Options, raw []byte) error {
+	sum := sha256.Sum256(raw)
+	nextHash := hex.EncodeToString(sum[:])
+	if c.box != nil && c.hash != "" && c.hash == nextHash {
+		c.at = time.Now().UTC()
+		return nil
+	}
+
 	newBox, err := NewBox(sbbox.Options{Options: options, Context: c.ctx})
 	if err != nil {
 		return err
-	}
-
-	oldBox := c.box
-	if oldBox != nil {
-		_ = oldBox.Close()
 	}
 
 	if err := newBox.Start(); err != nil {
@@ -92,11 +94,15 @@ func (c *Core) ApplyOptions(options option.Options, raw []byte) error {
 	if router := newBox.Router(); router != nil {
 		router.AppendTracker(c.traffic)
 	}
-	c.box = newBox
 
-	sum := sha256.Sum256(raw)
-	c.hash = hex.EncodeToString(sum[:])
-	c.at = time.Now()
+	oldBox := c.box
+	c.box = newBox
+	if oldBox != nil {
+		_ = oldBox.Close()
+	}
+
+	c.hash = nextHash
+	c.at = time.Now().UTC()
 	return nil
 }
 

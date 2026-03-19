@@ -89,7 +89,7 @@ func TestNodeRPCTelemetryMonitor(t *testing.T) {
 
 	nodeItem, err := store.CreateNode(ctx, db.NodeCreate{
 		Name:          "node-rpc",
-		APIAddress:    host,
+		APIAddress:    parsedURL.Scheme + "://" + host,
 		APIPort:       port,
 		SecretKey:     "secret",
 		PublicAddress: host,

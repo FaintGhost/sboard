@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strconv"
 	"strings"
 	"testing"
@@ -81,14 +82,24 @@ func TestNewClient_DefaultDoer(t *testing.T) {
 }
 
 func TestBuildURL(t *testing.T) {
+	t.Setenv(defaultNodeRPCSchemeEnv, "")
 	n := db.Node{APIAddress: "10.0.0.2", APIPort: 3900, PublicAddress: "pub.example"}
-	require.Equal(t, "http://10.0.0.2:3900/rpc", buildRPCBaseURL(n))
+	require.Equal(t, "https://10.0.0.2:3900/rpc", buildRPCBaseURL(n))
 
 	n = db.Node{APIAddress: "", PublicAddress: "pub.example", APIPort: 0}
-	require.Equal(t, "http://pub.example:3000/rpc", buildRPCBaseURL(n))
+	require.Equal(t, "https://pub.example:3000/rpc", buildRPCBaseURL(n))
 
 	n = db.Node{}
-	require.Equal(t, "http://127.0.0.1:3000/rpc", buildRPCBaseURL(n))
+	require.Equal(t, "https://127.0.0.1:3000/rpc", buildRPCBaseURL(n))
+
+	n = db.Node{APIAddress: "http://10.0.0.2", APIPort: 3900}
+	require.Equal(t, "http://10.0.0.2:3900/rpc", buildRPCBaseURL(n))
+
+	n = db.Node{APIAddress: "https://10.0.0.2/control", APIPort: 3900}
+	require.Equal(t, "https://10.0.0.2:3900/control/rpc", buildRPCBaseURL(n))
+
+	t.Setenv(defaultNodeRPCSchemeEnv, "http")
+	require.Equal(t, "http://127.0.0.1:3000/rpc", buildRPCBaseURL(db.Node{}))
 }
 
 func TestClientHealth(t *testing.T) {
@@ -253,12 +264,12 @@ func TestClientSyncConfig(t *testing.T) {
 
 func nodeFromServerURL(t *testing.T, rawURL string) db.Node {
 	t.Helper()
-	trimmed := strings.TrimPrefix(rawURL, "http://")
-	parts := strings.Split(trimmed, ":")
-	require.Len(t, parts, 2)
-	port, err := strconv.Atoi(parts[1])
+	parsed, err := url.Parse(rawURL)
 	require.NoError(t, err)
-	return db.Node{APIAddress: parts[0], APIPort: port, SecretKey: "secret"}
+	host := parsed.Hostname()
+	port, err := strconv.Atoi(parsed.Port())
+	require.NoError(t, err)
+	return db.Node{APIAddress: parsed.Scheme + "://" + host, APIPort: port, SecretKey: "secret"}
 }
 
 func ioNopCloser(body string) *readCloser { return &readCloser{Reader: strings.NewReader(body)} }

@@ -10,6 +10,7 @@ services:
       PANEL_SERVE_WEB: "true"
       PANEL_WEB_DIR: "/app/web/dist"
       PANEL_LOG_REQUESTS: "true"
+      PANEL_NODE_RPC_SCHEME: "http"
       PANEL_NODE_MONITOR_INTERVAL: "5s"
       PANEL_TRAFFIC_MONITOR_INTERVAL: "10s"
     volumes:
