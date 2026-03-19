@@ -6,15 +6,19 @@ import { BootstrapForm } from "@/components/bootstrap-form";
 import { LoginForm } from "@/components/login-form";
 import { bootstrapAdmin, getBootstrapStatus, loginAdmin } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/client";
+import { isTokenExpired } from "@/store/auth";
 import { useAuthStore } from "@/store/auth";
 
 export function LoginPage() {
   const { t } = useTranslation();
   const token = useAuthStore((state) => state.token);
+  const expiresAt = useAuthStore((state) => state.expiresAt);
+  const clearToken = useAuthStore((state) => state.clearToken);
   const setToken = useAuthStore((state) => state.setToken);
   const navigate = useNavigate();
   const location = useLocation();
   const from = (location.state as { from?: string } | null)?.from ?? "/";
+  const expired = token ? isTokenExpired(expiresAt) : false;
 
   const statusQuery = useQuery({
     queryKey: ["admin-bootstrap-status"],
@@ -27,7 +31,7 @@ export function LoginPage() {
   const loginMutation = useMutation({
     mutationFn: loginAdmin,
     onSuccess: (data) => {
-      setToken(data.token);
+      setToken(data.token, data.expires_at);
       navigate(from, { replace: true });
     },
   });
@@ -40,7 +44,11 @@ export function LoginPage() {
     },
   });
 
-  if (token) {
+  if (expired) {
+    clearToken();
+  }
+
+  if (token && !expired) {
     return <Navigate to={from} replace />;
   }
 

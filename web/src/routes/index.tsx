@@ -8,6 +8,7 @@ import {
 } from "react-router-dom";
 
 import { AppLayout } from "@/layouts/app-layout";
+import { isTokenExpired } from "@/store/auth";
 import { useAuthStore } from "@/store/auth";
 
 const DashboardPage = lazy(() =>
@@ -59,9 +60,16 @@ function withSuspense(element: ReactNode) {
 
 function RequireAuth() {
   const token = useAuthStore((state) => state.token);
+  const expiresAt = useAuthStore((state) => state.expiresAt);
+  const clearToken = useAuthStore((state) => state.clearToken);
   const location = useLocation();
+  const expired = token ? isTokenExpired(expiresAt) : false;
 
-  if (!token) {
+  if (expired) {
+    clearToken();
+  }
+
+  if (!token || expired) {
     return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   }
 
