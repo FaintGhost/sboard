@@ -1,5 +1,7 @@
 import { test, expect, ADMIN_USERNAME, ADMIN_PASSWORD, BASE_URL, SETUP_TOKEN } from "../fixtures";
 
+const AUTH_EXPIRES_AT_KEY = "sboard_token_expires_at";
+
 async function ensureBootstrap(request: import("@playwright/test").APIRequestContext) {
   const statusResp = await request.post(`${BASE_URL}/rpc/sboard.panel.v1.AuthService/GetBootstrapStatus`, {
     headers: { "Content-Type": "application/json" },
@@ -70,9 +72,13 @@ test.describe("认证管理", () => {
     await page.goto(`${BASE_URL}/login`);
 
     // Inject a fake/expired token into localStorage
-    await page.evaluate(() => {
+    await page.evaluate((expiresKey) => {
       localStorage.setItem("sboard_token", "invalid-expired-token");
-    });
+      localStorage.setItem(
+        expiresKey,
+        new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+      );
+    }, AUTH_EXPIRES_AT_KEY);
 
     // Navigate to a protected route — the page will attempt RPC calls
     // which return Unauthenticated (401), triggering the transport
@@ -85,5 +91,23 @@ test.describe("认证管理", () => {
     // Verify the invalid token has been removed from localStorage
     const token = await page.evaluate(() => localStorage.getItem("sboard_token"));
     expect(token).toBeNull();
+  });
+
+  test("本地已过期 token 直接跳回 login", async ({ page, request }) => {
+    await ensureBootstrap(request);
+    await page.goto(`${BASE_URL}/login`);
+
+    await page.evaluate((expiresKey) => {
+      localStorage.setItem("sboard_token", "expired-token");
+      localStorage.setItem(expiresKey, "2000-01-01T00:00:00.000Z");
+    }, AUTH_EXPIRES_AT_KEY);
+
+    await page.goto(`${BASE_URL}/users`);
+
+    await expect(page).toHaveURL(/\/login/, { timeout: 5_000 });
+    const token = await page.evaluate(() => localStorage.getItem("sboard_token"));
+    const expiresAt = await page.evaluate((expiresKey) => localStorage.getItem(expiresKey), AUTH_EXPIRES_AT_KEY);
+    expect(token).toBeNull();
+    expect(expiresAt).toBeNull();
   });
 });

@@ -2,20 +2,20 @@ import { Code, ConnectError } from "@connectrpc/connect";
 import { createConnectTransport } from "@connectrpc/connect-web";
 import type { Interceptor } from "@connectrpc/connect";
 
-import { useAuthStore } from "@/store/auth";
+import { getValidAuthSnapshot, useAuthStore } from "@/store/auth";
 
 const envBase = import.meta.env.VITE_API_BASE_URL?.trim();
 const runtimeOrigin =
   typeof globalThis !== "undefined" &&
-  "location" in globalThis &&
-  typeof globalThis.location?.origin === "string" &&
-  globalThis.location.origin
+    "location" in globalThis &&
+    typeof globalThis.location?.origin === "string" &&
+    globalThis.location.origin
     ? globalThis.location.origin
     : "http://localhost";
 const base = envBase ? envBase.replace(/\/+$/, "") : runtimeOrigin.replace(/\/+$/, "");
 
 export const authInterceptor: Interceptor = (next) => async (req) => {
-  const token = useAuthStore.getState().token;
+  const { token } = getValidAuthSnapshot();
   if (token) {
     req.header.set("Authorization", `Bearer ${token}`);
   }

@@ -1,4 +1,14 @@
-import { test, expect, PanelAPI, NodeAPI, uniqueGroupName, uniqueInboundTag, uniqueNodeName, uniqueUsername } from "../fixtures";
+import {
+  test,
+  expect,
+  PanelAPI,
+  NodeAPI,
+  uniqueGroupName,
+  uniqueInboundPort,
+  uniqueInboundTag,
+  uniqueNodeName,
+  uniqueUsername,
+} from "../fixtures";
 
 const BASE_URL = process.env.BASE_URL || "http://localhost:8080";
 const NODE_SECRET_KEY = process.env.NODE_SECRET_KEY || "e2e-test-node-secret";
@@ -33,13 +43,14 @@ test.describe.serial("Node RPC 直切边界", () => {
     expect(nodeResp.ok()).toBeTruthy();
     const nodeBody = await nodeResp.json();
     const nodeId = Number(nodeBody.data.id);
+    const inboundPort = uniqueInboundPort();
 
     const inboundResp = await panelApi.createInbound({
       node_id: nodeId,
       tag: uniqueInboundTag(),
       protocol: "socks",
-      listen_port: 16080,
-      public_port: 16080,
+      listen_port: inboundPort,
+      public_port: inboundPort,
       settings: { users: [] },
       tls_settings: {},
       transport_settings: {},
