@@ -55,8 +55,8 @@ Validated on a fresh clone:
   - In this environment `bun` was missing.
   - `npm install -g bun` worked.
 2. Install JS dependencies:
-  - `cd /home/runner/work/sboard/sboard/web && bun install --frozen-lockfile`
-  - `cd /home/runner/work/sboard/sboard/e2e && bun install --frozen-lockfile`
+  - `cd web && bun install --frozen-lockfile`
+  - `cd e2e && bun install --frozen-lockfile`
 3. Use direct workspace commands for local validation if Moon fails.
 
 Important local pitfalls that were actually observed:
@@ -71,19 +71,19 @@ Important local pitfalls that were actually observed:
 Run these from the repo root or the listed workspace:
 
 - Generated files freshness:
-  - `cd /home/runner/work/sboard/sboard/panel && bash check-generate.sh`
+  - `cd panel && bash check-generate.sh`
   - Result: works and prints `Generated files are up to date.`
 - Frontend:
-  - `cd /home/runner/work/sboard/sboard/web && bun run lint`
-  - `cd /home/runner/work/sboard/sboard/web && bun run format:check`
-  - `cd /home/runner/work/sboard/sboard/web && bunx tsc -b`  
+  - `cd web && bun run lint`
+  - `cd web && bun run format:check`
+  - `cd web && bunx tsc -b`  
     No output means success.
-  - `cd /home/runner/work/sboard/sboard/web && bun run test`
-  - `cd /home/runner/work/sboard/sboard/web && bun run build`
+  - `cd web && bun run test`
+  - `cd web && bun run build`
     Works; Vite warns about large chunks after minification, but build still succeeds.
 - Go backends:
-  - `cd /home/runner/work/sboard/sboard/panel && go test ./... -count=1`
-  - `cd /home/runner/work/sboard/sboard/node && go test ./... -count=1`
+  - `cd panel && go test ./... -count=1`
+  - `cd node && go test ./... -count=1`
 
 ## Build/run details that avoid common mistakes
 
@@ -111,15 +111,15 @@ When changing `/panel/proto/sboard/panel/v1/panel.proto`:
 1. Ensure `buf` is installed and `web/node_modules` exists.
 2. Run generation (`moon run panel:generate` in a normal environment).
 3. Re-run freshness check:
-  - `cd /home/runner/work/sboard/sboard/panel && bash check-generate.sh`
+  - `cd panel && bash check-generate.sh`
 
 `/panel/internal/rpc/generate.go` shows generation also formats generated TS files with `bunx oxfmt --write`.
 
 ## E2E / Docker
 
 - E2E entrypoints:
-  - `cd /home/runner/work/sboard/sboard/e2e && bash smoke.sh`
-  - `cd /home/runner/work/sboard/sboard/e2e && bash run.sh`
+  - `cd e2e && bash smoke.sh`
+  - `cd e2e && bash run.sh`
 - Docker itself was available here, but `smoke.sh` failed during Playwright image build because Bun inside Docker could not fetch `@playwright/test` (`HTTPError parsing package manifest`).
 - So E2E needs **both** Docker and working outbound package resolution during image build; do not mark E2E as validated if package fetching is restricted.
 
@@ -130,4 +130,3 @@ When changing `/panel/proto/sboard/panel/v1/panel.proto`:
 - Panel admin API is RPC-first; compatibility REST is mainly `GET /api/sub/:user_uuid`.
 - `panel.proto` is the single source of truth for panel management APIs.
 - Go workspace root is `/go.work`; both `panel` and `node` are active modules.
-
