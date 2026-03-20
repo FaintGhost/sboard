@@ -34,6 +34,7 @@ cd panel
 PANEL_HTTP_ADDR=:8080 \
 PANEL_DB_PATH=panel.db \
 PANEL_CORS_ALLOW_ORIGINS=http://localhost:5173 \
+PANEL_NODE_RPC_SCHEME=http \
 PANEL_JWT_SECRET=change-me-in-prod \
 GOFLAGS='-tags=with_utls' \
 go run ./cmd/panel
@@ -61,6 +62,7 @@ VITE_API_BASE_URL=http://127.0.0.1:8080 bun run dev
 
 - 管理面默认走 `/rpc/*`
 - `/api/*` 仅保留订阅兼容入口（`/api/sub/:user_uuid`）和 Node 侧 REST
+- Panel 默认通过 HTTPS 连接 Node；本地开发或纯内网 HTTP 节点请显式设置 `PANEL_NODE_RPC_SCHEME=http`
 
 如需走 Vite 代理：
 
@@ -171,6 +173,7 @@ SBOARD_PANEL_IMAGE="faintghost/sboard-panel:latest" \
 | `PANEL_SERVE_WEB` | 是否托管前端 | `false` |
 | `PANEL_WEB_DIR` | 前端产物目录 | `web/dist` |
 | `PANEL_CORS_ALLOW_ORIGINS` | 允许的 Origin | `http://localhost:5173` |
+| `PANEL_NODE_RPC_SCHEME` | Panel -> Node RPC 默认 scheme（`https` 或 `http`） | `https` |
 | `PANEL_LOG_REQUESTS` | 打印 HTTP 请求 | `true` |
 
 ### Node
@@ -180,6 +183,7 @@ SBOARD_PANEL_IMAGE="faintghost/sboard-panel:latest" \
 | `NODE_HTTP_ADDR` | 监听地址 | `:3000` |
 | `NODE_SECRET_KEY` | API 密钥 | - |
 | `NODE_LOG_LEVEL` | 日志级别 | `info` |
+| `PANEL_URL` | Node 心跳上报的 Panel 基地址；未带 scheme 时默认按 `https` 处理 | - |
 
 ## API
 
@@ -238,15 +242,16 @@ moon run panel:check-generate
 ```bash
 cd web
 bun run lint
-bun run format
+bun run format:check
 bunx tsc -b
 bun run test
 ```
 
 交付门禁：
 
-- `bun run lint`
-- `bun run format`
-- `bunx tsc -b`
-- `bun run test`
+- `moon run web:lint`
+- `moon run web:format-check`
+- `moon run web:typecheck`
+- `moon run web:test`
 - `moon run panel:check-generate`
+- `moon run e2e:test`

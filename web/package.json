@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "lint": "bun run oxlint",
-    "format": "bun run oxfmt"
+    "format": "bun run oxfmt",
+    "format:check": "bunx oxfmt --check ."
   },
   "dependencies": {
     "@bufbuild/protobuf": "^2.10.1",

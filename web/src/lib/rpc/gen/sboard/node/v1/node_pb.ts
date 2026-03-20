@@ -9,21 +9,23 @@ import type { Message } from "@bufbuild/protobuf";
 /**
  * Describes the file sboard/node/v1/node.proto.
  */
-export const file_sboard_node_v1_node: GenFile = /*@__PURE__*/
-  fileDesc("ChlzYm9hcmQvbm9kZS92MS9ub2RlLnByb3RvEg5zYm9hcmQubm9kZS52MSIPCg1IZWFsdGhSZXF1ZXN0IiAKDkhlYWx0aFJlc3BvbnNlEg4KBnN0YXR1cxgBIAEoCSIpChFTeW5jQ29uZmlnUmVxdWVzdBIUCgxwYXlsb2FkX2pzb24YASABKAwiJAoSU3luY0NvbmZpZ1Jlc3BvbnNlEg4KBnN0YXR1cxgBIAEoCSImChFHZXRUcmFmZmljUmVxdWVzdBIRCglpbnRlcmZhY2UYASABKAkiVwoSR2V0VHJhZmZpY1Jlc3BvbnNlEhEKCWludGVyZmFjZRgBIAEoCRIQCghyeF9ieXRlcxgCIAEoBBIQCgh0eF9ieXRlcxgDIAEoBBIKCgJhdBgEIAEoCSIpChhHZXRJbmJvdW5kVHJhZmZpY1JlcXVlc3QSDQoFcmVzZXQYASABKAgiWQoOSW5ib3VuZFRyYWZmaWMSCwoDdGFnGAEgASgJEgwKBHVzZXIYAiABKAkSDgoGdXBsaW5rGAMgASgDEhAKCGRvd25saW5rGAQgASgDEgoKAmF0GAUgASgJIlAKEkluYm91bmRUcmFmZmljTWV0YRIUCgx0cmFja2VkX3RhZ3MYASABKAUSEQoJdGNwX2Nvbm5zGAIgASgDEhEKCXVkcF9jb25ucxgDIAEoAyKKAQoZR2V0SW5ib3VuZFRyYWZmaWNSZXNwb25zZRIsCgRkYXRhGAEgAygLMh4uc2JvYXJkLm5vZGUudjEuSW5ib3VuZFRyYWZmaWMSDQoFcmVzZXQYAiABKAgSMAoEbWV0YRgDIAEoCzIiLnNib2FyZC5ub2RlLnYxLkluYm91bmRUcmFmZmljTWV0YTLxAgoSTm9kZUNvbnRyb2xTZXJ2aWNlEkcKBkhlYWx0aBIdLnNib2FyZC5ub2RlLnYxLkhlYWx0aFJlcXVlc3QaHi5zYm9hcmQubm9kZS52MS5IZWFsdGhSZXNwb25zZRJTCgpTeW5jQ29uZmlnEiEuc2JvYXJkLm5vZGUudjEuU3luY0NvbmZpZ1JlcXVlc3QaIi5zYm9hcmQubm9kZS52MS5TeW5jQ29uZmlnUmVzcG9uc2USUwoKR2V0VHJhZmZpYxIhLnNib2FyZC5ub2RlLnYxLkdldFRyYWZmaWNSZXF1ZXN0GiIuc2JvYXJkLm5vZGUudjEuR2V0VHJhZmZpY1Jlc3BvbnNlEmgKEUdldEluYm91bmRUcmFmZmljEiguc2JvYXJkLm5vZGUudjEuR2V0SW5ib3VuZFRyYWZmaWNSZXF1ZXN0Gikuc2JvYXJkLm5vZGUudjEuR2V0SW5ib3VuZFRyYWZmaWNSZXNwb25zZUI1WjNzYm9hcmQvcGFuZWwvaW50ZXJuYWwvcnBjL2dlbi9zYm9hcmQvbm9kZS92MTtub2RldjFiBnByb3RvMw");
+export const file_sboard_node_v1_node: GenFile /*@__PURE__*/ = fileDesc(
+  "ChlzYm9hcmQvbm9kZS92MS9ub2RlLnByb3RvEg5zYm9hcmQubm9kZS52MSIPCg1IZWFsdGhSZXF1ZXN0IiAKDkhlYWx0aFJlc3BvbnNlEg4KBnN0YXR1cxgBIAEoCSIpChFTeW5jQ29uZmlnUmVxdWVzdBIUCgxwYXlsb2FkX2pzb24YASABKAwiJAoSU3luY0NvbmZpZ1Jlc3BvbnNlEg4KBnN0YXR1cxgBIAEoCSImChFHZXRUcmFmZmljUmVxdWVzdBIRCglpbnRlcmZhY2UYASABKAkiVwoSR2V0VHJhZmZpY1Jlc3BvbnNlEhEKCWludGVyZmFjZRgBIAEoCRIQCghyeF9ieXRlcxgCIAEoBBIQCgh0eF9ieXRlcxgDIAEoBBIKCgJhdBgEIAEoCSIpChhHZXRJbmJvdW5kVHJhZmZpY1JlcXVlc3QSDQoFcmVzZXQYASABKAgiWQoOSW5ib3VuZFRyYWZmaWMSCwoDdGFnGAEgASgJEgwKBHVzZXIYAiABKAkSDgoGdXBsaW5rGAMgASgDEhAKCGRvd25saW5rGAQgASgDEgoKAmF0GAUgASgJIlAKEkluYm91bmRUcmFmZmljTWV0YRIUCgx0cmFja2VkX3RhZ3MYASABKAUSEQoJdGNwX2Nvbm5zGAIgASgDEhEKCXVkcF9jb25ucxgDIAEoAyKKAQoZR2V0SW5ib3VuZFRyYWZmaWNSZXNwb25zZRIsCgRkYXRhGAEgAygLMh4uc2JvYXJkLm5vZGUudjEuSW5ib3VuZFRyYWZmaWMSDQoFcmVzZXQYAiABKAgSMAoEbWV0YRgDIAEoCzIiLnNib2FyZC5ub2RlLnYxLkluYm91bmRUcmFmZmljTWV0YTLxAgoSTm9kZUNvbnRyb2xTZXJ2aWNlEkcKBkhlYWx0aBIdLnNib2FyZC5ub2RlLnYxLkhlYWx0aFJlcXVlc3QaHi5zYm9hcmQubm9kZS52MS5IZWFsdGhSZXNwb25zZRJTCgpTeW5jQ29uZmlnEiEuc2JvYXJkLm5vZGUudjEuU3luY0NvbmZpZ1JlcXVlc3QaIi5zYm9hcmQubm9kZS52MS5TeW5jQ29uZmlnUmVzcG9uc2USUwoKR2V0VHJhZmZpYxIhLnNib2FyZC5ub2RlLnYxLkdldFRyYWZmaWNSZXF1ZXN0GiIuc2JvYXJkLm5vZGUudjEuR2V0VHJhZmZpY1Jlc3BvbnNlEmgKEUdldEluYm91bmRUcmFmZmljEiguc2JvYXJkLm5vZGUudjEuR2V0SW5ib3VuZFRyYWZmaWNSZXF1ZXN0Gikuc2JvYXJkLm5vZGUudjEuR2V0SW5ib3VuZFRyYWZmaWNSZXNwb25zZUI1WjNzYm9hcmQvcGFuZWwvaW50ZXJuYWwvcnBjL2dlbi9zYm9hcmQvbm9kZS92MTtub2RldjFiBnByb3RvMw",
+);
 
 /**
  * @generated from message sboard.node.v1.HealthRequest
  */
-export type HealthRequest = Message<"sboard.node.v1.HealthRequest"> & {
-};
+export type HealthRequest = Message<"sboard.node.v1.HealthRequest"> & {};
 
 /**
  * Describes the message sboard.node.v1.HealthRequest.
  * Use `create(HealthRequestSchema)` to create a new message.
  */
-export const HealthRequestSchema: GenMessage<HealthRequest> = /*@__PURE__*/
-  messageDesc(file_sboard_node_v1_node, 0);
+export const HealthRequestSchema: GenMessage<HealthRequest> /*@__PURE__*/ = messageDesc(
+  file_sboard_node_v1_node,
+  0,
+);
 
 /**
  * @generated from message sboard.node.v1.HealthResponse
@@ -39,8 +41,10 @@ export type HealthResponse = Message<"sboard.node.v1.HealthResponse"> & {
  * Describes the message sboard.node.v1.HealthResponse.
  * Use `create(HealthResponseSchema)` to create a new message.
  */
-export const HealthResponseSchema: GenMessage<HealthResponse> = /*@__PURE__*/
-  messageDesc(file_sboard_node_v1_node, 1);
+export const HealthResponseSchema: GenMessage<HealthResponse> /*@__PURE__*/ = messageDesc(
+  file_sboard_node_v1_node,
+  1,
+);
 
 /**
  * @generated from message sboard.node.v1.SyncConfigRequest
@@ -56,8 +60,10 @@ export type SyncConfigRequest = Message<"sboard.node.v1.SyncConfigRequest"> & {
  * Describes the message sboard.node.v1.SyncConfigRequest.
  * Use `create(SyncConfigRequestSchema)` to create a new message.
  */
-export const SyncConfigRequestSchema: GenMessage<SyncConfigRequest> = /*@__PURE__*/
-  messageDesc(file_sboard_node_v1_node, 2);
+export const SyncConfigRequestSchema: GenMessage<SyncConfigRequest> /*@__PURE__*/ = messageDesc(
+  file_sboard_node_v1_node,
+  2,
+);
 
 /**
  * @generated from message sboard.node.v1.SyncConfigResponse
@@ -73,8 +79,10 @@ export type SyncConfigResponse = Message<"sboard.node.v1.SyncConfigResponse"> & 
  * Describes the message sboard.node.v1.SyncConfigResponse.
  * Use `create(SyncConfigResponseSchema)` to create a new message.
  */
-export const SyncConfigResponseSchema: GenMessage<SyncConfigResponse> = /*@__PURE__*/
-  messageDesc(file_sboard_node_v1_node, 3);
+export const SyncConfigResponseSchema: GenMessage<SyncConfigResponse> /*@__PURE__*/ = messageDesc(
+  file_sboard_node_v1_node,
+  3,
+);
 
 /**
  * @generated from message sboard.node.v1.GetTrafficRequest
@@ -90,8 +98,10 @@ export type GetTrafficRequest = Message<"sboard.node.v1.GetTrafficRequest"> & {
  * Describes the message sboard.node.v1.GetTrafficRequest.
  * Use `create(GetTrafficRequestSchema)` to create a new message.
  */
-export const GetTrafficRequestSchema: GenMessage<GetTrafficRequest> = /*@__PURE__*/
-  messageDesc(file_sboard_node_v1_node, 4);
+export const GetTrafficRequestSchema: GenMessage<GetTrafficRequest> /*@__PURE__*/ = messageDesc(
+  file_sboard_node_v1_node,
+  4,
+);
 
 /**
  * @generated from message sboard.node.v1.GetTrafficResponse
@@ -122,8 +132,10 @@ export type GetTrafficResponse = Message<"sboard.node.v1.GetTrafficResponse"> & 
  * Describes the message sboard.node.v1.GetTrafficResponse.
  * Use `create(GetTrafficResponseSchema)` to create a new message.
  */
-export const GetTrafficResponseSchema: GenMessage<GetTrafficResponse> = /*@__PURE__*/
-  messageDesc(file_sboard_node_v1_node, 5);
+export const GetTrafficResponseSchema: GenMessage<GetTrafficResponse> /*@__PURE__*/ = messageDesc(
+  file_sboard_node_v1_node,
+  5,
+);
 
 /**
  * @generated from message sboard.node.v1.GetInboundTrafficRequest
@@ -139,7 +151,7 @@ export type GetInboundTrafficRequest = Message<"sboard.node.v1.GetInboundTraffic
  * Describes the message sboard.node.v1.GetInboundTrafficRequest.
  * Use `create(GetInboundTrafficRequestSchema)` to create a new message.
  */
-export const GetInboundTrafficRequestSchema: GenMessage<GetInboundTrafficRequest> = /*@__PURE__*/
+export const GetInboundTrafficRequestSchema: GenMessage<GetInboundTrafficRequest> /*@__PURE__*/ =
   messageDesc(file_sboard_node_v1_node, 6);
 
 /**
@@ -176,8 +188,10 @@ export type InboundTraffic = Message<"sboard.node.v1.InboundTraffic"> & {
  * Describes the message sboard.node.v1.InboundTraffic.
  * Use `create(InboundTrafficSchema)` to create a new message.
  */
-export const InboundTrafficSchema: GenMessage<InboundTraffic> = /*@__PURE__*/
-  messageDesc(file_sboard_node_v1_node, 7);
+export const InboundTrafficSchema: GenMessage<InboundTraffic> /*@__PURE__*/ = messageDesc(
+  file_sboard_node_v1_node,
+  7,
+);
 
 /**
  * @generated from message sboard.node.v1.InboundTrafficMeta
@@ -203,8 +217,10 @@ export type InboundTrafficMeta = Message<"sboard.node.v1.InboundTrafficMeta"> & 
  * Describes the message sboard.node.v1.InboundTrafficMeta.
  * Use `create(InboundTrafficMetaSchema)` to create a new message.
  */
-export const InboundTrafficMetaSchema: GenMessage<InboundTrafficMeta> = /*@__PURE__*/
-  messageDesc(file_sboard_node_v1_node, 8);
+export const InboundTrafficMetaSchema: GenMessage<InboundTrafficMeta> /*@__PURE__*/ = messageDesc(
+  file_sboard_node_v1_node,
+  8,
+);
 
 /**
  * @generated from message sboard.node.v1.GetInboundTrafficResponse
@@ -230,7 +246,7 @@ export type GetInboundTrafficResponse = Message<"sboard.node.v1.GetInboundTraffi
  * Describes the message sboard.node.v1.GetInboundTrafficResponse.
  * Use `create(GetInboundTrafficResponseSchema)` to create a new message.
  */
-export const GetInboundTrafficResponseSchema: GenMessage<GetInboundTrafficResponse> = /*@__PURE__*/
+export const GetInboundTrafficResponseSchema: GenMessage<GetInboundTrafficResponse> /*@__PURE__*/ =
   messageDesc(file_sboard_node_v1_node, 9);
 
 /**
@@ -244,7 +260,7 @@ export const NodeControlService: GenService<{
     methodKind: "unary";
     input: typeof HealthRequestSchema;
     output: typeof HealthResponseSchema;
-  },
+  };
   /**
    * @generated from rpc sboard.node.v1.NodeControlService.SyncConfig
    */
@@ -252,7 +268,7 @@ export const NodeControlService: GenService<{
     methodKind: "unary";
     input: typeof SyncConfigRequestSchema;
     output: typeof SyncConfigResponseSchema;
-  },
+  };
   /**
    * @generated from rpc sboard.node.v1.NodeControlService.GetTraffic
    */
@@ -260,7 +276,7 @@ export const NodeControlService: GenService<{
     methodKind: "unary";
     input: typeof GetTrafficRequestSchema;
     output: typeof GetTrafficResponseSchema;
-  },
+  };
   /**
    * @generated from rpc sboard.node.v1.NodeControlService.GetInboundTraffic
    */
@@ -268,7 +284,5 @@ export const NodeControlService: GenService<{
     methodKind: "unary";
     input: typeof GetInboundTrafficRequestSchema;
     output: typeof GetInboundTrafficResponseSchema;
-  },
-}> = /*@__PURE__*/
-  serviceDesc(file_sboard_node_v1_node, 0);
-
+  };
+}> /*@__PURE__*/ = serviceDesc(file_sboard_node_v1_node, 0);

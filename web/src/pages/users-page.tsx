@@ -401,10 +401,7 @@ export function UsersPage() {
                   );
                 })}
                 {usersTable.showNoData || filteredUsers.length === 0 ? (
-                  <TableEmptyState
-                    colSpan={6}
-                    message={t("common.noData")}
-                  />
+                  <TableEmptyState colSpan={6} message={t("common.noData")} />
                 ) : null}
               </TableBody>
             </Table>

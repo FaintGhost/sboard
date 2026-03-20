@@ -25,10 +25,7 @@ function mockFetchForNodes(getNodes: () => unknown[]) {
       });
     }
 
-    if (
-      req.method === "POST" &&
-      url.pathname === "/rpc/sboard.panel.v1.GroupService/ListGroups"
-    ) {
+    if (req.method === "POST" && url.pathname === "/rpc/sboard.panel.v1.GroupService/ListGroups") {
       return new Response(JSON.stringify({ data: [] }), {
         status: 200,
         headers: { "Content-Type": "application/json" },
@@ -302,7 +299,10 @@ describe("NodesPage", () => {
         });
       }
 
-      if (req.method === "POST" && url.pathname === "/rpc/sboard.panel.v1.NodeService/ApproveNode") {
+      if (
+        req.method === "POST" &&
+        url.pathname === "/rpc/sboard.panel.v1.NodeService/ApproveNode"
+      ) {
         approvedPayload = (await req.json()) as Record<string, unknown>;
         nodes = [
           {
